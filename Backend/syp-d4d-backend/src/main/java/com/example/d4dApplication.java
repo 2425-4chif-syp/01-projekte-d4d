@@ -1,5 +1,7 @@
 package com.example;
 
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -38,8 +40,20 @@ public class d4dApplication {
     @GET
     @Path("/{service}")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<User> usersByServiceOffer(@PathParam("service") String service) {
-        return UserRepository.getServices(service);
-    }
+    public Response usersByServiceOffer(@PathParam("service") String service) {
+        List<User> users = UserRepository.getServices(service);
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 
+        for (User user : users) {
+            JsonObject userJson = Json.createObjectBuilder()
+                    .add("name", user.getName())
+                    .add("serviceOffer", user.getServiceOffer())
+                    .add("serviceWanted", user.getServiceWanted())
+                    .add("description", user.getDescription())
+                    .build();
+            jsonArrayBuilder.add(userJson);
+        }
+
+        return Response.ok(jsonArrayBuilder.build()).build();
+    }
 }
