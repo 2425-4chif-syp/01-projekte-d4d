@@ -57,23 +57,65 @@ document.getElementById("submitButton").onclick = function() {
     });
 };
 
-// Dienstleistung bearbeiten
-function editService(serviceElement) {
-    const details = serviceElement.dataset;
-    document.getElementById("name").value = details.name;
-    document.getElementById("serviceType").value = details.serviceType;
-    document.getElementById("desiredServiceType").value = details.desiredServiceType;
-    document.getElementById("description").value = details.description;
-    document.getElementById("serviceModal").style.display = "block";
+// Filterfunktion: Holt die gefilterten Dienstleistungen vom Backend
+document.getElementById("applyFilter").onclick = function() {
+    const filterValue = document.getElementById("filterService").value;
 
-    serviceElement.remove();
-}
+    // Wenn kein Fach ausgewählt ist, alle Benutzer holen
+    const url = filterValue
+        ? `http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`
+        : "http://localhost:8080/d4d/users";
 
-// Dienstleistung löschen
-function deleteService(serviceElement) {
-    if (confirm("Möchten Sie diese Dienstleistung wirklich löschen?")) {
-        serviceElement.remove();
-    }
+    // Abrufen der Daten von der API
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.json();
+        })
+        .then(users => {
+            // Bestehende Dienstleistungsliste leeren
+            document.getElementById("serviceList").innerHTML = "";
+            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            alert("Es gab ein Problem beim Abrufen der Daten.");
+        });
+};
+
+// Filter zurücksetzen und Angebote ausblenden
+document.getElementById("clearFilter").onclick = function() {
+    // Auswahlfeld zurücksetzen
+    document.getElementById("filterService").value = "";
+
+    // Angebotsliste leeren
+    const serviceList = document.getElementById("serviceList");
+    serviceList.innerHTML = "";
+
+    // Optionale Nachricht einfügen
+    const noOffersMessage = document.createElement("p");
+    noOffersMessage.textContent = "Keine Angebote verfügbar.";
+    noOffersMessage.style.textAlign = "center";
+    noOffersMessage.style.color = "#757575";
+    serviceList.appendChild(noOffersMessage);
+};
+
+// Dienstleistung zur Liste hinzufügen
+function addUserToList(serviceType, desiredServiceType, name, description) {
+    const li = document.createElement("li");
+    li.classList.add("service-item", serviceType.toLowerCase());
+    
+    // Container für Text und Button
+    const textContainer = document.createElement("span");
+    textContainer.classList.add("service-text");
+    textContainer.textContent = `${name} - ${serviceType} --- Gegentausch: ${desiredServiceType}`;
+
+    // Elemente anordnen
+    li.appendChild(textContainer);
+
+    document.getElementById("serviceList").appendChild(li);
 }
 
 // Schließen des Hauptmodals (serviceModal) über den Schließen-Button

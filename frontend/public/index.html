@@ -11,6 +11,30 @@
         <h1>D4D - Dienstleistungen</h1>
         <button id="serviceButton">Dienstleistung anbieten</button>
 
+        <!-- Filterbereich -->
+        <div class="filter-container">
+            <label for="filterService">Fach filtern:</label>
+            <select id="filterService">
+                <option value="">Alle Fächer</option>
+                <option value="Biologie">Biologie</option>
+                <option value="Chemie">Chemie</option>
+                <option value="Deutsch">Deutsch</option>
+                <option value="Englisch">Englisch</option>
+                <option value="Informatik">Informatik</option>
+                <option value="Mathematik">Mathematik</option>
+                <option value="Physik">Physik</option>
+                <option value="Projektmanagement">Projektmanagement</option>
+                <option value="Wirtschaft">Wirtschaft</option>
+                <option value="Betriebswirtschaft">Betriebswirtschaft</option>
+                <option value="Elektrotechnik">Elektrotechnik</option>
+                <option value="Maschinenbau">Maschinenbau</option>
+                <option value="Kunst">Kunst</option>
+                <option value="Geschichte">Geschichte</option>
+            </select>
+            <button id="applyFilter">Filtern</button>
+            <button id="clearFilter">Filter zurücksetzen</button>
+        </div>
+
         <h2>Angenommene Dienstleistungen</h2>
         <ul id="serviceList"></ul>
     </div>
