@@ -229,3 +229,21 @@ h2 {
     transition: transform 0.2s;
     cursor: pointer;
 }
+header.header {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f4f4f4; /* Optional: Hintergrundfarbe */
+    border-bottom: 1px solid #ddd; /* Optional: Trennlinie */
+}
+
+header .logo {
+    height: 50px; /* Höhe des Logos */
+    margin-right: 15px; /* Abstand zwischen Logo und Text */
+}
+
+header h1 {
+    font-size: 24px;
+    color: #333; /* Farbe des Titels */
+    margin: 0;
+}
