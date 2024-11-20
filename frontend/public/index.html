@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D4D</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>D4D - Dienstleistungen</h1>
+        <button id="serviceButton">Dienstleistung anbieten</button>
+
+        <h2>Angenommene Dienstleistungen</h2>
+        <ul id="serviceList"></ul>
+    </div>
+
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeButton">&times;</span>
+            <h2>Dienstleistung anbieten</h2>
+            <div>
+                <label for="name">Dein Name:</label>
+                <input type="text" id="name" placeholder="Gib deinen Namen ein..." required>
+            </div>
+
+            <div>
+                <label for="serviceType">Fach:</label>
+                <select id="serviceType" required>
+                    <option value="">Wähle ein Fach aus</option>
+                    <option value="Biologie">Biologie</option>
+                    <option value="Chemie">Chemie</option>
+                    <option value="Deutsch">Deutsch</option>
+                    <option value="Englisch">Englisch</option>
+                    <option value="Informatik">Informatik</option>
+                    <option value="Mathematik">Mathematik</option>
+                    <option value="Physik">Physik</option>
+                    <option value="Projektmanagement">Projektmanagement</option>
+                    <option value="Wirtschaft">Wirtschaft</option>
+                    <option value="Betriebswirtschaft">Betriebswirtschaft</option>
+                    <option value="Elektrotechnik">Elektrotechnik</option>
+                    <option value="Maschinenbau">Maschinenbau</option>
+                    <option value="Kunst">Kunst</option>
+                    <option value="Geschichte">Geschichte</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="desiredServiceType">Fach im Gegentausch:</label>
+                <select id="desiredServiceType" required>
+                    <option value="">Wähle ein gewünschtes Fach im Gegentausch aus</option>
+                    <option value="Biologie">Biologie</option>
+                    <option value="Chemie">Chemie</option>
+                    <option value="Deutsch">Deutsch</option>
+                    <option value="Englisch">Englisch</option>
+                    <option value="Informatik">Informatik</option>
+                    <option value="Mathematik">Mathematik</option>
+                    <option value="Physik">Physik</option>
+                    <option value="Projektmanagement">Projektmanagement</option>
+                    <option value="Wirtschaft">Wirtschaft</option>
+                    <option value="Betriebswirtschaft">Betriebswirtschaft</option>
+                    <option value="Elektrotechnik">Elektrotechnik</option>
+                    <option value="Maschinenbau">Maschinenbau</option>
+                    <option value="Kunst">Kunst</option>
+                    <option value="Geschichte">Geschichte</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="description">Beschreibung:</label>
+                <textarea id="description" placeholder="Gib eine ausführliche Beschreibung deiner Dienstleistung ein..." required></textarea>
+                <div id="charCount" class="character-counter">0/250 Zeichen</div>
+            </div>
+            
+            <button id="submitButton">Einreichen</button>
+        </div>
+    </div>
+
+    <div id="serviceModalDetails" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeDetailsButton">&times;</span>
+            <h2>Dienstleistungs-Details</h2>
+            <p id="serviceDetails"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
