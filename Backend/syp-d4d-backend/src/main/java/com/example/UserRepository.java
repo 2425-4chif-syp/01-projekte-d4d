@@ -16,6 +16,13 @@ public abstract class UserRepository {
     public static List<User> getServices(String serviceOffer) {
         List<User> offers = new ArrayList<>();
 
+        if (serviceOffer.equals("all")) {
+            for (User u : users) {
+                offers.add(u);
+            }
+            return offers;
+        }
+
         for (User u : users) {
             if (u.getServiceOffer().equals(serviceOffer)) {
                 offers.add(u);

@@ -20,7 +20,7 @@ document.getElementById("submitButton").onclick = function() {
     const desiredServiceType = document.getElementById("desiredServiceType").value;
     const description = document.getElementById("description").value;
 
-    if (name.trim() === "" || serviceType === "" || desiredServiceType === "" || description.trim() === "") {
+    if (name.trim() === "" || description.trim() === "") {
         alert("Bitte fülle alle Felder aus.");
         return;
     }
@@ -61,10 +61,7 @@ document.getElementById("submitButton").onclick = function() {
 document.getElementById("applyFilter").onclick = function() {
     const filterValue = document.getElementById("filterService").value;
 
-    // Wenn kein Fach ausgewählt ist, alle Benutzer holen
-    const url = filterValue
-        ? `http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`
-        : "http://localhost:8080/d4d/users";
+    const url = `http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`;
 
     // Abrufen der Daten von der API
     fetch(url)
@@ -87,19 +84,26 @@ document.getElementById("applyFilter").onclick = function() {
 
 // Filter zurücksetzen und Angebote ausblenden
 document.getElementById("clearFilter").onclick = function() {
-    // Auswahlfeld zurücksetzen
-    document.getElementById("filterService").value = "";
 
-    // Angebotsliste leeren
-    const serviceList = document.getElementById("serviceList");
-    serviceList.innerHTML = "";
+    const url = `http://localhost:8080/d4d/${encodeURIComponent("all")}`;
 
-    // Optionale Nachricht einfügen
-    const noOffersMessage = document.createElement("p");
-    noOffersMessage.textContent = "Keine Angebote verfügbar.";
-    noOffersMessage.style.textAlign = "center";
-    noOffersMessage.style.color = "#757575";
-    serviceList.appendChild(noOffersMessage);
+    // Abrufen der Daten von der API
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.json();
+        })
+        .then(users => {
+            // Bestehende Dienstleistungsliste leeren
+            document.getElementById("serviceList").innerHTML = "";
+            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            alert("Es gab ein Problem beim Abrufen der Daten.");
+        });
 };
 
 // Dienstleistung zur Liste hinzufügen
@@ -158,3 +162,4 @@ descriptionField.addEventListener("input", () => {
         descriptionField.style.borderColor = "#00796b";
     }
 });
+
