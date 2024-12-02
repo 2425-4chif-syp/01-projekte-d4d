@@ -1,0 +1,181 @@
+= Projektantrag D4D (Dienstleistung 4 Dienstleistung)
+
+== Autoren
+Vlad-Raul Guran, Stefan Jelic, Michael Birklbauer, Leon Zehetner, Semih Yüzuak
+
+== Projekthintergrund
+
+=== Sinn und Zweck des Projekts
+In Österreich sind Nachhilfestunden für viele Familien sehr teuer. Das führt dazu, dass viele Schüler und Schülerinnen keine Chance haben, sich mithilfe von Nachhilfe den Schulstoff anzueignen. Besonders Familien mit geringerem Einkommen suchen daher nach alternativen Möglichkeiten, um ihre Kinder im Schulalltag zu unterstützen. Hier setzt unser Projekt an, das genau dieses Problem lösen möchte.
+
+== UseCase-Diagramm
+["plantuml"]
+----
+@startuml
+left to right direction
+
+skin rose
+
+title D4D
+
+    (edit user profile)
+    (services needed)
+    (services provided)
+    (Search for Service)
+    (Request service)
+    (chat with service partner)
+    (request service exchange)
+    (request payment)
+    (accept / decline request)
+    (give ratings)
+
+:User:
+
+User -- (edit user profile)
+(edit user profile) .> (services needed) : include
+(edit user profile) .> (services provided) : include
+User -- (Search for Service)
+User --(chat with service partner)
+User -- (request service exchange)
+User -- (request payment)
+User -- (Request service)
+User -- (accept / decline request)
+User -- (give ratings)
+
+@enduml
+----
+
+== Projektauslöser
+Die Idee entstand, weil uns aufgefallen ist, dass sich nicht jeder Nachhilfe leisten kann, obwohl viele Schüler dringend Unterstützung benötigen. Deswegen wollen wir eine neue Lösung entwickeln, die allen zugutekommt und Nachhilfe auch ohne Geld ermöglicht.
+
+== Projektendergebnis
+Am Ende des Projekts wollen wir eine Plattform präsentieren, die Schülern und Schülerinnen hilft, sich gegenseitig zu unterstützen. Die Plattform soll wie eine Tauschbörse funktionieren, bei der jeder Hilfe in einem Fach anbieten kann, in dem er gut ist, und dafür Unterstützung in einem anderen Fach bekommt. Die Plattform bietet dabei folgende Funktionen:
+
+* *Benutzerprofile*: Jeder kann sich ein Konto anlegen und dabei Infos wie Name, Stärken und Schwächen, Schulstufe und erhaltene Bewertungen anzeigen lassen. Auch kann man Profile favorisieren, um leichter darauf zugreifen zu können.
+* *Tauschsystem*: Schüler bieten Nachhilfe in ihren starken Fächern an und können im Gegenzug Unterstützung in Fächern bekommen, in denen sie selbst Hilfe brauchen. Über eine Filterfunktion können die passenden Fächer und Schulstufen gesucht werden.
+* *Kommunikationsplattform*: Es gibt ein integriertes Chatsystem, über das man sich austauschen, Termine ausmachen und Lernmaterial teilen kann.
+* *Bewertungssystem*: Nach jeder abgeschlossenen Nachhilfestunde können Schüler eine Bewertung abgeben, um die Qualität der Unterstützung zu sichern.
+* *Mögliche Zahlung*: Falls kein Tausch möglich/gewünscht ist, kann via PayPal bezahlt werden.
+
+== Projektziele
+Mit dem Projekt „D4D“ verfolgen wir diese Ziele:
+
+* *Bessere schulische Leistungen*: Durch regelmäßige Hilfe sollen die Noten der teilnehmenden Schüler langfristig verbessert werden.
+* *Gemeinschaft stärken*: Die Plattform soll auch die Zusammenarbeit und den Austausch unter Schülern fördern.
+
+== ERDs:
+
+=== Grobes ERD (Entwurf)
+
+["plantuml"]
+----
+@startuml
+entity "User" as User {
+
+}
+
+entity "TypeOfService" as TypeOfService {
+
+}
+
+entity "Service" as Service {
+
+}
+
+entity "Market" as Market {
++Offer: boolean
+}
+
+entity "ChatEntry" as ChatEntry {
+
+}
+
+entity "Review" as Review {
+
+}
+
+User <-- ChatEntry
+User <-- Review
+User <-- Review
+Review --> TypeOfService
+ChatEntry --> User
+TypeOfService <-- Market
+Service --> Market
+Service --> Market
+Service <--> Service
+Market --> User
+@enduml
+----
+
+=== ERD mit Attributen
+["plantuml"]
+----
+@startuml
+entity "User" as User {
++User_ID: int
++Username: String
++Name: String
++Email: String
++Password: String
++Description: String
++PayPal_Email: String
++Strengths: String
++Weaknesses: String
++City: String
+}
+
+entity "TypeOfService" as TypeOfService {
+ServiceType: String
+}
+
+entity "Service" as Service {
++Offer_ID: int
++Service: Object
++Description: String
++User_ID: int
+}
+
+entity "Market" as Market {
++Offer: boolean
+}
+
+entity "ChatEntry" as ChatEntry {
++Chat_ID: int
++User_ID: int
++Message: String
++Time: Date
+}
+
+entity "Review" as Review {
++Rating_ID: int
++Rating: double
++Comment: String
++User_ID: int
+}
+
+User <-- ChatEntry
+User <-- Review
+User <-- Review
+Review --> TypeOfService
+ChatEntry --> User
+TypeOfService <-- Market
+Service --> Market
+Service --> Market
+Service <--> Service
+Market --> User
+@enduml
+----
+
+== Projektbeschreibung
+Unsere Plattform „D4D“ richtet sich an Schüler und Schülerinnen, die Unterstützung beim Lernen brauchen, sich aber keine professionelle Nachhilfe leisten können. Das Konzept beruht darauf, dass Schüler sich gegenseitig helfen: Wer gut in einem Fach ist, gibt Nachhilfe, und kann im Gegenzug Unterstützung in anderen Fächern erhalten, wo er selbst Probleme hat. So wird sichergestellt, dass jeder, unabhängig vom Einkommen, Zugang zu Lernhilfe hat. Alternativ kann die Nachhilfe auch über PayPal bezahlt werden, wenn kein Tausch gewünscht ist.
+
+== Technologien und Werkzeuge
+Da wir uns noch in der Planungsphase befinden, haben wir uns folgende Technologien provisorisch überlegt:
+
+* **Backend**: Java
+* **Datenbank**: Oracle SQL
+* **Frontend**: JavaScript, HTML5, CSS, TypeScript
+* **Tests**: Unittests, UAT
+
+== Ergebnis
+Ziel des Projekts ist es, am Ende eine funktionierende Plattform bereitzustellen, die von den Schülern genutzt werden kann, um sich gegenseitig zu unterstützen. Mit D4D können sich die Schüler in ihren schulischen Leistungen verbessern, ohne teure Nachhilfe in Anspruch nehmen zu müssen.
