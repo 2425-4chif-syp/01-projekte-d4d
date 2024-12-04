@@ -33,7 +33,7 @@ document.getElementById("submitButton").onclick = function() {
         description: description
     };
 
-    fetch("http://localhost:8080/d4d/user", {
+    fetch("http://localhost:8080/d4d/service", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
