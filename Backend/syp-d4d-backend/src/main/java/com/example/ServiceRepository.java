@@ -23,6 +23,7 @@ public abstract class UserRepository {
             return offers;
         }
 
+
         for (User u : users) {
             if (u.getServiceOffer().equals(serviceOffer)) {
                 offers.add(u);
