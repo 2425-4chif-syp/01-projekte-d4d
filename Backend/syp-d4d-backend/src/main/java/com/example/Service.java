@@ -1,5 +1,5 @@
 package com.example;
-public class User {
+public class Service {
     private String name;
     private String serviceOffer;
     private String serviceWanted;
@@ -37,12 +37,12 @@ public class User {
         this.description = description;
     }
 
-    public User(String name, String serviceOffer, String serviceWanted, String description) {
+    public Service(String name, String serviceOffer, String serviceWanted, String description) {
         setName(name);
         setServiceOffer(serviceOffer);
         setServiceWanted(serviceWanted);
         setDescription(description);
-        UserRepository.addUser(this);
+        ServiceRepository.addService(this);
     }
 
 }

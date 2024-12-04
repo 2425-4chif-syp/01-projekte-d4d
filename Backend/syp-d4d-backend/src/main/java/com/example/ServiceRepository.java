@@ -3,30 +3,29 @@ package com.example;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class UserRepository {
-    private static List<User> users = new ArrayList<>();
-    public static List<User> getAllUsers() {
-        return users;
+public abstract class ServiceRepository {
+    private static List<Service> services = new ArrayList<>();
+    public static List<Service> getAllServices() {
+        return services;
     }
 
-    public static void addUser(User user) {
-        users.add(user);
+    public static void addService(Service service) {
+        services.add(service);
     }
 
-    public static List<User> getServices(String serviceOffer) {
-        List<User> offers = new ArrayList<>();
+    public static List<Service> getServices(String serviceOffer) {
+        List<Service> offers = new ArrayList<>();
 
         if (serviceOffer.equals("all")) {
-            for (User u : users) {
-                offers.add(u);
+            for (Service s: services) {
+                offers.add(s);
             }
             return offers;
         }
 
-
-        for (User u : users) {
-            if (u.getServiceOffer().equals(serviceOffer)) {
-                offers.add(u);
+        for (Service s : services) {
+            if (s.getServiceOffer().equals(serviceOffer)) {
+                offers.add(s);
             }
         }
         return offers;

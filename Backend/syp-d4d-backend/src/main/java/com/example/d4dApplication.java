@@ -13,43 +13,43 @@ import java.util.List;
 public class d4dApplication {
 
     @GET
-    @Path("/users")
+    @Path("/services")
     @Produces(MediaType.TEXT_PLAIN)
-    public String allUsers() {
+    public String allServices() {
         String usersNames = "";
-        for (User u : UserRepository.getAllUsers()) {
-            usersNames += " " + u.getName();
+        for (Service s : ServiceRepository.getAllServices()) {
+            usersNames += " " + s.getName();
         }
         return usersNames;
     }
 
     @POST
-    @Path("/user")
+    @Path("/service")
     @Produces(MediaType.TEXT_PLAIN)
-    public Response createUser(JsonObject userJson) {
-        User user = new User(
+    public Response createService(JsonObject userJson) {
+        Service service = new Service(
                 userJson.getString("name"),
                 userJson.getString("serviceOffer"),
                 userJson.getString("serviceWanted"),
                 userJson.getString("description")
         );
-        System.out.println(UserRepository.getAllUsers());
-        return Response.ok("User created successfully").build();
+        System.out.println(ServiceRepository.getAllServices());
+        return Response.ok("Service created successfully").build();
     }
 
     @GET
     @Path("/{service}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response usersByServiceOffer(@PathParam("service") String service) {
-        List<User> users = UserRepository.getServices(service);
+        List<Service> services = ServiceRepository.getServices(service);
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 
-        for (User user : users) {
+        for (Service s : services) {
             JsonObject userJson = Json.createObjectBuilder()
-                    .add("name", user.getName())
-                    .add("serviceOffer", user.getServiceOffer())
-                    .add("serviceWanted", user.getServiceWanted())
-                    .add("description", user.getDescription())
+                    .add("name", s.getName())
+                    .add("serviceOffer", s.getServiceOffer())
+                    .add("serviceWanted", s.getServiceWanted())
+                    .add("description", s.getDescription())
                     .build();
             jsonArrayBuilder.add(userJson);
         }
