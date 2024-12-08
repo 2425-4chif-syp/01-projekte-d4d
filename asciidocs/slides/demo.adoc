@@ -1,6 +1,4 @@
-= Some Slide
-:author: firstname lastname
-:email: x.y@htl.at
+= Project: D4D
 :revnumber: 1.0
 :revdate: {docdate}
 :revremark: SLIDEDEMO @ HTL Leonding
@@ -33,106 +31,23 @@ endif::[]
 :title-slide-transition: zoom
 :title-slide-transition-speed: fast
 
-Testing filter by changing documentation file
+Dienstleistung für Dienstleistung
 
-== Slide w/ image
+== Project Team
+
+* Vlad Guran (Project Leader) - Frontend
+* Leon Zehetner - Frontend, Backend
+* Michael Birklbauer - Backend
+* Stefan Jelic - Backend, Database
+* Semih Yüzüak - Database
+
+== Goals
+
+* Better school performances: Regular help is intended to improve the participating students' grades.
+* Strengthen community: The platform is also intended to promote collaboration and exchange among students.
+
+== System Architecture
 
 [.stretch]
-image::img.png[]
-
-[.lightbg,background-opacity="0.7"]
-== Slide w/ text and background image
-
-image::img.png[background, size="contain"]
-
-
-* Topic 1
-* Topic 2
-* Topic 3
-
-[%auto-animate]
-== !
-
-Matched element will be animated automatically!
-
-[%auto-animate]
-== !
-
-[.highlight]
-Matched element will be animated automatically!
-
-And move to the right position!
-
-[%hardbreaks]
-⬆️
-⬆️
-⬆️
-
-
-[%auto-animate]
-== !
-
-[source%linenums,js,data-id=planets]
-----
-let planets = [
-  { name: 'mars', diameter: 6779 },
-]
-----
-
-[%auto-animate]
-== !
-
-[source%linenums,js,data-id=planets]
-----
-let planets = [
-  { name: 'mars', diameter: 6779 },
-  { name: 'earth', diameter: 12742 },
-  { name: 'jupiter', diameter: 139820 }
-]
-----
-
-[%auto-animate]
-== !
-
-[source%linenums,js,data-id=planets]
-----
-let circumferenceReducer = ( c, planet ) => {
-  return c + planet.diameter * Math.PI;
-}
-
-let planets = [
-  { name: 'mars', diameter: 6779 },
-  { name: 'earth', diameter: 12742 },
-  { name: 'jupiter', diameter: 139820 }
-]
-
-let c = planets.reduce( circumferenceReducer, 0 )
-----
-
-
-[%auto-animate,auto-animate-unmatched=false]
-== Unmatched
-
-Introduction. (matched)
-
-[%auto-animate,auto-animate-unmatched=false]
-== Unmatched
-
-Introduction. (matched)
-
-This will be shown instantly ⚡ (unmatched)
-
-
-[%auto-animate,auto-animate-duration=5]
-== Duration
-
-This animation...
-
-[%auto-animate,auto-animate-duration=5]
-== Duration
-
-This animation...
-
-...will take 5 seconds! ⌚
-
+image::system-architecture.png[]
 
