@@ -51,3 +51,7 @@ Dienstleistung für Dienstleistung
 [.stretch]
 image::system-architecture.png[]
 
+== ERD
+
+[.stretch]
+image::erd.png[]
