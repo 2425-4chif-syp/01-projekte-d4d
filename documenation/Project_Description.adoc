@@ -108,49 +108,58 @@ Market --> User
 ----
 
 === ERD mit Attributen
+
+// In der Entität "Service" wird aus Gründen des besseren Verständnisses das Attribut "service" als :object dargestellt,
+// was in der tatsächlichen Implementierung so nicht möglich ist.
+// Damit ein "Service" in "Market" existieren kann, müssen mindestens zwei Services vorhanden sein,
+// die aus "Nachfrage" und "Angebot" bestehen und aufeinander verweisen.
+
 ["plantuml"]
 ----
 @startuml
 entity "User" as User {
-+User_ID: int
-+Username: String
-+Name: String
-+Email: String
-+Password: String
-+Description: String
-+PayPal_Email: String
-+Strengths: String
-+Weaknesses: String
-+City: String
++user_ID: number
+name: varchar2
+username: varchar2
+email: varchar2
+password: varchar2
+description: varchar2
+payPal_Email: varchar2
+strengths: varchar2
+weaknesses: varchar2
+city: varchar2
 }
 
 entity "TypeOfService" as TypeOfService {
-ServiceType: String
++serviceType_ID: number
+serviceType: varchar2
 }
 
 entity "Service" as Service {
-+Offer_ID: int
-+Service: Object
-+Description: String
-+User_ID: int
+#service: object
++offer_ID: number
+-user_ID: number
+-serviceType_ID: number
+description: varchar2
 }
 
 entity "Market" as Market {
-+Offer: boolean
+offer: number
+-offer_ID: number
 }
 
 entity "ChatEntry" as ChatEntry {
-+Chat_ID: int
-+User_ID: int
-+Message: String
-+Time: Date
++chat_ID: number
+-user_ID: number
+message: varchar2
+time: date
 }
 
 entity "Review" as Review {
-+Rating_ID: int
-+Rating: double
-+Comment: String
-+User_ID: int
++rating_ID: number
+-user_ID: number
+rating: double
+comment: varchar2
 }
 
 User <-- ChatEntry
