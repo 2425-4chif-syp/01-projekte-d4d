@@ -23,6 +23,7 @@ public class d4dApplication {
         return usersNames;
     }
 
+    /*
     @POST
     @Path("/service")
     @Produces(MediaType.TEXT_PLAIN)
@@ -34,8 +35,10 @@ public class d4dApplication {
                 userJson.getString("description")
         );
         System.out.println(ServiceRepository.getAllServices());
+
         return Response.ok("Service created successfully").build();
     }
+    */
 
     @GET
     @Path("/{service}")
