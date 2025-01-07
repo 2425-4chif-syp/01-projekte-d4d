@@ -1,3 +1,7 @@
+document.getElementById('marketButton').addEventListener('click', function() {
+    window.location.href = 'showOffers.html';
+});
+
 // Daten einreichen
 document.getElementById("submitButton").onclick = function () {
     const name = document.getElementById("name").value;
@@ -34,29 +38,12 @@ document.getElementById("submitButton").onclick = function () {
         })
         .then(message => {
             alert(message);
-            addUserToList(userData.serviceOffer, userData.serviceWanted, userData.name, userData.description);
-            document.getElementById("serviceModal").style.display = "none";
         })
         .catch(error => {
             alert(error.message);
         });
 };
 
-// Dienstleistung zur Liste hinzufügen
-function addUserToList(serviceType, desiredServiceType, name, description) {
-    const li = document.createElement("li");
-    li.classList.add("service-item", serviceType.toLowerCase());
-
-    // Container für Text und Button
-    const textContainer = document.createElement("span");
-    textContainer.classList.add("service-text");
-    textContainer.textContent = `${name} - ${serviceType} --- Gegentausch: ${desiredServiceType}`;
-
-    // Elemente anordnen
-    li.appendChild(textContainer);
-
-    document.getElementById("serviceList").appendChild(li);
-}
 
 // Zeichenanzahl im Beschreibungsfeld überwachen
 const descriptionField = document.getElementById("description");

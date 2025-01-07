@@ -40,7 +40,7 @@ public class d4dApplication {
     }
     */
 
-    @GET
+    /*@GET
     @Path("/{service}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response usersByServiceOffer(@PathParam("service") String service) {
@@ -58,5 +58,5 @@ public class d4dApplication {
         }
 
         return Response.ok(jsonArrayBuilder.build()).build();
-    }
+    }*/
 }

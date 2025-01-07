@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dienstleistungen anbieten</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+</head>
+<body>
+<div class="header">
+    <button id="createOfferButton">Dienstleistung anbieten</button>
+    <button id="loginButton">Login</button>
+</div>
+   <!-- Filterbereich -->
+   <div class="filter-container">
+    <label for="filterService">Fach filtern:</label>
+    <select id="filterService">
+        <option value="all">Alle Fächer</option>
+        <option value="Biologie">Biologie</option>
+        <option value="Chemie">Chemie</option>
+        <option value="Deutsch">Deutsch</option>
+        <option value="Englisch">Englisch</option>
+        <option value="Informatik">Informatik</option>
+        <option value="Mathematik">Mathematik</option>
+        <option value="Physik">Physik</option>
+        <option value="Projektmanagement">Projektmanagement</option>
+        <option value="Wirtschaft">Wirtschaft</option>
+        <option value="Betriebswirtschaft">Betriebswirtschaft</option>
+        <option value="Elektrotechnik">Elektrotechnik</option>
+        <option value="Maschinenbau">Maschinenbau</option>
+        <option value="Kunst">Kunst</option>
+        <option value="Geschichte">Geschichte</option>
+    </select>
+    <button id="applyFilter">Filtern</button>
+    <button id="clearFilter">Filter zurücksetzen</button>
+</div>
+
+<h2>Dienstleistungen</h2>
+<ul id="serviceList"></ul>
+</div> 
+</div>
+<script src="scripts/showOffers.js"></script>
+</body>
+</html>

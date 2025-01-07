@@ -1,0 +1,184 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #e3f7ff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    padding-top: 60px;
+    box-sizing: border-box;
+}
+
+.header {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.header button {
+    padding: 10px 20px;
+    background-color: #005b4f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    flex: 1;
+}
+
+.header button:hover {
+    background-color: #007566;
+}
+
+.filter-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+}
+
+.filter-container label {
+    font-size: 18px;
+    color: #333;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.filter-container select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #b3dfe8;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.filter-container button {
+    padding: 10px 20px;
+    background-color: #005b4f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+
+.filter-container button:hover {
+    background-color: #007566;
+}
+
+h2 {
+    margin-top: 20px;
+    color: #005b4f;
+    text-align: center;
+    font-size: 28px;
+}
+
+#serviceList {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+}
+
+#serviceList li {
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+#serviceList li:last-child {
+    margin-bottom: 0;
+}
+
+/* Karten-Design */
+.service-item .card {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-item .card:hover {
+    transform: translateY(-5px); /* Hover-Effekt */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: #005b4f;
+    color: white;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-header .badge {
+    background-color: #ffffff;
+    color: #005b4f;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card-body p {
+    margin: 10px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.card-body p strong {
+    font-weight: bold;
+    color: #005b4f;
+}
+
+@media (max-width: 768px) {
+    .filter-container {
+        padding: 15px;
+    }
+
+    h2 {
+        font-size: 24px;
+    }
+
+    .filter-container button {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+}
+
+.no-results {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px dashed #007566;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}

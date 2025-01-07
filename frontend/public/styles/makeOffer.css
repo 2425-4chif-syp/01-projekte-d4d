@@ -27,6 +27,7 @@ body {
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s;
+    flex: 1;
 }
 
 .header button:hover {
@@ -73,7 +74,7 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 5px rgba(0, 91, 79, 0.5);
 }
 
-button {
+.modal-content button {
     width: 100%;
     padding: 15px;
     background-color: #005b4f;
@@ -86,7 +87,7 @@ button {
     transition: background-color 0.3s;
 }
 
-button:hover {
+.modal-content button:hover {
     background-color: #007566;
 }
 
