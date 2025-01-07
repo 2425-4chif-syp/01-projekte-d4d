@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Service Types</title>
+    <link rel="stylesheet" href="styles/makeOffer.css">
+</head>
+<body>
+    <div class="header">
+        <button id="marketButton" onclick="window.location.href='showOffers.html'">Zum Markt</button>
+        <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">Dienstleistung anbieten</button>
+    </div>
+    <div class="container">
+        <h2>Dienstleistungsarten verwalten</h2>
+        <label for="newServiceType">Neue Dienstleistungsart:</label>
+        <input type="text" id="newServiceType" placeholder="Gib eine neue Dienstleistungsart ein..." required>
+        <button id="addServiceTypeButton">Hinzufügen</button>
+        <div id="responseMessage" class="response-message"></div>
+    </div>
+    <script src="scripts/manageServiceTypes.js"></script>
+</body>
+</html>

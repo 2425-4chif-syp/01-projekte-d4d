@@ -114,3 +114,65 @@ input:focus, select:focus, textarea:focus {
         padding: 12px;
     }
 }
+
+#loginButton {
+    width: 100%;
+    padding: 15px;
+    background-color: #005b4f;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#loginButton:hover {
+    background-color: #007566;
+    transform: scale(1.05); 
+}
+
+#loginButton:active {
+    background-color: #00453a;
+    transform: scale(1); 
+}
+
+.response-message {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #333;
+    text-align: center;
+    display: none;
+}
+
+.response-message.success {
+    color: #28a745;
+}
+
+.response-message.error {
+    color: #dc3545;
+}
+
+#addServiceTypeButton {
+    width: 100%;
+    padding: 15px;
+    background-color: #005b4f;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#addServiceTypeButton:hover {
+    background-color: #007566;
+    transform: scale(1.05); 
+}
+
+#addServiceTypeButton:active {
+    background-color: #00453a; 
+    transform: scale(1); 
+}
