@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats</title>
+    <link rel="stylesheet" href="styles/chats_styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h1>Chat-Bereich</h1>
+            <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
+        </header>
+        <main class="chat-main">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Nachrichten werden hier dynamisch eingefügt -->
+            </div>
+            <div class="chat-form-container">
+                <form id="chatForm">
+                    <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+                    <button type="submit" id="chatSubmit">Senden</button>
+                </form>
+                <div class="user-switch">
+                    <button id="switchUser">Benutzer wechseln</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="scripts/chat-script.js"></script>
+</body>
+</html>
