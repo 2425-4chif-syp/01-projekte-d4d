@@ -23,7 +23,6 @@ function addUserToList(serviceOffer, serviceWanted, name, description) {
     serviceList.appendChild(listItem);
 }
 
-
 function showLoading(message = "Laden...") {
     const serviceList = document.getElementById("serviceList");
     serviceList.innerHTML = `<li class="loading">${message}</li>`;
@@ -33,6 +32,71 @@ function clearLoading() {
     const serviceList = document.getElementById("serviceList");
     serviceList.innerHTML = "";
 }
+
+function loadServiceTypesAndOffers() {
+    loadServiceTypes();
+    loadAllOffers();
+}
+
+function loadServiceTypes() {
+    const filterService = document.getElementById("filterService");
+    const url = "http://localhost:8080/d4d/serviceTypes";
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Kategorien");
+            }
+            return response.text();
+        })
+        .then(data => {
+            const serviceTypes = data.split('|'); // Daten aufteilen
+            filterService.innerHTML = '<option value="all">Alle Fächer</option>'; // Standardoption
+            serviceTypes.forEach(type => {
+                const option = document.createElement("option");
+                option.value = type;
+                option.textContent = type;
+                filterService.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error("Fehler beim Laden der Kategorien:", error);
+        });
+}
+
+function loadAllOffers() {
+    const url = `http://localhost:8080/d4d/all`;
+
+    showLoading();
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.json();
+        })
+        .then(users => {
+            clearLoading();
+            if (users.length === 0) {
+                const messageContainer = document.createElement("div");
+                messageContainer.className = "no-results";
+                messageContainer.innerHTML = `
+                    <p>Es wurden keine gefunden.</p>
+                `;
+                document.getElementById("serviceList").appendChild(messageContainer);
+                return;
+            }
+            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            clearLoading();
+            alert("Es gab ein Problem beim Abrufen der Daten.");
+        });
+}
+
+document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
 
 document.getElementById("applyFilter").onclick = function () {
     const filterValue = document.getElementById("filterService").value.trim();
