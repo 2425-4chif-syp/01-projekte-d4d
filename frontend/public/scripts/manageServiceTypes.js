@@ -1,3 +1,28 @@
+function fetchServiceTypes() {
+    fetch("http://localhost:8080/d4d/serviceTypes")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.text(); 
+        })
+        .then(serviceTypesText => {
+            console.log("Service Types Text:", serviceTypesText); 
+            const serviceTypeList = document.getElementById("serviceTypeList");
+            serviceTypeList.innerHTML = "";
+            const serviceTypes = serviceTypesText.split("|");
+            serviceTypes.forEach(serviceType => {
+                const li = document.createElement("li");
+                li.textContent = serviceType.trim();
+                serviceTypeList.appendChild(li);
+            });
+        })
+        .catch(error => {
+            console.error("Fehler beim Abrufen der Service-Typen:", error);
+        });
+}
+
+
 document.getElementById("addServiceTypeButton").addEventListener("click", function () {
     const newServiceType = document.getElementById("newServiceType").value.trim();
     const responseMessage = document.getElementById("responseMessage");
@@ -18,8 +43,9 @@ document.getElementById("addServiceTypeButton").addEventListener("click", functi
     })
         .then(response => {
             if (response.ok) {
-                responseMessage.textContent = "Dienstleistungsart erfolgreich hinzugefügt!";
-                responseMessage.className = "response-message success";
+                fetchServiceTypes();
+
+                document.getElementById("newServiceType").value = "";
             } else {
                 responseMessage.textContent = "Fehler beim Hinzufügen der Dienstleistungsart.";
                 responseMessage.className = "response-message error";
@@ -34,6 +60,4 @@ document.getElementById("addServiceTypeButton").addEventListener("click", functi
         });
 });
 
-document.getElementById("logoutButton").addEventListener("click", function () {
-    window.location.href = "adminLogin.html";
-});
+document.addEventListener("DOMContentLoaded", fetchServiceTypes);

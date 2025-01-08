@@ -63,4 +63,23 @@ public class ServiceTypesControllerRepository {
             System.out.println("Error occurred while creating the table or inserting the data.");
         }
     }
+
+    public static List<String> getServiceTypes() {
+        List<String> typeOfServices = new ArrayList<>();
+        String selectServiceTypesSQL = "SELECT typeOfService FROM service_types";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(selectServiceTypesSQL)) {
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                typeOfServices.add(resultSet.getString("typeOfService"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return typeOfServices;
+    }
 }
