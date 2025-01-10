@@ -1,38 +1,27 @@
 package com.example;
 
-import javax.persistence.*;
+import java.time.LocalDateTime;
 
-@Entity
 public class Review {
+    private String userName;
+    private String review;
+    private LocalDateTime createdAt;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String content;
-    private int rating;
-
-    // Getters and setters
-    public Long getId() {
-        return id;
+    public Review(String userName, String review, LocalDateTime createdAt) {
+        this.userName = userName;
+        this.review = review;
+        this.createdAt = createdAt;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getUserName() {
+        return userName;
     }
 
-    public String getContent() {
-        return content;
+    public String getReview() {
+        return review;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
-
-    public int getRating() {
-        return rating;
-    }
-
-    public void setRating(int rating) {
-        this.rating = rating;
-    }
-} 
+}
