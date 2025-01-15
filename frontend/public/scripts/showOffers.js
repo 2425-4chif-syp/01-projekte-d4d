@@ -98,19 +98,18 @@ function loadAllOffers() {
 
 document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
 
-document.getElementById("applyFilter").onclick = function () {
-    const filterValue = document.getElementById("filterService").value.trim();
-
-    if (!filterValue) {
-        alert("Bitte geben Sie einen Filterwert ein.");
+// Event Listener für die Filterauswahl
+document.getElementById("filterService").addEventListener('change', function() {
+    const filterValue = this.value;
+    
+    if (filterValue === 'all') {
+        loadAllOffers();
         return;
     }
 
-    const url = `http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`;
-
     showLoading();
 
-    fetch(url)
+    fetch(`http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -123,7 +122,7 @@ document.getElementById("applyFilter").onclick = function () {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
                 messageContainer.innerHTML = `
-                    <p>Es wurden keine gefunden.</p>
+                    <p>Keine Ergebnisse gefunden.</p>
                 `;
                 document.getElementById("serviceList").appendChild(messageContainer);
                 return;
@@ -135,14 +134,35 @@ document.getElementById("applyFilter").onclick = function () {
             clearLoading();
             alert("Es gab ein Problem beim Abrufen der Daten.");
         });
-};
+});
 
-document.getElementById("clearFilter").onclick = function () {
-    const url = `http://localhost:8080/d4d/all`;
+// Suchfunktionalität für beide Suchleisten
+document.getElementById('nameSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const searchTerm = this.value.trim();
+        if (searchTerm) {
+            performNameSearch(searchTerm);
+        } else {
+            loadAllOffers();
+        }
+    }
+});
 
-    showLoading();
+document.getElementById('detailSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const searchTerm = this.value.trim();
+        if (searchTerm) {
+            performDescriptionSearch(searchTerm);
+        } else {
+            loadAllOffers();
+        }
+    }
+});
 
-    fetch(url)
+function performNameSearch(searchTerm) {
+    showLoading("Suche läuft...");
+
+    fetch(`http://localhost:8080/d4d/search/name/${encodeURIComponent(searchTerm)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -155,7 +175,7 @@ document.getElementById("clearFilter").onclick = function () {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
                 messageContainer.innerHTML = `
-                    <p>Es wurden keine gefunden.</p>
+                    <p>Keine Ergebnisse gefunden.</p>
                 `;
                 document.getElementById("serviceList").appendChild(messageContainer);
                 return;
@@ -165,6 +185,36 @@ document.getElementById("clearFilter").onclick = function () {
         .catch(error => {
             console.error("Fehler:", error);
             clearLoading();
-            alert("Es gab ein Problem beim Abrufen der Daten.");
+            alert("Es gab ein Problem bei der Suche.");
         });
-};
+}
+
+function performDescriptionSearch(searchTerm) {
+    showLoading("Suche läuft...");
+
+    fetch(`http://localhost:8080/d4d/search/description/${encodeURIComponent(searchTerm)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.json();
+        })
+        .then(users => {
+            clearLoading();
+            if (users.length === 0) {
+                const messageContainer = document.createElement("div");
+                messageContainer.className = "no-results";
+                messageContainer.innerHTML = `
+                    <p>Keine Ergebnisse gefunden.</p>
+                `;
+                document.getElementById("serviceList").appendChild(messageContainer);
+                return;
+            }
+            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            clearLoading();
+            alert("Es gab ein Problem bei der Suche.");
+        });
+}

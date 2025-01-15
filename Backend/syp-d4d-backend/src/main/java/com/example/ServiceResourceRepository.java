@@ -56,4 +56,54 @@ public class ServiceResourceRepository {
 
         return services;
     }
+
+    public static List<Service> searchByName(String name) {
+        List<Service> services = new ArrayList<>();
+        String query = "SELECT username, service_offer, service_wanted, description FROM user_services WHERE LOWER(username) LIKE ?";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, "%" + name.toLowerCase() + "%");
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                String username = resultSet.getString("username");
+                String offer = resultSet.getString("service_offer");
+                String wanted = resultSet.getString("service_wanted");
+                String description = resultSet.getString("description");
+
+                services.add(new Service(username, offer, wanted, description));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return services;
+    }
+
+    public static List<Service> searchInDescription(String searchTerm) {
+        List<Service> services = new ArrayList<>();
+        String query = "SELECT username, service_offer, service_wanted, description FROM user_services WHERE LOWER(description) LIKE ?";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, "%" + searchTerm.toLowerCase() + "%");
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                String username = resultSet.getString("username");
+                String offer = resultSet.getString("service_offer");
+                String wanted = resultSet.getString("service_wanted");
+                String description = resultSet.getString("description");
+
+                services.add(new Service(username, offer, wanted, description));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return services;
+    }
 }

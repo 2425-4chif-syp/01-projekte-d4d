@@ -51,4 +51,44 @@ public class ServiceResource {
 
         return Response.ok(jsonArrayBuilder.build()).build();
     }
+
+    @GET
+    @Path("/search/name/{name}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchByName(@PathParam("name") String name) {
+        List<Service> services = ServiceResourceRepository.searchByName(name);
+
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+        for (Service service : services) {
+            JsonObject userJson = Json.createObjectBuilder()
+                    .add("name", service.getName())
+                    .add("serviceOffer", service.getServiceOffer())
+                    .add("serviceWanted", service.getServiceWanted())
+                    .add("description", service.getDescription())
+                    .build();
+            jsonArrayBuilder.add(userJson);
+        }
+
+        return Response.ok(jsonArrayBuilder.build()).build();
+    }
+
+    @GET
+    @Path("/search/description/{term}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchInDescription(@PathParam("term") String term) {
+        List<Service> services = ServiceResourceRepository.searchInDescription(term);
+
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+        for (Service service : services) {
+            JsonObject userJson = Json.createObjectBuilder()
+                    .add("name", service.getName())
+                    .add("serviceOffer", service.getServiceOffer())
+                    .add("serviceWanted", service.getServiceWanted())
+                    .add("description", service.getDescription())
+                    .build();
+            jsonArrayBuilder.add(userJson);
+        }
+
+        return Response.ok(jsonArrayBuilder.build()).build();
+    }
 }
