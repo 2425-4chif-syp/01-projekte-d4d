@@ -137,15 +137,16 @@ serviceType: varchar2
 
 entity "Service" as Service {
 #service: object
-+offer_ID: number
--user_ID: number
--serviceType_ID: number
-description: varchar2
++service_ID: number
+-market_ID: number
 }
 
 entity "Market" as Market {
++market_ID: number
+-user_ID: number
+-serviceType_ID: number
 offer: number
--offer_ID: number
+description: varchar2
 }
 
 entity "ChatEntry" as ChatEntry {
