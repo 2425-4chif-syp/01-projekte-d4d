@@ -136,28 +136,33 @@ serviceType: varchar2
 }
 
 entity "Service" as Service {
-#service: object
-+offer_ID: number
--user_ID: number
--serviceType_ID: number
++service_ID: number
+-marketProvider_ID: number
+-marketClient_ID: number
+exchangeService: number
 description: varchar2
 }
 
 entity "Market" as Market {
++market_ID: number
+-serviceType_ID: number
+-user_ID: number
 offer: number
--offer_ID: number
 }
 
 entity "ChatEntry" as ChatEntry {
 +chat_ID: number
--user_ID: number
+-sender_ID: number
+-receiver_ID: number
 message: varchar2
 time: date
 }
 
 entity "Review" as Review {
 +rating_ID: number
--user_ID: number
+-evaluatee_ID: number
+-evaluator_ID: number
+-serviceType_ID: number
 rating: double
 comment: varchar2
 }
