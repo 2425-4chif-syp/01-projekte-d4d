@@ -25,4 +25,16 @@ public class ServiceTypesController {
         List<String> serviceTypes = ServiceTypesControllerRepository.getServiceTypes();
         return String.join("|", serviceTypes);
     }
+
+    @DELETE
+    @Path("/serviceType/{typeOfService}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response deleteServiceType(@PathParam("typeOfService") String typeOfService) {
+        boolean deleted = ServiceTypesControllerRepository.deleteServiceType(typeOfService);
+        if (deleted) {
+            return Response.ok("ServiceType deleted successfully").build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).entity("ServiceType not found").build();
+        }
+    }
 }

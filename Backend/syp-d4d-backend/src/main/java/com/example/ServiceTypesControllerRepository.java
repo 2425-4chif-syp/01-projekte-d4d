@@ -82,4 +82,20 @@ public class ServiceTypesControllerRepository {
 
         return typeOfServices;
     }
+
+    public static boolean deleteServiceType(String typeOfService) {
+        String deleteServiceTypeSQL = "DELETE FROM service_types WHERE LOWER(typeOfService) = LOWER(?)";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(deleteServiceTypeSQL)) {
+
+            statement.setString(1, typeOfService);
+            int rowsDeleted = statement.executeUpdate();
+            return rowsDeleted > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
