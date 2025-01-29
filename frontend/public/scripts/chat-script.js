@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const messageData = {
                 user: currentUser,
                 message: message,
+                timestamp: new Date().toISOString()
             };
 
             try {
@@ -31,12 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({user: currentUser, message: message,}),
+                    body: JSON.stringify(messageData),
                 });
 
-
-                console.log('Request gesendet:', {user: currentUser, message: message});
-                
                 if (response.ok) {
                     chatInput.value = ''; // Eingabefeld leeren
                     fetchMessages(); // Nachrichtenliste aktualisieren
@@ -69,16 +67,32 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.innerHTML = ''; // Nachrichtenliste leeren
         messages.forEach((msg) => {
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
+            messageDiv.className = 'message';
+            
+            // Bestimme die Position der Nachricht (rechts für eigene, links für andere)
             if (msg.user === currentUser) {
-                messageDiv.classList.add('self'); // Nachrichten des aktuellen Nutzers rechts anzeigen
+                messageDiv.classList.add('self');
             } else {
-                messageDiv.classList.add('user'); // Andere Nachrichten links anzeigen
+                messageDiv.classList.add('other');
             }
-            messageDiv.textContent = `${msg.user}: ${msg.message}`;
+
+            // Erstelle den Nachrichteninhalt mit Benutzer, Text und Zeitstempel
+            messageDiv.innerHTML = `
+                <div class="message-user">${msg.user}</div>
+                <div class="message-content">${msg.message}</div>
+                <div class="message-time">${formatTime(msg.timestamp)}</div>
+            `;
+            
             chatMessages.appendChild(messageDiv);
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Hilfsfunktion zum Formatieren der Zeit
+    function formatTime(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     }
 
     // Nachrichten alle 2 Sekunden aktualisieren

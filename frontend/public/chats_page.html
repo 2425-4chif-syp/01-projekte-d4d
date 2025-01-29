@@ -4,29 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chats</title>
-    <link rel="stylesheet" href="styles/chats_styles.css">
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="chat-container">
-        <header class="chat-header">
-            <h1>Chat-Bereich</h1>
-            <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
-        </header>
-        <main class="chat-main">
-            <div class="chat-messages" id="chatMessages">
-                <!-- Nachrichten werden hier dynamisch eingefügt -->
-            </div>
-            <div class="chat-form-container">
-                <form id="chatForm">
-                    <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
-                    <button type="submit" id="chatSubmit">Senden</button>
-                </form>
-                <div class="user-switch">
-                    <button id="switchUser">Benutzer wechseln</button>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-handshake"></i>
+            <span>D4D</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="marketButton" onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="content-section">
+            <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
+            
+            <div class="card chat-card">
+                <div class="card-header chat-header">
+                    <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
+                    <button id="switchUser" class="user-switch-btn">
+                        <i class="fas fa-user-switch"></i>
+                        Benutzer wechseln
+                    </button>
+                </div>
+                <div class="card-body chat-body">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Nachrichten werden hier dynamisch eingefÃ¼gt -->
+                    </div>
+                    <div class="chat-form-container">
+                        <form id="chatForm">
+                            <div class="chat-input-group">
+                                <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+                                <button type="submit" id="chatSubmit">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Senden
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script src="scripts/chat-script.js"></script>
 </body>
