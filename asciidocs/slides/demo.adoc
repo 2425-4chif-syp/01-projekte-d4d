@@ -35,11 +35,11 @@ Dienstleistung für Dienstleistung
 
 == Project Team
 
-* Vlad Guran (Project Leader) - Frontend
-* Leon Zehetner - Frontend, Backend
-* Michael Birklbauer - Backend
-* Stefan Jelic - Backend, Database
-* Semih Yüzüak - Database
+* Vlad Guran (Project Leader) - chat
+* Leon Zehetner - show market (filter functions)
+* Michael Birklbauer - manage service types
+* Stefan Jelic - service offers
+* Semih Yüzüak - reviews
 
 == Goals
 
