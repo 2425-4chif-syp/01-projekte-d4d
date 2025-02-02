@@ -36,7 +36,7 @@ function fetchServiceTypes() {
 function deleteServiceType(serviceType) {
     if (confirm(`Möchten Sie wirklich die Dienstleistungsart "${serviceType}" löschen?`)) {
         fetch(`http://localhost:8080/d4d/serviceType/${encodeURIComponent(serviceType)}`, {
-            method: "DELETE"
+            method: "PUT"
         })
         .then(response => {
             if (!response.ok) {
