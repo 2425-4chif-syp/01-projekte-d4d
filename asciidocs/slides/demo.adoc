@@ -54,4 +54,4 @@ image::system-architecture.png[]
 == ERD
 
 [.stretch]
-image::erd.png[]
+image::er-diagram.png[]
