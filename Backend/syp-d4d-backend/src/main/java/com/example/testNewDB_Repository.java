@@ -54,4 +54,27 @@ public class testNewDB_Repository {
             System.out.println("Error occurred while creating the table.");
         }
     }
+
+    public static void createServiceDB(){
+        String createServiceTable = """
+            CREATE TABLE IF NOT EXISTS "service" (
+                service_ID SERIAL PRIMARY KEY,
+                marketProvider_ID INT REFERENCES "user"(user_ID),
+                marketClient_ID INT REFERENCES "user"(user_ID),
+                exchangeService INT REFERENCES service(service_ID),
+                description VARCHAR(255)
+            );
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement createTableStatement = connection.prepareStatement(createServiceTable)) {
+
+            createTableStatement.execute();
+            System.out.println("Table 'service' created or already exists.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred while creating the table.");
+        }
+    }
 }
