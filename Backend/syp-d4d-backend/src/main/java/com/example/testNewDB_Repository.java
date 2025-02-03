@@ -77,4 +77,26 @@ public class testNewDB_Repository {
             System.out.println("Error occurred while creating the table.");
         }
     }
+
+    public static void createMarketDB(){
+        String createMarketTable = """
+            CREATE TABLE IF NOT EXISTS market (
+                market_ID SERIAL PRIMARY KEY,
+                serviceType_ID INT REFERENCES typeOfService(serviceType_ID),
+                user_ID INT REFERENCES "user"(user_ID),
+                offer INT
+            );
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement createTableStatement = connection.prepareStatement(createMarketTable)) {
+
+            createTableStatement.execute();
+            System.out.println("Table 'market' created or already exists.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred while creating the table.");
+        }
+    }
 }
