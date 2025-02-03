@@ -26,31 +26,44 @@
     </nav>
 
     <main class="container">
-        <div class="content-section">
-            <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
-            
-            <div class="card chat-card">
-                <div class="card-header chat-header">
-                    <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
-                    <button id="switchUser" class="user-switch-btn">
-                        <i class="fas fa-user-switch"></i>
-                        Benutzer wechseln
-                    </button>
-                </div>
-                <div class="card-body chat-body">
-                    <div class="chat-messages" id="chatMessages">
-                        <!-- Nachrichten werden hier dynamisch eingefÃ¼gt -->
+        <div class="chat-layout">
+            <!-- Linke Spalte für die Chat-Auswahl -->
+            <div class="chat-list">
+                <h3>Chats</h3>
+                <ul id="chatList">
+                    <li onclick="switchChat(1)">Chat mit Alex</li>
+                    <li onclick="switchChat(2)">Chat mit Maria</li>
+                    <li onclick="switchChat(3)">Chat mit Chris</li>
+                </ul>
+            </div>
+
+            <!-- Rechte Spalte für den aktuellen Chat -->
+            <div class="content-section">
+                <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
+                
+                <div class="card chat-card">
+                    <div class="card-header chat-header">
+                        <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
+                        <button id="switchUser" class="user-switch-btn">
+                            <i class="fas fa-user-switch"></i>
+                            Benutzer wechseln
+                        </button>
                     </div>
-                    <div class="chat-form-container">
-                        <form id="chatForm">
-                            <div class="chat-input-group">
-                                <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
-                                <button type="submit" id="chatSubmit">
-                                    <i class="fas fa-paper-plane"></i>
-                                    Senden
-                                </button>
-                            </div>
-                        </form>
+                    <div class="card-body chat-body">
+                        <div class="chat-messages" id="chatMessages">
+                            <!-- Nachrichten werden hier dynamisch eingefügt -->
+                        </div>
+                        <div class="chat-form-container">
+                            <form id="chatForm">
+                                <div class="chat-input-group">
+                                    <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+                                    <button type="submit" id="chatSubmit">
+                                        <i class="fas fa-paper-plane"></i>
+                                        Senden
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
