@@ -99,4 +99,27 @@ public class testNewDB_Repository {
             System.out.println("Error occurred while creating the table.");
         }
     }
+
+    public static void createChatEntryDB(){
+        String createChatEntryTable = """
+            CREATE TABLE IF NOT EXISTS chatEntry (
+                chat_ID SERIAL PRIMARY KEY,
+                sender_ID INT REFERENCES "user"(user_ID),
+                receiver_ID INT REFERENCES "user"(user_ID),
+                message VARCHAR(255),
+                time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement createTableStatement = connection.prepareStatement(createChatEntryTable)) {
+
+            createTableStatement.execute();
+            System.out.println("Table 'chatEntry' created or already exists.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred while creating the table.");
+        }
+    }
 }
