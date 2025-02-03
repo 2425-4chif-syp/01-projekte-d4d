@@ -49,6 +49,11 @@ public class ServiceResource {
             jsonArrayBuilder.add(userJson);
         }
 
+        //Testing new DB
+        //*******
+        testNewDB_Repository.createUserDB();
+        //*******
+
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 
