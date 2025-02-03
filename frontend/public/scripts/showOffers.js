@@ -2,9 +2,44 @@ document.getElementById('createOfferButton').addEventListener('click', function 
     window.location.href = 'makeOffer.html';
 });
 
+// Tag-Verwaltung
+let selectedTags = new Set();
+
+document.getElementById('detailSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const searchTerm = this.value.trim();
+        if (searchTerm) {
+            addTag(searchTerm);
+            this.value = '';
+        }
+    }
+});
+
+function addTag(tag) {
+    if (!selectedTags.has(tag)) {
+        selectedTags.add(tag);
+        const tagElement = document.createElement('span');
+        tagElement.className = 'tag';
+        tagElement.innerHTML = `
+            ${tag}
+            <button class="tag-remove" onclick="removeTag('${tag}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        document.getElementById('selectedTags').appendChild(tagElement);
+    }
+}
+
+function removeTag(tag) {
+    selectedTags.delete(tag);
+    const tagElement = document.querySelector(`.tag:has(button[onclick*="${tag}"])`);
+    if (tagElement) {
+        tagElement.remove();
+    }
+}
+
 function addUserToList(serviceOffer, serviceWanted, name, description) {
     const serviceList = document.getElementById("serviceList");
-
     const listItem = document.createElement("li");
     listItem.className = "service-item";
 
@@ -135,86 +170,3 @@ document.getElementById("filterService").addEventListener('change', function() {
             alert("Es gab ein Problem beim Abrufen der Daten.");
         });
 });
-
-// Suchfunktionalität für beide Suchleisten
-document.getElementById('nameSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        const searchTerm = this.value.trim();
-        if (searchTerm) {
-            performNameSearch(searchTerm);
-        } else {
-            loadAllOffers();
-        }
-    }
-});
-
-document.getElementById('detailSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        const searchTerm = this.value.trim();
-        if (searchTerm) {
-            performDescriptionSearch(searchTerm);
-        } else {
-            loadAllOffers();
-        }
-    }
-});
-
-function performNameSearch(searchTerm) {
-    showLoading("Suche läuft...");
-
-    fetch(`http://localhost:8080/d4d/search/name/${encodeURIComponent(searchTerm)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Fehler beim Abrufen der Daten");
-            }
-            return response.json();
-        })
-        .then(users => {
-            clearLoading();
-            if (users.length === 0) {
-                const messageContainer = document.createElement("div");
-                messageContainer.className = "no-results";
-                messageContainer.innerHTML = `
-                    <p>Keine Ergebnisse gefunden.</p>
-                `;
-                document.getElementById("serviceList").appendChild(messageContainer);
-                return;
-            }
-            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
-        })
-        .catch(error => {
-            console.error("Fehler:", error);
-            clearLoading();
-            alert("Es gab ein Problem bei der Suche.");
-        });
-}
-
-function performDescriptionSearch(searchTerm) {
-    showLoading("Suche läuft...");
-
-    fetch(`http://localhost:8080/d4d/search/description/${encodeURIComponent(searchTerm)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Fehler beim Abrufen der Daten");
-            }
-            return response.json();
-        })
-        .then(users => {
-            clearLoading();
-            if (users.length === 0) {
-                const messageContainer = document.createElement("div");
-                messageContainer.className = "no-results";
-                messageContainer.innerHTML = `
-                    <p>Keine Ergebnisse gefunden.</p>
-                `;
-                document.getElementById("serviceList").appendChild(messageContainer);
-                return;
-            }
-            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
-        })
-        .catch(error => {
-            console.error("Fehler:", error);
-            clearLoading();
-            alert("Es gab ein Problem bei der Suche.");
-        });
-}
