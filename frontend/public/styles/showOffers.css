@@ -905,14 +905,15 @@ input:focus, select:focus, textarea:focus {
 }
 
 .chat-list {
-    width: 200px;
-    padding: 15px;
+    width: 15%; /* Kleinere Chatauswahl */
+    min-width: 120px;
+    padding: 10px;
     border-right: 2px solid #ddd;
 }
 
 .chat-list h3 {
     margin-bottom: 10px;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .chat-list ul {
@@ -921,7 +922,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .chat-list li {
-    padding: 10px;
+    padding: 8px;
+    font-size: 14px;
     border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s;
@@ -929,4 +931,9 @@ input:focus, select:focus, textarea:focus {
 
 .chat-list li:hover {
     background: #f0f0f0;
+}
+
+.content-section {
+    flex-grow: 1; /* Chat-Bereich nimmt mehr Platz ein */
+    width: 85%;
 }
