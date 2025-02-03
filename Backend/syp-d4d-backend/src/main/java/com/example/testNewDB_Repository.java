@@ -35,7 +35,23 @@ public class testNewDB_Repository {
         }
     }
 
-    public static void main(String[] args) {
-        createUserDB();
+    public static void createTypeOfServiceDB(){
+        String createTypeOfServiceTable = """
+            CREATE TABLE IF NOT EXISTS typeOfService (
+                serviceType_ID SERIAL PRIMARY KEY,
+                serviceType VARCHAR(255) NOT NULL
+            );
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement createTableStatement = connection.prepareStatement(createTypeOfServiceTable)) {
+
+            createTableStatement.execute();
+            System.out.println("Table 'typeOfService' created or already exists.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred while creating the table.");
+        }
     }
 }

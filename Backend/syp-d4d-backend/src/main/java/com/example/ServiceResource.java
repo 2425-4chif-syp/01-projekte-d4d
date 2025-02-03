@@ -52,6 +52,7 @@ public class ServiceResource {
         //Testing new DB
         //*******
         testNewDB_Repository.createUserDB();
+        testNewDB_Repository.createTypeOfServiceDB();
         //*******
 
         return Response.ok(jsonArrayBuilder.build()).build();
