@@ -56,6 +56,7 @@ public class ServiceResource {
         testNewDB_Repository.createServiceDB();
         testNewDB_Repository.createMarketDB();
         testNewDB_Repository.createChatEntryDB();
+        testNewDB_Repository.createReviewTable();
         //*******
 
         return Response.ok(jsonArrayBuilder.build()).build();

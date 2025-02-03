@@ -122,4 +122,28 @@ public class testNewDB_Repository {
             System.out.println("Error occurred while creating the table.");
         }
     }
+    
+    public static void createReviewTable(){
+        String createReviewTable = """
+            CREATE TABLE IF NOT EXISTS review (
+                rating_ID SERIAL PRIMARY KEY,
+                evaluatee_ID INT REFERENCES "user"(user_ID),
+                evaluator_ID INT REFERENCES "user"(user_ID),
+                serviceType_ID INT REFERENCES typeOfService(serviceType_ID),
+                rating DOUBLE PRECISION,
+                comment VARCHAR(255)
+            );
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement createTableStatement = connection.prepareStatement(createReviewTable)) {
+
+            createTableStatement.execute();
+            System.out.println("Table 'review' created or already exists.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred while creating the table.");
+        }
+    }
 }
