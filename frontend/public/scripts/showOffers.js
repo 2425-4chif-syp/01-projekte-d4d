@@ -5,6 +5,13 @@ document.getElementById('createOfferButton').addEventListener('click', function 
 // Tag-Verwaltung
 let selectedTags = new Set();
 
+// Suchfunktionalität für beide Suchleisten
+document.getElementById('nameSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters(); // Direkte Suche im Namen
+    }
+});
+
 document.getElementById('detailSearchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         const searchTerm = this.value.trim();
@@ -42,6 +49,7 @@ function removeTag(tag) {
 
 function applyFilters() {
     const serviceFilter = document.getElementById('filterService').value;
+    const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     showLoading();
 
     fetch(`http://localhost:8080/d4d/${serviceFilter === 'all' ? 'all' : encodeURIComponent(serviceFilter)}`)
@@ -52,12 +60,13 @@ function applyFilters() {
             return response.json();
         })
         .then(users => {
+            // Filtere die Ergebnisse basierend auf den ausgewählten Tags und der Namenssuche
             const filteredUsers = users.filter(user => {
-                if (selectedTags.size === 0) return true;
-                const description = user.description.toLowerCase();
-                return Array.from(selectedTags).some(tag => 
-                    description.includes(tag.toLowerCase())
+                const matchesName = nameSearch === '' || user.name.toLowerCase().includes(nameSearch);
+                const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
+                    user.description.toLowerCase().includes(tag.toLowerCase())
                 );
+                return matchesName && matchesTags;
             });
 
             clearLoading();
