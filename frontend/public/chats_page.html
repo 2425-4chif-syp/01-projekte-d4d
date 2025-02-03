@@ -73,7 +73,7 @@
         </div>
     </main>
 
-    <!-- Modal for new chat -->
+    <!-- Modal for new chat (Hidden by default) -->
     <div id="chatModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -82,5 +82,34 @@
             <button id="createChat">Chat erstellen</button>
         </div>
     </div>
+
+    <script>
+        document.getElementById("newChatButton").addEventListener("click", function() {
+            document.getElementById("chatModal").style.display = "flex";
+        });
+
+        document.querySelector(".close").addEventListener("click", function() {
+            document.getElementById("chatModal").style.display = "none";
+        });
+
+        document.getElementById("createChat").addEventListener("click", function() {
+            let chatName = document.getElementById("chatNameInput").value.trim();
+            if (chatName) {
+                let chatList = document.getElementById("chatList");
+                let newChat = document.createElement("li");
+                newChat.textContent = `Chat mit ${chatName}`;
+                newChat.onclick = function () {
+                    switchChat(chatName);
+                };
+                chatList.appendChild(newChat);
+                document.getElementById("chatModal").style.display = "none";
+                document.getElementById("chatNameInput").value = "";
+            }
+        });
+
+        function switchChat(chatName) {
+            document.getElementById('chatMessages').innerHTML = `<p>Chat mit ${chatName} wird geladen...</p>`;
+        }
+    </script>
 </body>
 </html>
