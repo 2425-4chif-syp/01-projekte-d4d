@@ -27,6 +27,7 @@ function addTag(tag) {
             </button>
         `;
         document.getElementById('selectedTags').appendChild(tagElement);
+        applyFilters();
     }
 }
 
@@ -36,6 +37,46 @@ function removeTag(tag) {
     if (tagElement) {
         tagElement.remove();
     }
+    applyFilters();
+}
+
+function applyFilters() {
+    const serviceFilter = document.getElementById('filterService').value;
+    showLoading();
+
+    fetch(`http://localhost:8080/d4d/${serviceFilter === 'all' ? 'all' : encodeURIComponent(serviceFilter)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen der Daten");
+            }
+            return response.json();
+        })
+        .then(users => {
+            const filteredUsers = users.filter(user => {
+                if (selectedTags.size === 0) return true;
+                const description = user.description.toLowerCase();
+                return Array.from(selectedTags).some(tag => 
+                    description.includes(tag.toLowerCase())
+                );
+            });
+
+            clearLoading();
+            if (filteredUsers.length === 0) {
+                const messageContainer = document.createElement("div");
+                messageContainer.className = "no-results";
+                messageContainer.innerHTML = `
+                    <p>Keine Ergebnisse gefunden.</p>
+                `;
+                document.getElementById("serviceList").appendChild(messageContainer);
+                return;
+            }
+            filteredUsers.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            clearLoading();
+            alert("Es gab ein Problem beim Abrufen der Daten.");
+        });
 }
 
 function addUserToList(serviceOffer, serviceWanted, name, description) {
@@ -134,39 +175,4 @@ function loadAllOffers() {
 document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
 
 // Event Listener für die Filterauswahl
-document.getElementById("filterService").addEventListener('change', function() {
-    const filterValue = this.value;
-    
-    if (filterValue === 'all') {
-        loadAllOffers();
-        return;
-    }
-
-    showLoading();
-
-    fetch(`http://localhost:8080/d4d/${encodeURIComponent(filterValue)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Fehler beim Abrufen der Daten");
-            }
-            return response.json();
-        })
-        .then(users => {
-            clearLoading();
-            if (users.length === 0) {
-                const messageContainer = document.createElement("div");
-                messageContainer.className = "no-results";
-                messageContainer.innerHTML = `
-                    <p>Keine Ergebnisse gefunden.</p>
-                `;
-                document.getElementById("serviceList").appendChild(messageContainer);
-                return;
-            }
-            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
-        })
-        .catch(error => {
-            console.error("Fehler:", error);
-            clearLoading();
-            alert("Es gab ein Problem beim Abrufen der Daten.");
-        });
-});
+document.getElementById("filterService").addEventListener('change', applyFilters);
