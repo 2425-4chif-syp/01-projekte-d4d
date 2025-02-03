@@ -937,3 +937,22 @@ input:focus, select:focus, textarea:focus {
     flex-grow: 1; /* Chat-Bereich nimmt mehr Platz ein */
     width: 85%;
 }
+#newChatButton {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+#newChatButton:hover {
+    background-color: #0056b3;
+}

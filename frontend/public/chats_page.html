@@ -30,11 +30,15 @@
             <!-- Linke Spalte für die Chat-Auswahl -->
             <div class="chat-list">
                 <h3>Chats</h3>
+                <button id="newChatButton" onclick="createNewChat()">
+                    <i class="fas fa-plus"></i> Neuer Chat
+                </button>
                 <ul id="chatList">
                     <li onclick="switchChat(1)">Chat mit Alex</li>
                     <li onclick="switchChat(2)">Chat mit Maria</li>
                     <li onclick="switchChat(3)">Chat mit Chris</li>
                 </ul>
+
             </div>
 
             <!-- Rechte Spalte für den aktuellen Chat -->
