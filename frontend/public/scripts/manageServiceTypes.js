@@ -12,9 +12,20 @@ function fetchServiceTypes() {
             serviceTypeList.innerHTML = "";
             const serviceTypes = serviceTypesText.split("|");
             serviceTypes.forEach(serviceType => {
-                const li = document.createElement("li");
-                li.textContent = serviceType.trim();
-                serviceTypeList.appendChild(li);
+                if (serviceType.trim()) {
+                    const li = document.createElement("li");
+                    const serviceTypeSpan = document.createElement("span");
+                    serviceTypeSpan.textContent = serviceType.trim();
+                    
+                    const deleteButton = document.createElement("button");
+                    deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                    deleteButton.className = "delete-button";
+                    deleteButton.onclick = () => deleteServiceType(serviceType.trim());
+                    
+                    li.appendChild(serviceTypeSpan);
+                    li.appendChild(deleteButton);
+                    serviceTypeList.appendChild(li);
+                }
             });
         })
         .catch(error => {
@@ -22,6 +33,33 @@ function fetchServiceTypes() {
         });
 }
 
+function deleteServiceType(serviceType) {
+    if (confirm(`Möchten Sie wirklich die Dienstleistungsart "${serviceType}" löschen?`)) {
+        fetch(`http://localhost:8080/d4d/serviceType/${encodeURIComponent(serviceType)}`, {
+            method: "PUT"
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Löschen der Dienstleistungsart");
+            }
+            return response.text();
+        })
+        .then(message => {
+            const responseMessage = document.getElementById("responseMessage");
+            responseMessage.textContent = "Dienstleistungsart erfolgreich gelöscht";
+            responseMessage.className = "response-message success";
+            responseMessage.style.display = "block";
+            fetchServiceTypes(); // Refresh the list
+        })
+        .catch(error => {
+            console.error("Fehler:", error);
+            const responseMessage = document.getElementById("responseMessage");
+            responseMessage.textContent = "Fehler beim Löschen der Dienstleistungsart";
+            responseMessage.className = "response-message error";
+            responseMessage.style.display = "block";
+        });
+    }
+}
 
 document.getElementById("addServiceTypeButton").addEventListener("click", function () {
     const newServiceType = document.getElementById("newServiceType").value.trim();
