@@ -10,15 +10,16 @@ public class MessageRepository {
     private static final String PASSWORD = "d4d1234";
 
     private static final String CREATE_MESSAGES_TABLE = """
-        CREATE TABLE IF NOT EXISTS messages (
-            id SERIAL PRIMARY KEY,
-            chat_id INT NOT NULL,
-            user_name VARCHAR(50) NOT NULL,
-            message TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (chat_id) REFERENCES chats(id)
-        );
-    """;
+    CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        chat_id INT NOT NULL,
+        user_name VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (chat_id) REFERENCES chats(id)
+    );
+""";
+
 
     private static final String INSERT_MESSAGE_SQL = """
         INSERT INTO messages (chat_id, user_name, message)

@@ -24,7 +24,7 @@ public class ChatRoomsResource {
                     .build();
         }
         try {
-            // Beispiel: ChatRepository.saveChat(chatName);
+            // Beispiel: Speichere den Chat in der DB.
             ChatRepository.saveChat(chatName);
             return Response.status(Response.Status.CREATED)
                     .entity(Json.createObjectBuilder()
