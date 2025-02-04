@@ -3,12 +3,18 @@ package com.example;
 import java.time.LocalDateTime;
 
 public class Chat {
+    private int id;
     private String chatName;
     private LocalDateTime createdAt;
 
-    public Chat(String chatName, LocalDateTime createdAt) {
+    public Chat(int id, String chatName, LocalDateTime createdAt) {
+        this.id = id;
         this.chatName = chatName;
         this.createdAt = createdAt;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getChatName() {

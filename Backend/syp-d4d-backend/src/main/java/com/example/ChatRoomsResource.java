@@ -6,7 +6,6 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
 
 @Path("/chat/rooms")
@@ -25,17 +24,11 @@ public class ChatRoomsResource {
                     .build();
         }
         try {
+            // Beispiel: ChatRepository.saveChat(chatName);
             ChatRepository.saveChat(chatName);
             return Response.status(Response.Status.CREATED)
                     .entity(Json.createObjectBuilder()
                             .add("chatName", chatName)
-                            .build())
-                    .build();
-        } catch (WebApplicationException wae) {
-            // Gebe den ursprünglichen HTTP-Statuscode zurück (z. B. 409 Conflict)
-            return Response.status(wae.getResponse().getStatus())
-                    .entity(Json.createObjectBuilder()
-                            .add("error", wae.getMessage())
                             .build())
                     .build();
         } catch (Exception e) {
@@ -51,13 +44,12 @@ public class ChatRoomsResource {
     public Response getChats() {
         List<Chat> chats = ChatRepository.getAllChats();
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
-
         for (Chat chat : chats) {
             jsonArrayBuilder.add(Json.createObjectBuilder()
+                    .add("id", chat.getId())
                     .add("chatName", chat.getChatName())
                     .add("createdAt", chat.getCreatedAt().toString()));
         }
-
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 }

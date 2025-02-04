@@ -4,9 +4,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 public class ChatRepository {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "d4d-admin";
@@ -22,13 +19,7 @@ public class ChatRepository {
 
     private static final String INSERT_CHAT_SQL = """
         INSERT INTO chats (chat_name)
-        VALUES (?);
-    """;
-
-    private static final String SELECT_ALL_CHATS_SQL = """
-        SELECT chat_name, created_at
-        FROM chats
-        ORDER BY created_at ASC;
+        VALUES (?)
     """;
 
     static {
@@ -38,31 +29,11 @@ public class ChatRepository {
             statement.execute(CREATE_CHATS_TABLE);
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("Error while creating the chats table.");
-        }
-    }
-
-    // Optional: Vorab-Prüfung, ob der Chat existiert
-    public static boolean chatExists(String chatName) {
-        String checkChatSql = "SELECT 1 FROM chats WHERE chat_name = ?";
-        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement checkStmt = connection.prepareStatement(checkChatSql)) {
-            checkStmt.setString(1, chatName);
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
     public static void saveChat(String chatName) {
-        // Optional: Vorab-Prüfung (funktioniert nicht immer, wenn sich Transaktionen noch nicht synchronisiert haben)
-        if (chatExists(chatName)) {
-            throw new WebApplicationException("Chat already exists: " + chatName, Response.Status.CONFLICT);
-        }
-
+        // Hier kann – wie bereits gezeigt – ein Duplikat-Check erfolgen.
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement insertStatement = connection.prepareStatement(INSERT_CHAT_SQL)) {
 
@@ -70,37 +41,27 @@ public class ChatRepository {
             insertStatement.setString(1, chatName);
             int rowsInserted = insertStatement.executeUpdate();
             System.out.println(rowsInserted + " row(s) inserted successfully!");
-            if (rowsInserted == 0) {
-                throw new SQLException("No rows inserted for chat: " + chatName);
-            }
         } catch (SQLException e) {
-            // Falls der Duplicate-Key-Fehler nicht durch die Vorab-Prüfung abgefangen wird:
-            if (e.getMessage().toLowerCase().contains("duplicate key")) {
-                throw new WebApplicationException("Chat already exists: " + chatName, Response.Status.CONFLICT);
-            }
-            System.out.println("Error occurred while inserting the chat: " + e.getMessage());
-            throw new WebApplicationException("Chat creation failed: " + e.getMessage(), e);
+            e.printStackTrace();
+            throw new jakarta.ws.rs.WebApplicationException("Chat creation failed: " + e.getMessage(), e);
         }
     }
 
     public static List<Chat> getAllChats() {
         List<Chat> chats = new ArrayList<>();
-
+        String sql = "SELECT id, chat_name, created_at FROM chats ORDER BY created_at ASC";
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement selectStatement = connection.prepareStatement(SELECT_ALL_CHATS_SQL);
-             ResultSet resultSet = selectStatement.executeQuery()) {
-
-            while (resultSet.next()) {
-                String chatName = resultSet.getString("chat_name");
-                Timestamp createdAt = resultSet.getTimestamp("created_at");
-                chats.add(new Chat(chatName, createdAt.toLocalDateTime()));
+             PreparedStatement selectStatement = connection.prepareStatement(sql);
+             ResultSet rs = selectStatement.executeQuery()) {
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String chatName = rs.getString("chat_name");
+                Timestamp createdAt = rs.getTimestamp("created_at");
+                chats.add(new Chat(id, chatName, createdAt.toLocalDateTime()));
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("Error occurred while fetching chats.");
         }
-
         return chats;
     }
 }

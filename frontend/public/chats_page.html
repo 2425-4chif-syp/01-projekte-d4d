@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="styles/showOffers.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    body {
+   
+   body {
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -114,6 +115,9 @@
     .modal button:last-of-type {
       background-color: #ccc;
     }
+ 
+
+
   </style>
 </head>
 <body>
@@ -124,12 +128,10 @@
     </div>
     <div class="nav-buttons">
       <button id="marketButton" onclick="window.location.href='showOffers.html'">
-        <i class="fas fa-store"></i>
-        Zum Markt
+        <i class="fas fa-store"></i> Zum Markt
       </button>
       <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
-        <i class="fas fa-plus"></i>
-        Dienstleistung anbieten
+        <i class="fas fa-plus"></i> Dienstleistung anbieten
       </button>
     </div>
   </nav>
@@ -139,7 +141,6 @@
       <button onclick="openChatCreation()">+ Neuen Chat erstellen</button>
       <div id="chatItems"></div>
     </div>
-
     <div class="chat-section">
       <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
       <div class="chat-messages" id="chatMessages"></div>
@@ -162,36 +163,18 @@
   </div>
 
   <script>
-    // Öffnet das Modal zum Erstellen eines neuen Chats
+    // Globale Variable für den aktuell gewählten Chat (ID)
+    let currentChatId = null;
+
+    // Modal-Funktionen
     function openChatCreation() {
       document.getElementById("chatModal").classList.add("active");
     }
-
-    // Schließt das Modal
     function closeChatCreation() {
       document.getElementById("chatModal").classList.remove("active");
     }
 
-    // Holt die Chat-Nachrichten per GET vom Server
-    async function fetchMessages() {
-      try {
-        const response = await fetch("http://localhost:8080/chat/messages");
-        const messages = await response.json();
-        const chatMessages = document.getElementById('chatMessages');
-        chatMessages.innerHTML = "";
-        messages.forEach(msg => {
-          const messageElement = document.createElement("div");
-          messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
-          messageElement.textContent = `${msg.user}: ${msg.message}`;
-          chatMessages.appendChild(messageElement);
-        });
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      } catch (error) {
-        console.error("Fehler beim Abrufen der Nachrichten:", error);
-      }
-    }
-
-    // Holt alle gespeicherten Chats per GET vom Server und fügt sie der Chatliste hinzu
+    // Lädt alle Chats vom Server und zeigt sie in der Chatliste an
     async function fetchChats() {
       try {
         const response = await fetch("http://localhost:8080/chat/rooms");
@@ -200,10 +183,12 @@
           const chatItems = document.getElementById("chatItems");
           chatItems.innerHTML = "";
           chats.forEach(chat => {
+            // Erstelle ein Element, das sowohl die Chat-ID als auch den Namen enthält
             const chatElement = document.createElement("div");
             chatElement.classList.add("chat-item");
+            // Beim Klick wird openChat mit der Chat-ID aufgerufen
             chatElement.innerHTML = `<i class="fas fa-user"></i> ${chat.chatName}`;
-            chatElement.setAttribute("onclick", `openChat('${chat.chatName}')`);
+            chatElement.setAttribute("onclick", `openChat(${chat.id})`);
             chatItems.appendChild(chatElement);
           });
         } else {
@@ -214,9 +199,42 @@
       }
     }
 
-    // Event-Listener zum Senden einer Nachricht
+    // Öffnet einen Chat: speichert die Chat-ID und lädt die zugehörigen Nachrichten
+    function openChat(chatId) {
+      currentChatId = chatId;
+      fetchChatMessages(chatId);
+    }
+
+    // Lädt Nachrichten für einen bestimmten Chat
+    async function fetchChatMessages(chatId) {
+      try {
+        const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
+        if (response.ok) {
+          const messages = await response.json();
+          const chatMessages = document.getElementById("chatMessages");
+          chatMessages.innerHTML = "";
+          messages.forEach(msg => {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
+            messageElement.textContent = `${msg.user}: ${msg.message}`;
+            chatMessages.appendChild(messageElement);
+          });
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+          console.error("Fehler beim Abrufen der Nachrichten:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Nachrichten:", error);
+      }
+    }
+
+    // Sendet eine neue Nachricht an den aktuell gewählten Chat
     document.getElementById("chatForm").addEventListener("submit", async function(e) {
       e.preventDefault();
+      if (currentChatId === null) {
+        alert("Bitte wähle zuerst einen Chat aus.");
+        return;
+      }
       const chatInput = document.getElementById("chatInput");
       const messageText = chatInput.value.trim();
       if (messageText === "") return;
@@ -225,14 +243,14 @@
         message: messageText 
       };
       try {
-        const response = await fetch("http://localhost:8080/chat/messages", {
+        const response = await fetch(`http://localhost:8080/chat/rooms/${currentChatId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(messageData)
         });
         if (response.ok) {
           chatInput.value = "";
-          fetchMessages();
+          fetchChatMessages(currentChatId);
         } else {
           console.error("Fehler beim Senden der Nachricht:", response.statusText);
         }
@@ -241,10 +259,15 @@
       }
     });
 
-    // Erstellt einen neuen Chat und aktualisiert die Chatliste
+    // Erst beim Laden der Seite: Chats laden; Nachrichten werden erst angezeigt, wenn ein Chat ausgewählt wird
+    document.addEventListener("DOMContentLoaded", function() {
+      fetchChats();
+    });
+
+    // Erstellt einen neuen Chat und lädt danach die aktualisierte Chatliste
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
-      console.log("Creating new chat:", chatName); // Debug-Ausgabe
+      console.log("Creating new chat:", chatName);
       if (chatName === "") return;
       const chatData = { chatName };
       try {
@@ -254,7 +277,6 @@
           body: JSON.stringify(chatData)
         });
         if (response.ok) {
-          // Nach erfolgreicher Erstellung wird die Chatliste neu geladen
           fetchChats();
           closeChatCreation();
           document.getElementById("chatName").value = "";
@@ -264,18 +286,6 @@
       } catch (error) {
         console.error("Network error:", error);
       }
-    }
-
-    // Wird ausgeführt, sobald das DOM vollständig geladen ist
-    document.addEventListener("DOMContentLoaded", function() {
-      fetchChats();
-      fetchMessages();
-    });
-    
-    // Beispiel-Funktion zum Öffnen eines Chats (muss ggf. noch implementiert werden)
-    function openChat(chatName) {
-      console.log("Chat öffnen:", chatName);
-      // Hier kann der Wechsel in einen bestimmten Chat erfolgen
     }
   </script>
 </body>
