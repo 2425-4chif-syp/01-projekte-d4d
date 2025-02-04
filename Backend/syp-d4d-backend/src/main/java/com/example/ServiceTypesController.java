@@ -34,6 +34,19 @@ public class ServiceTypesController {
         return String.join("|", typeOfServices);
     }
 
+    @GET
+    @Path("/allServiceTypes")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getAllServiceTypesFromDb() {
+        List<ServiceType> serviceTypes = ServiceTypesControllerRepository.getServiceTypes();
+        List<String> typeOfServices = new ArrayList<>();
+
+        for (var serviceType : serviceTypes) {
+            typeOfServices.add(serviceType.getTypeOfService());
+        }
+        return String.join("|", typeOfServices);
+    }
+
     @PUT
     @Path("/serviceType/{typeOfService}")
     @Produces(MediaType.TEXT_PLAIN)

@@ -125,7 +125,7 @@ function loadServiceTypesAndOffers() {
 
 function loadServiceTypes() {
     const filterService = document.getElementById("filterService");
-    const url = "http://localhost:8080/d4d/serviceTypes";
+    const url = "http://localhost:8080/d4d/allServiceTypes";
 
     fetch(url)
         .then(response => {
