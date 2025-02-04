@@ -178,6 +178,7 @@
     </div>
 
     <script>
+        // Vorhandene Funktion, die Nachrichten per GET abruft
         async function fetchMessages() {
             try {
                 const response = await fetch("http://localhost:8080/chat/messages");
@@ -195,28 +196,43 @@
                 console.error("Fehler beim Abrufen der Nachrichten:", error);
             }
         }
-        
-        function openChatCreation() {
-            document.getElementById("chatModal").classList.add("active");
-        }
-        
-        function closeChatCreation() {
-            document.getElementById("chatModal").classList.remove("active");
-        }
-        
-        function createNewChat() {
-            const chatName = document.getElementById("chatName").value.trim();
-            if (chatName === "") return;
-            const chatItems = document.getElementById("chatItems");
-            const newChat = document.createElement("div");
-            newChat.classList.add("chat-item");
-            newChat.innerHTML = `<i class='fas fa-user'></i> ${chatName}`;
-            newChat.setAttribute("onclick", `openChat('${chatName}')`);
-            chatItems.appendChild(newChat);
-            closeChatCreation();
-            document.getElementById("chatName").value = "";
-        }
+    
+        // Neuen Event-Listener für das Senden einer Nachricht hinzufügen
+        document.getElementById("chatForm").addEventListener("submit", async function(e) {
+            e.preventDefault(); // Verhindert das Standardverhalten (z.B. Neuladen der Seite)
+    
+            const chatInput = document.getElementById("chatInput");
+            const messageText = chatInput.value.trim();
+    
+            if (messageText === "") return; // Leere Nachrichten ignorieren
+    
+            // Erstelle das Datenobjekt. Hier ist der Benutzer statisch "Me"
+            const messageData = { 
+                user: "Me", 
+                message: messageText 
+            };
+    
+            try {
+                const response = await fetch("http://localhost:8080/chat/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(messageData)
+                });
+    
+                if (response.ok) {
+                    chatInput.value = ""; // Eingabefeld leeren
+                    fetchMessages();      // Nachrichten neu laden, damit die neue Nachricht angezeigt wird
+                } else {
+                    console.error("Fehler beim Senden der Nachricht:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Netzwerkfehler beim Senden der Nachricht:", error);
+            }
+        });
+    
+        // Initialer Abruf der Nachrichten
         fetchMessages();
     </script>
+    
 </body>
 </html>
