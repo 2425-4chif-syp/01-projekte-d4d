@@ -84,6 +84,9 @@ document.getElementById("addServiceTypeButton").addEventListener("click", functi
                 fetchServiceTypes();
 
                 document.getElementById("newServiceType").value = "";
+
+                responseMessage.textContent = "Dienstleistungsart erfolgreich hinzugefügt.";
+                responseMessage.className = "response-message success";
             } else {
                 responseMessage.textContent = "Fehler beim Hinzufügen der Dienstleistungsart.";
                 responseMessage.className = "response-message error";
@@ -99,3 +102,10 @@ document.getElementById("addServiceTypeButton").addEventListener("click", functi
 });
 
 document.addEventListener("DOMContentLoaded", fetchServiceTypes);
+
+document.getElementById("newServiceType").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById("addServiceTypeButton").click();
+    }
+});
