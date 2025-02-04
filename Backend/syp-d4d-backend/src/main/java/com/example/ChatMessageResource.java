@@ -6,6 +6,7 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 
 @Path("/chat/rooms/{chatId}/messages")
 @Produces(MediaType.APPLICATION_JSON)
@@ -17,9 +18,21 @@ public class ChatMessageResource {
 
     @GET
     public Response getMessages() {
-        // Beispiel: Nachrichten abrufen (hier evtl. leeres Array, wenn noch keine Nachrichten vorhanden)
+        // Rufe die Nachrichten aus der Datenbank für den gegebenen chatId ab.
+        List<Message> messages = MessageRepository.getMessagesByChat(chatId);
+
+        // Erstelle ein JSON-Array aus den Nachrichten
         JsonArrayBuilder arr = Json.createArrayBuilder();
-        // Falls du Nachrichten aus der DB laden möchtest, rufe hier MessageRepository.getMessagesByChat(chatId) auf
+        for (Message m : messages) {
+            arr.add(Json.createObjectBuilder()
+                    .add("id", m.getId())
+                    .add("chatId", m.getChatId())
+                    .add("user", m.getUserName())
+                    .add("message", m.getMessage())
+                    .add("createdAt", m.getCreatedAt().toString())
+            );
+        }
+
         return Response.ok(arr.build()).build();
     }
 
@@ -30,7 +43,7 @@ public class ChatMessageResource {
         // Debug-Ausgabe, um sicherzustellen, dass der Endpoint aufgerufen wird:
         System.out.println("Received message for chatId " + chatId + ": " + user + " - " + message);
 
-        // Hier wird die Nachricht in der DB gespeichert:
+        // Speichere die Nachricht in der DB
         MessageRepository.saveMessage(chatId, user, message);
 
         // Sende eine Erfolgsmeldung zurück:

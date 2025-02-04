@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="styles/showOffers.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-   
-   body {
+    /* Basis-Stile */
+    body {
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -115,9 +115,6 @@
     .modal button:last-of-type {
       background-color: #ccc;
     }
- 
-
-
   </style>
 </head>
 <body>
@@ -180,14 +177,14 @@
         const response = await fetch("http://localhost:8080/chat/rooms");
         if (response.ok) {
           const chats = await response.json();
+          console.log("Fetched chats:", chats);
           const chatItems = document.getElementById("chatItems");
           chatItems.innerHTML = "";
           chats.forEach(chat => {
-            // Erstelle ein Element, das sowohl die Chat-ID als auch den Namen enthält
             const chatElement = document.createElement("div");
             chatElement.classList.add("chat-item");
-            // Beim Klick wird openChat mit der Chat-ID aufgerufen
             chatElement.innerHTML = `<i class="fas fa-user"></i> ${chat.chatName}`;
+            // Beim Klick wird openChat mit der Chat-ID aufgerufen
             chatElement.setAttribute("onclick", `openChat(${chat.id})`);
             chatItems.appendChild(chatElement);
           });
@@ -199,9 +196,10 @@
       }
     }
 
-    // Öffnet einen Chat: speichert die Chat-ID und lädt die zugehörigen Nachrichten
+    // Öffnet einen Chat und lädt die zugehörigen Nachrichten
     function openChat(chatId) {
       currentChatId = chatId;
+      console.log("Selected chatId:", chatId);
       fetchChatMessages(chatId);
     }
 
@@ -211,10 +209,12 @@
         const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
         if (response.ok) {
           const messages = await response.json();
+          console.log("Fetched messages for chat", chatId, ":", messages);
           const chatMessages = document.getElementById("chatMessages");
           chatMessages.innerHTML = "";
           messages.forEach(msg => {
             const messageElement = document.createElement("div");
+            // Unterschiedliche CSS-Klassen, je nachdem ob die Nachricht von "Me" stammt
             messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
             messageElement.textContent = `${msg.user}: ${msg.message}`;
             chatMessages.appendChild(messageElement);
@@ -249,7 +249,9 @@
           body: JSON.stringify(messageData)
         });
         if (response.ok) {
+          console.log("Message sent successfully");
           chatInput.value = "";
+          // Nachrichten für den aktuellen Chat neu laden
           fetchChatMessages(currentChatId);
         } else {
           console.error("Fehler beim Senden der Nachricht:", response.statusText);
@@ -259,12 +261,12 @@
       }
     });
 
-    // Erst beim Laden der Seite: Chats laden; Nachrichten werden erst angezeigt, wenn ein Chat ausgewählt wird
+    // Beim Laden der Seite werden die Chats abgerufen
     document.addEventListener("DOMContentLoaded", function() {
       fetchChats();
     });
 
-    // Erstellt einen neuen Chat und lädt danach die aktualisierte Chatliste
+    // Erstellt einen neuen Chat und aktualisiert die Chatliste
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
       console.log("Creating new chat:", chatName);
@@ -277,6 +279,7 @@
           body: JSON.stringify(chatData)
         });
         if (response.ok) {
+          console.log("Chat created successfully");
           fetchChats();
           closeChatCreation();
           document.getElementById("chatName").value = "";
