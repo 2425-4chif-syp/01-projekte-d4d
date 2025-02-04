@@ -33,20 +33,20 @@ endif::[]
 
 Dienstleistung für Dienstleistung
 
-== Project Team
+== Projektteam
 
-* Vlad Guran (Project Leader) - chat
-* Leon Zehetner - show market (filter functions)
-* Michael Birklbauer - manage service types
-* Stefan Jelic - service offers
-* Semih Yüzüak - reviews
+* *Vlad Guran (Projektleiter)* - Chat
+* *Leon Zehetner* - Markt anzeigen (Filterfunktionen)
+* *Michael Birklbauer* - Servicetypen verwalten
+* *Stefan Jelic* - Serviceangebote
+* *Semih Yüzüak* - Bewertungen
 
 == Ziele
 
 * *Bessere schulische Leistungen*: Durch regelmäßige Hilfe sollen die Noten der teilnehmenden Schüler langfristig verbessert werden.
 * *Gemeinschaft stärken*: Die Plattform soll auch die Zusammenarbeit und den Austausch unter Schülern fördern.
 
-== System Architecture
+== Systemarchitektur
 
 [.stretch]
 image::system-architecture.png[]
