@@ -63,7 +63,7 @@
             border: 1px solid #ccc;
             padding: 15px;
             background-color: white;
-            max-height: 80vh;
+            max-height: 70vh;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -95,17 +95,60 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             border-radius: 8px;
+            width: 200px;
+            text-align: center;
         }
 
         .modal.active {
             display: block;
         }
+
+        .modal input {
+            width: 90%;
+            padding: 6px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .modal button {
+            padding: 6px 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .modal button:first-of-type {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .modal button:last-of-type {
+            background-color: #ccc;
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-handshake"></i>
+            <span>D4D</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="marketButton" onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+        </div>
+    </nav>
     <main class="container">
         <div class="chat-list">
             <h3>Chats</h3>
@@ -128,17 +171,16 @@
     </main>
 
     <div class="modal" id="chatModal">
-        <h3>Neuen Chat erstellen</h3>
-        <input type="text" id="chatName" placeholder="Chat Name eingeben">
+        <h3>Neuer Chat</h3>
+        <input type="text" id="chatName" placeholder="Chat Name">
         <button onclick="createNewChat()">Erstellen</button>
         <button onclick="closeChatCreation()">Abbrechen</button>
     </div>
 
     <script>
-        const API_URL = "http://localhost:8080/chat/messages";
         async function fetchMessages() {
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch("http://localhost:8080/chat/messages");
                 const messages = await response.json();
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.innerHTML = "";
@@ -174,24 +216,6 @@
             closeChatCreation();
             document.getElementById("chatName").value = "";
         }
-        
-        document.getElementById("chatForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const chatInput = document.getElementById("chatInput");
-            const message = chatInput.value.trim();
-            if (!message) return;
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user: "Me", message })
-                });
-                fetchMessages();
-            } catch (error) {
-                console.error("Fehler beim Senden der Nachricht:", error);
-            }
-            chatInput.value = "";
-        });
         fetchMessages();
     </script>
 </body>
