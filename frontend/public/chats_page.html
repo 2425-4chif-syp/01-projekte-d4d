@@ -69,35 +69,39 @@
             gap: 8px;
         }
 
-        .chat-form-container {
-            padding-top: 10px;
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            word-wrap: break-word;
         }
 
-        .chat-input-group {
-            display: flex;
-        }
-
-        .chat-input-group input {
-            flex-grow: 1;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .chat-input-group button {
-            padding: 12px;
+        .message.user {
             background-color: #007bff;
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 8px;
-            font-size: 16px;
+            align-self: flex-end;
         }
 
-        .chat-input-group button:hover {
-            background-color: #0056b3;
+        .message.other {
+            background-color: #e0e0e0;
+            color: black;
+            align-self: flex-start;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .modal.active {
+            display: block;
         }
     </style>
 </head>
@@ -123,21 +127,24 @@
         </div>
     </main>
 
+    <div class="modal" id="chatModal">
+        <h3>Neuen Chat erstellen</h3>
+        <input type="text" id="chatName" placeholder="Chat Name eingeben">
+        <button onclick="createNewChat()">Erstellen</button>
+        <button onclick="closeChatCreation()">Abbrechen</button>
+    </div>
+
     <script>
         const API_URL = "http://localhost:8080/chat/messages";
-
         async function fetchMessages() {
             try {
                 const response = await fetch(API_URL);
                 const messages = await response.json();
-                
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.innerHTML = "";
-                
                 messages.forEach(msg => {
                     const messageElement = document.createElement("div");
-                    messageElement.classList.add("message");
-                    messageElement.classList.add(msg.user === "Me" ? "user" : "other");
+                    messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
                     messageElement.textContent = `${msg.user}: ${msg.message}`;
                     chatMessages.appendChild(messageElement);
                 });
@@ -146,13 +153,33 @@
                 console.error("Fehler beim Abrufen der Nachrichten:", error);
             }
         }
-
+        
+        function openChatCreation() {
+            document.getElementById("chatModal").classList.add("active");
+        }
+        
+        function closeChatCreation() {
+            document.getElementById("chatModal").classList.remove("active");
+        }
+        
+        function createNewChat() {
+            const chatName = document.getElementById("chatName").value.trim();
+            if (chatName === "") return;
+            const chatItems = document.getElementById("chatItems");
+            const newChat = document.createElement("div");
+            newChat.classList.add("chat-item");
+            newChat.innerHTML = `<i class='fas fa-user'></i> ${chatName}`;
+            newChat.setAttribute("onclick", `openChat('${chatName}')`);
+            chatItems.appendChild(newChat);
+            closeChatCreation();
+            document.getElementById("chatName").value = "";
+        }
+        
         document.getElementById("chatForm").addEventListener("submit", async function (e) {
             e.preventDefault();
             const chatInput = document.getElementById("chatInput");
             const message = chatInput.value.trim();
             if (!message) return;
-            
             try {
                 await fetch(API_URL, {
                     method: "POST",
@@ -163,10 +190,8 @@
             } catch (error) {
                 console.error("Fehler beim Senden der Nachricht:", error);
             }
-            
             chatInput.value = "";
         });
-
         fetchMessages();
     </script>
 </body>
