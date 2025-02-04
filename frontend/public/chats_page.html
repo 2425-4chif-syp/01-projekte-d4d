@@ -12,6 +12,7 @@
             flex-direction: column;
             height: 100vh;
             margin: 0;
+            font-family: Arial, sans-serif;
         }
 
         .container {
@@ -20,8 +21,9 @@
             overflow: hidden;
         }
 
+        /* Sidebar with chat list */
         .chat-list {
-            width: 25%;
+            width: 20%;
             background-color: #f1f1f1;
             padding: 15px;
             overflow-y: auto;
@@ -29,57 +31,96 @@
         }
 
         .chat-item {
-            padding: 10px;
+            padding: 12px;
             border-radius: 5px;
             cursor: pointer;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             background-color: white;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-weight: bold;
+        }
+
+        .chat-item:hover {
+            background-color: #e0e0e0;
         }
 
         .chat-item.active {
             background-color: #d4d4d4;
-            font-weight: bold;
         }
 
+        /* Chat section */
         .chat-section {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            padding: 15px;
+            padding: 20px;
+            background-color: #f9f9f9;
         }
 
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
             border: 1px solid #ccc;
-            padding: 10px;
-            background-color: #fff;
-            max-height: 500px;
+            padding: 15px;
+            background-color: white;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Message styling */
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .message.other {
+            background-color: #e0e0e0;
+            color: black;
+            align-self: flex-start;
+        }
+
+        /* Chat input */
+        .chat-form-container {
+            padding-top: 10px;
         }
 
         .chat-input-group {
             display: flex;
-            margin-top: 10px;
         }
 
         .chat-input-group input {
             flex-grow: 1;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 16px;
         }
 
         .chat-input-group button {
-            padding: 10px;
+            padding: 12px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-left: 5px;
+            margin-left: 8px;
+            font-size: 16px;
+        }
+
+        .chat-input-group button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -100,6 +141,7 @@
     </nav>
 
     <main class="container">
+        <!-- Chat selection panel -->
         <div class="chat-list">
             <h3>Chats</h3>
             <div class="chat-item active" onclick="openChat('chat1')">
@@ -113,6 +155,7 @@
             </div>
         </div>
 
+        <!-- Chat window -->
         <div class="chat-section">
             <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
             <div class="chat-messages" id="chatMessages"></div>
@@ -131,25 +174,33 @@
 
     <script>
         const API_URL = "http://localhost:8080/chat/messages";
-        let currentChat = "chat1"; // Default chat
+        let currentChat = "chat1";
+        const currentUser = "Me"; // Change to dynamic user if needed
 
         async function fetchMessages() {
             try {
                 const response = await fetch(API_URL);
                 const messages = await response.json();
 
-                // Filter messages for the current chat
-                const filteredMessages = messages.filter(msg => msg.user === currentChat);
-
-                // Display messages
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.innerHTML = "";
-                filteredMessages.forEach(msg => {
-                    const messageElement = document.createElement("p");
-                    messageElement.textContent = `${msg.user}: ${msg.message}`;
+
+                messages.forEach(msg => {
+                    const messageElement = document.createElement("div");
+                    messageElement.classList.add("message");
+
+                    if (msg.user === currentUser) {
+                        messageElement.classList.add("user");
+                        messageElement.textContent = msg.message;
+                    } else {
+                        messageElement.classList.add("other");
+                        messageElement.textContent = `${msg.user}: ${msg.message}`;
+                    }
+
                     chatMessages.appendChild(messageElement);
                 });
 
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             } catch (error) {
                 console.error("Error fetching messages:", error);
             }
@@ -158,14 +209,10 @@
         function openChat(chatId) {
             currentChat = chatId;
 
-            // Remove 'active' class from all chats
             document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-
-            // Highlight active chat
             const selectedChat = document.querySelector(`[onclick="openChat('${chatId}')"]`);
             if (selectedChat) selectedChat.classList.add('active');
 
-            // Fetch messages for this chat
             fetchMessages();
         }
 
@@ -175,17 +222,14 @@
             const message = chatInput.value.trim();
             if (!message) return;
 
-            // Send message to Quarkus backend
             try {
                 await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user: currentChat, message })
+                    body: JSON.stringify({ user: currentUser, message })
                 });
 
-                // Reload chat messages
                 fetchMessages();
-
             } catch (error) {
                 console.error("Error sending message:", error);
             }
@@ -193,7 +237,6 @@
             chatInput.value = "";
         });
 
-        // Load messages on page load
         fetchMessages();
     </script>
 </body>
