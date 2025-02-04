@@ -242,37 +242,39 @@
 
         // Erstellt einen neuen Chat-Raum und fügt ihn zur Chatliste hinzu
         async function createNewChat() {
-            const chatName = document.getElementById("chatName").value.trim();
-            if (chatName === "") return;
-            
-            const chatData = { chatName };
+    const chatName = document.getElementById("chatName").value.trim();
+    console.log("Creating new chat:", chatName); // Debug-Ausgabe
+    if (chatName === "") return;
+    
+    const chatData = { chatName };
 
-            try {
-                const response = await fetch("http://localhost:8080/chat/rooms", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(chatData)
-                });
+    try {
+        const response = await fetch("http://localhost:8080/chat/rooms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(chatData)
+        });
 
-                if (response.ok) {
-                    const newChat = await response.json();
-                    // Neuen Chat zur Chatliste hinzufügen
-                    const chatItems = document.getElementById("chatItems");
-                    const newChatElement = document.createElement("div");
-                    newChatElement.classList.add("chat-item");
-                    newChatElement.innerHTML = `<i class='fas fa-user'></i> ${newChat.chatName}`;
-                    newChatElement.setAttribute("onclick", `openChat('${newChat.chatName}')`);
-                    chatItems.appendChild(newChatElement);
+        if (response.ok) {
+            const newChat = await response.json();
+            // Füge den neuen Chat zur Chatliste hinzu
+            const chatItems = document.getElementById("chatItems");
+            const newChatElement = document.createElement("div");
+            newChatElement.classList.add("chat-item");
+            newChatElement.innerHTML = `<i class='fas fa-user'></i> ${newChat.chatName}`;
+            newChatElement.setAttribute("onclick", `openChat('${newChat.chatName}')`);
+            chatItems.appendChild(newChatElement);
 
-                    closeChatCreation();
-                    document.getElementById("chatName").value = "";
-                } else {
-                    console.error("Error creating chat room:", response.statusText);
-                }
-            } catch (error) {
-                console.error("Network error:", error);
-            }
+            closeChatCreation();
+            document.getElementById("chatName").value = "";
+        } else {
+            console.error("Error creating chat room:", response.statusText);
         }
+    } catch (error) {
+        console.error("Network error:", error);
+    }
+}
+
 
         // Initialer Abruf der Nachrichten
         fetchMessages();

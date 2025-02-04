@@ -3,6 +3,7 @@ package com.example;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.ws.rs.WebApplicationException;
 
 public class ChatRepository {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
@@ -43,6 +44,15 @@ public class ChatRepository {
     }
 
     public static void saveChat(String chatName) {
+        // Prüfen, ob der Chat bereits existiert
+        if (chatExists(chatName)) {
+            // Hier kannst du entweder einen Fehler werfen oder eine entsprechende Response zurückgeben.
+            throw new jakarta.ws.rs.WebApplicationException(
+                    "Chat already exists: " + chatName,
+                    jakarta.ws.rs.core.Response.Status.CONFLICT
+            );
+        }
+
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement insertStatement = connection.prepareStatement(INSERT_CHAT_SQL)) {
 
@@ -50,9 +60,27 @@ public class ChatRepository {
             insertStatement.setString(1, chatName);
             int rowsInserted = insertStatement.executeUpdate();
             System.out.println(rowsInserted + " row(s) inserted successfully!");
+            if (rowsInserted == 0) {
+                throw new SQLException("No rows inserted for chat: " + chatName);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error occurred while inserting the chat: " + e.getMessage());
+            throw new jakarta.ws.rs.WebApplicationException("Chat creation failed: " + e.getMessage(), e);
+        }
+    }
+
+    public static boolean chatExists(String chatName) {
+        String checkChatSql = "SELECT 1 FROM chats WHERE chat_name = ?";
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement checkStmt = connection.prepareStatement(checkChatSql)) {
+            checkStmt.setString(1, chatName);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                return rs.next(); // Gibt true zurück, wenn bereits ein Eintrag vorhanden ist
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("Error occurred while inserting the chat.");
+            // Im Fehlerfall false zurückgeben, oder je nach Bedarf einen Fehler werfen
+            return false;
         }
     }
 

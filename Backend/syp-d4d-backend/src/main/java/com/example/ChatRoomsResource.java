@@ -2,7 +2,6 @@ package com.example;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
-import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -14,7 +13,7 @@ import java.util.List;
 public class ChatRoomsResource {
 
     @POST
-    public Response createChat(JsonObject chatJson) {
+    public Response createChat(jakarta.json.JsonObject chatJson) {
         String chatName = chatJson.getString("chatName", "").trim();
         if (chatName.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -23,12 +22,21 @@ public class ChatRoomsResource {
                             .build())
                     .build();
         }
-        ChatRepository.saveChat(chatName);
-        return Response.status(Response.Status.CREATED)
-                .entity(Json.createObjectBuilder()
-                        .add("chatName", chatName)
-                        .build())
-                .build();
+        try {
+            ChatRepository.saveChat(chatName);
+            return Response.status(Response.Status.CREATED)
+                    .entity(Json.createObjectBuilder()
+                            .add("chatName", chatName)
+                            .build())
+                    .build();
+        } catch (Exception e) {
+            // Fehler wird hier an den Client weitergereicht
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Json.createObjectBuilder()
+                            .add("error", "Could not create chat: " + e.getMessage())
+                            .build())
+                    .build();
+        }
     }
 
     @GET
