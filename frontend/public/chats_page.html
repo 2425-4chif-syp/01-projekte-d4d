@@ -6,6 +6,82 @@
     <title>Chats</title>
     <link rel="stylesheet" href="styles/showOffers.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .chat-list {
+            width: 25%;
+            background-color: #f1f1f1;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid #ccc;
+        }
+
+        .chat-item {
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-item.active {
+            background-color: #d4d4d4;
+            font-weight: bold;
+        }
+
+        .chat-section {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            max-height: 500px;
+        }
+
+        .chat-input-group {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        .chat-input-group input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .chat-input-group button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -15,101 +91,110 @@
         </div>
         <div class="nav-buttons">
             <button id="marketButton" onclick="window.location.href='showOffers.html'">
-                <i class="fas fa-store"></i>
-                Zum Markt
+                <i class="fas fa-store"></i> Zum Markt
             </button>
             <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
-                <i class="fas fa-plus"></i>
-                Dienstleistung anbieten
+                <i class="fas fa-plus"></i> Dienstleistung anbieten
             </button>
         </div>
     </nav>
 
     <main class="container">
-        <div class="chat-layout">
-            <!-- Left panel for chat selection -->
-            <div class="chat-list">
-                <h3>Chats</h3>
-                <button id="newChatButton">
-                    <i class="fas fa-plus"></i> Neuer Chat
-                </button>
-                <ul id="chatList">
-                    <li onclick="switchChat(1)">Chat mit Alex</li>
-                    <li onclick="switchChat(2)">Chat mit Maria</li>
-                    <li onclick="switchChat(3)">Chat mit Chris</li>
-                </ul>
+        <div class="chat-list">
+            <h3>Chats</h3>
+            <div class="chat-item active" onclick="openChat('chat1')">
+                <i class="fas fa-user"></i> Chat 1
             </div>
+            <div class="chat-item" onclick="openChat('chat2')">
+                <i class="fas fa-user"></i> Chat 2
+            </div>
+            <div class="chat-item" onclick="openChat('chat3')">
+                <i class="fas fa-user"></i> Chat 3
+            </div>
+        </div>
 
-            <!-- Right panel for chat display -->
-            <div class="content-section">
-                <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
-                
-                <div class="card chat-card">
-                    <div class="card-header chat-header">
-                        <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
-                        <button id="switchUser" class="user-switch-btn">
-                            <i class="fas fa-user-switch"></i>
-                            Benutzer wechseln
+        <div class="chat-section">
+            <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-form-container">
+                <form id="chatForm">
+                    <div class="chat-input-group">
+                        <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+                        <button type="submit" id="chatSubmit">
+                            <i class="fas fa-paper-plane"></i> Senden
                         </button>
                     </div>
-                    <div class="card-body chat-body">
-                        <div class="chat-messages" id="chatMessages">
-                            <!-- Messages will be dynamically inserted here -->
-                        </div>
-                        <div class="chat-form-container">
-                            <form id="chatForm">
-                                <div class="chat-input-group">
-                                    <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
-                                    <button type="submit" id="chatSubmit">
-                                        <i class="fas fa-paper-plane"></i>
-                                        Senden
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </main>
 
-    <!-- Modal for new chat (Hidden by default) -->
-    <div id="chatModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Neuen Chat starten</h3>
-            <input type="text" id="chatNameInput" placeholder="Name der Person eingeben">
-            <button id="createChat">Chat erstellen</button>
-        </div>
-    </div>
-
     <script>
-        document.getElementById("newChatButton").addEventListener("click", function() {
-            document.getElementById("chatModal").style.display = "flex";
-        });
+        const API_URL = "http://localhost:8080/chat/messages";
+        let currentChat = "chat1"; // Default chat
 
-        document.querySelector(".close").addEventListener("click", function() {
-            document.getElementById("chatModal").style.display = "none";
-        });
+        async function fetchMessages() {
+            try {
+                const response = await fetch(API_URL);
+                const messages = await response.json();
 
-        document.getElementById("createChat").addEventListener("click", function() {
-            let chatName = document.getElementById("chatNameInput").value.trim();
-            if (chatName) {
-                let chatList = document.getElementById("chatList");
-                let newChat = document.createElement("li");
-                newChat.textContent = `Chat mit ${chatName}`;
-                newChat.onclick = function () {
-                    switchChat(chatName);
-                };
-                chatList.appendChild(newChat);
-                document.getElementById("chatModal").style.display = "none";
-                document.getElementById("chatNameInput").value = "";
+                // Filter messages for the current chat
+                const filteredMessages = messages.filter(msg => msg.user === currentChat);
+
+                // Display messages
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = "";
+                filteredMessages.forEach(msg => {
+                    const messageElement = document.createElement("p");
+                    messageElement.textContent = `${msg.user}: ${msg.message}`;
+                    chatMessages.appendChild(messageElement);
+                });
+
+            } catch (error) {
+                console.error("Error fetching messages:", error);
             }
+        }
+
+        function openChat(chatId) {
+            currentChat = chatId;
+
+            // Remove 'active' class from all chats
+            document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+
+            // Highlight active chat
+            const selectedChat = document.querySelector(`[onclick="openChat('${chatId}')"]`);
+            if (selectedChat) selectedChat.classList.add('active');
+
+            // Fetch messages for this chat
+            fetchMessages();
+        }
+
+        document.getElementById("chatForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const chatInput = document.getElementById("chatInput");
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Send message to Quarkus backend
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user: currentChat, message })
+                });
+
+                // Reload chat messages
+                fetchMessages();
+
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+
+            chatInput.value = "";
         });
 
-        function switchChat(chatName) {
-            document.getElementById('chatMessages').innerHTML = `<p>Chat mit ${chatName} wird geladen...</p>`;
-        }
+        // Load messages on page load
+        fetchMessages();
     </script>
 </body>
 </html>

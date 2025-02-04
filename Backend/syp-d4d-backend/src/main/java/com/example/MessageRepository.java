@@ -35,6 +35,7 @@ public class MessageRepository {
     static {
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              Statement statement = connection.createStatement()) {
+            System.out.println("Ensuring messages table exists...");
             statement.execute(CREATE_MESSAGES_TABLE);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -45,6 +46,8 @@ public class MessageRepository {
     public static void saveMessage(String userName, String message) {
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement insertStatement = connection.prepareStatement(INSERT_MESSAGE_SQL)) {
+
+            System.out.println("Attempting to save message: " + userName + " - " + message);
 
             insertStatement.setString(1, userName);
             insertStatement.setString(2, message);
@@ -57,6 +60,7 @@ public class MessageRepository {
             System.out.println("Error occurred while inserting the message.");
         }
     }
+
 
     public static List<Message> getAllMessages() {
         List<Message> messages = new ArrayList<>();
