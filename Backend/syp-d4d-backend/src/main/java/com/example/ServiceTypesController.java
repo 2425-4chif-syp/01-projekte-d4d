@@ -27,7 +27,9 @@ public class ServiceTypesController {
         List<String> typeOfServices = new ArrayList<>();
 
         for (var serviceType : serviceTypes) {
-            typeOfServices.add(serviceType.getTypeOfService());
+            if (serviceType.getDeletedAt() == null) {
+                typeOfServices.add(serviceType.getTypeOfService());
+            }
         }
         return String.join("|", typeOfServices);
     }

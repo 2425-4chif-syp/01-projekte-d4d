@@ -25,7 +25,7 @@ public class ServiceTypesControllerRepository {
         String updateServiceTypeSQL = """
             UPDATE service_types 
             SET deleted_at = NULL 
-            WHERE LOWER(serviceTypeToAdd) = LOWER(?)
+            WHERE LOWER(typeOfService) = LOWER(?)
         """;
 
         List<ServiceType> typeOfServices = getServiceTypes();
@@ -40,7 +40,7 @@ public class ServiceTypesControllerRepository {
             boolean alreadyExists = false;
 
             for (var typeOfService : typeOfServices) {
-                if (typeOfService.getTypeOfService().toLowerCase().equals(serviceTypeToAdd.toLowerCase())) {
+                if ((typeOfService.getTypeOfService().toLowerCase()).equals(serviceTypeToAdd.toLowerCase())) {
                     alreadyExists = true;
 
                     if (typeOfService.getDeletedAt() != null) {
@@ -54,11 +54,10 @@ public class ServiceTypesControllerRepository {
             if (!alreadyExists) {
                 insertStatement.setString(1, serviceTypeToAdd.substring(0, 1).toUpperCase()
                         + serviceTypeToAdd.substring(1));
+
+                int rowsInserted = insertStatement.executeUpdate();
+                System.out.println(rowsInserted + " row(s) inserted successfully!");
             }
-
-            int rowsInserted = insertStatement.executeUpdate();
-            System.out.println(rowsInserted + " row(s) inserted successfully!");
-
         } catch (SQLException e) {
             e.printStackTrace();
             System.out.println("Error occurred while creating the table or inserting the data.");
@@ -67,7 +66,7 @@ public class ServiceTypesControllerRepository {
 
     public static List<ServiceType> getServiceTypes() {
         List<ServiceType> typeOfServices = new ArrayList<>();
-        String selectServiceTypesSQL = "SELECT typeOfService, deleted_at FROM service_types WHERE deleted_at IS NULL ORDER BY service_types ASC";
+        String selectServiceTypesSQL = "SELECT typeOfService, deleted_at FROM service_types ORDER BY service_types ASC";
 
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement statement = connection.prepareStatement(selectServiceTypesSQL)) {
