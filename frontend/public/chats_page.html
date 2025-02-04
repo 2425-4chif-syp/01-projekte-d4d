@@ -178,7 +178,17 @@
     </div>
 
     <script>
-        // Vorhandene Funktion, die Nachrichten per GET abruft
+        // Öffnet das Modal zum Erstellen eines neuen Chats
+        function openChatCreation() {
+            document.getElementById("chatModal").classList.add("active");
+        }
+
+        // Schließt das Modal zum Erstellen eines neuen Chats
+        function closeChatCreation() {
+            document.getElementById("chatModal").classList.remove("active");
+        }
+
+        // Holt die Chat-Nachrichten per GET vom Server
         async function fetchMessages() {
             try {
                 const response = await fetch("http://localhost:8080/chat/messages");
@@ -197,16 +207,16 @@
             }
         }
     
-        // Neuen Event-Listener für das Senden einer Nachricht hinzufügen
+        // Event-Listener für das Senden einer Nachricht
         document.getElementById("chatForm").addEventListener("submit", async function(e) {
-            e.preventDefault(); // Verhindert das Standardverhalten (z.B. Neuladen der Seite)
+            e.preventDefault(); // Verhindert das Neuladen der Seite
     
             const chatInput = document.getElementById("chatInput");
             const messageText = chatInput.value.trim();
     
-            if (messageText === "") return; // Leere Nachrichten ignorieren
+            if (messageText === "") return;
     
-            // Erstelle das Datenobjekt. Hier ist der Benutzer statisch "Me"
+            // Datenobjekt für die Nachricht; Benutzer ist statisch "Me"
             const messageData = { 
                 user: "Me", 
                 message: messageText 
@@ -221,7 +231,7 @@
     
                 if (response.ok) {
                     chatInput.value = ""; // Eingabefeld leeren
-                    fetchMessages();      // Nachrichten neu laden, damit die neue Nachricht angezeigt wird
+                    fetchMessages();      // Nachrichten neu laden
                 } else {
                     console.error("Fehler beim Senden der Nachricht:", response.statusText);
                 }
@@ -229,7 +239,41 @@
                 console.error("Netzwerkfehler beim Senden der Nachricht:", error);
             }
         });
-    
+
+        // Erstellt einen neuen Chat-Raum und fügt ihn zur Chatliste hinzu
+        async function createNewChat() {
+            const chatName = document.getElementById("chatName").value.trim();
+            if (chatName === "") return;
+            
+            const chatData = { chatName };
+
+            try {
+                const response = await fetch("http://localhost:8080/chat/rooms", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(chatData)
+                });
+
+                if (response.ok) {
+                    const newChat = await response.json();
+                    // Neuen Chat zur Chatliste hinzufügen
+                    const chatItems = document.getElementById("chatItems");
+                    const newChatElement = document.createElement("div");
+                    newChatElement.classList.add("chat-item");
+                    newChatElement.innerHTML = `<i class='fas fa-user'></i> ${newChat.chatName}`;
+                    newChatElement.setAttribute("onclick", `openChat('${newChat.chatName}')`);
+                    chatItems.appendChild(newChatElement);
+
+                    closeChatCreation();
+                    document.getElementById("chatName").value = "";
+                } else {
+                    console.error("Error creating chat room:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Network error:", error);
+            }
+        }
+
         // Initialer Abruf der Nachrichten
         fetchMessages();
     </script>
