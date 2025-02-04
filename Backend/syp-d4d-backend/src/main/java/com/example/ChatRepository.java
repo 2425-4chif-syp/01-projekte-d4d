@@ -3,14 +3,15 @@ package com.example;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 public class ChatRepository {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "d4d-admin";
     private static final String PASSWORD = "d4d1234";
 
-    // Tabelle erstellen, falls nicht vorhanden
     private static final String CREATE_CHATS_TABLE = """
         CREATE TABLE IF NOT EXISTS chats (
             id SERIAL PRIMARY KEY,
@@ -19,13 +20,11 @@ public class ChatRepository {
         );
     """;
 
-    // Chat in die Datenbank einfügen
     private static final String INSERT_CHAT_SQL = """
         INSERT INTO chats (chat_name)
         VALUES (?);
     """;
 
-    // Alle Chats aus der Datenbank abrufen
     private static final String SELECT_ALL_CHATS_SQL = """
         SELECT chat_name, created_at
         FROM chats
@@ -43,14 +42,25 @@ public class ChatRepository {
         }
     }
 
+    // Optional: Vorab-Prüfung, ob der Chat existiert
+    public static boolean chatExists(String chatName) {
+        String checkChatSql = "SELECT 1 FROM chats WHERE chat_name = ?";
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement checkStmt = connection.prepareStatement(checkChatSql)) {
+            checkStmt.setString(1, chatName);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static void saveChat(String chatName) {
-        // Prüfen, ob der Chat bereits existiert
+        // Optional: Vorab-Prüfung (funktioniert nicht immer, wenn sich Transaktionen noch nicht synchronisiert haben)
         if (chatExists(chatName)) {
-            // Hier kannst du entweder einen Fehler werfen oder eine entsprechende Response zurückgeben.
-            throw new jakarta.ws.rs.WebApplicationException(
-                    "Chat already exists: " + chatName,
-                    jakarta.ws.rs.core.Response.Status.CONFLICT
-            );
+            throw new WebApplicationException("Chat already exists: " + chatName, Response.Status.CONFLICT);
         }
 
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -64,23 +74,12 @@ public class ChatRepository {
                 throw new SQLException("No rows inserted for chat: " + chatName);
             }
         } catch (SQLException e) {
-            System.out.println("Error occurred while inserting the chat: " + e.getMessage());
-            throw new jakarta.ws.rs.WebApplicationException("Chat creation failed: " + e.getMessage(), e);
-        }
-    }
-
-    public static boolean chatExists(String chatName) {
-        String checkChatSql = "SELECT 1 FROM chats WHERE chat_name = ?";
-        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement checkStmt = connection.prepareStatement(checkChatSql)) {
-            checkStmt.setString(1, chatName);
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                return rs.next(); // Gibt true zurück, wenn bereits ein Eintrag vorhanden ist
+            // Falls der Duplicate-Key-Fehler nicht durch die Vorab-Prüfung abgefangen wird:
+            if (e.getMessage().toLowerCase().contains("duplicate key")) {
+                throw new WebApplicationException("Chat already exists: " + chatName, Response.Status.CONFLICT);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // Im Fehlerfall false zurückgeben, oder je nach Bedarf einen Fehler werfen
-            return false;
+            System.out.println("Error occurred while inserting the chat: " + e.getMessage());
+            throw new WebApplicationException("Chat creation failed: " + e.getMessage(), e);
         }
     }
 

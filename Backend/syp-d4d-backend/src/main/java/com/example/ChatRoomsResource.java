@@ -2,9 +2,11 @@ package com.example;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
 
 @Path("/chat/rooms")
@@ -13,7 +15,7 @@ import java.util.List;
 public class ChatRoomsResource {
 
     @POST
-    public Response createChat(jakarta.json.JsonObject chatJson) {
+    public Response createChat(JsonObject chatJson) {
         String chatName = chatJson.getString("chatName", "").trim();
         if (chatName.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -29,8 +31,14 @@ public class ChatRoomsResource {
                             .add("chatName", chatName)
                             .build())
                     .build();
+        } catch (WebApplicationException wae) {
+            // Gebe den ursprünglichen HTTP-Statuscode zurück (z. B. 409 Conflict)
+            return Response.status(wae.getResponse().getStatus())
+                    .entity(Json.createObjectBuilder()
+                            .add("error", wae.getMessage())
+                            .build())
+                    .build();
         } catch (Exception e) {
-            // Fehler wird hier an den Client weitergereicht
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(Json.createObjectBuilder()
                             .add("error", "Could not create chat: " + e.getMessage())
