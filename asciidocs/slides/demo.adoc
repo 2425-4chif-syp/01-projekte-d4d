@@ -41,10 +41,10 @@ Dienstleistung für Dienstleistung
 * Stefan Jelic - service offers
 * Semih Yüzüak - reviews
 
-== Goals
+== Ziele
 
-* Better school performances: Regular help is intended to improve the participating students' grades.
-* Strengthen community: The platform is also intended to promote collaboration and exchange among students.
+* *Bessere schulische Leistungen*: Durch regelmäßige Hilfe sollen die Noten der teilnehmenden Schüler langfristig verbessert werden.
+* *Gemeinschaft stärken*: Die Plattform soll auch die Zusammenarbeit und den Austausch unter Schülern fördern.
 
 == System Architecture
 
