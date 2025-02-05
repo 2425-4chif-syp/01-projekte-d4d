@@ -71,4 +71,42 @@ public class ReviewRepository {
             e.printStackTrace();
         }
     }
+
+    public static List<Review> getAllReviews() {
+        List<Review> reviews = new ArrayList<>();
+        String query = """
+            SELECT 
+                u1.username as evaluatee_username,
+                u2.username as evaluator_username,
+                st.name as service_type,
+                r.rating,
+                r.comment
+            FROM review r
+            JOIN "user" u1 ON r.evaluatee_id = u1.id
+            JOIN "user" u2 ON r.evaluator_id = u2.id
+            JOIN servicetype st ON r.servicetype_id = st.id
+        """;
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                Review review = new Review(
+                    resultSet.getString("evaluatee_username"),
+                    resultSet.getString("evaluator_username"),
+                    resultSet.getString("service_type"),
+                    resultSet.getDouble("rating"),
+                    resultSet.getString("comment")
+                );
+                reviews.add(review);
+            }
+        } catch (SQLException e) {
+            System.err.println("Fehler beim Laden der Bewertungen: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return reviews;
+    }
+
 }
