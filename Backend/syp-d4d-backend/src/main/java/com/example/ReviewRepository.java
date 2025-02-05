@@ -109,4 +109,32 @@ public class ReviewRepository {
         return reviews;
     }
 
+    public static List<Review> getReviewsByUsername(String username) {
+        List<Review> reviews = new ArrayList<>();
+        String query = "SELECT evaluatee_username, evaluator_username, service_type, rating, comment, created_at FROM review WHERE evaluatee_username = ? AND deleted_at IS NULL";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Review review = new Review(
+                    resultSet.getString("evaluatee_username"),
+                    resultSet.getString("evaluator_username"),
+                    resultSet.getString("service_type"),
+                    resultSet.getDouble("rating"),
+                    resultSet.getString("comment")
+                );
+                review.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
+                reviews.add(review);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return reviews;
+    }
+
 }
