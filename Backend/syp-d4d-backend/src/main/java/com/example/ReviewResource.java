@@ -73,4 +73,25 @@ public class ReviewResource {
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 
+    @GET
+    @Path("/user/{username}")
+    public Response getReviewsByUser(@PathParam("username") String username) {
+        List<Review> reviews = ReviewRepository.getReviewsByUsername(username);
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+
+        for (Review review : reviews) {
+            JsonObject reviewJson = Json.createObjectBuilder()
+                .add("evaluateeUsername", review.getEvaluateeUsername())
+                .add("evaluatorUsername", review.getEvaluatorUsername())
+                .add("serviceType", review.getServiceType())
+                .add("rating", review.getRating())
+                .add("comment", review.getComment())
+                .add("createdAt", review.getCreatedAt().toString())
+                .build();
+            jsonArrayBuilder.add(reviewJson);
+        }
+
+        return Response.ok(jsonArrayBuilder.build()).build();
+    }
+
 }
