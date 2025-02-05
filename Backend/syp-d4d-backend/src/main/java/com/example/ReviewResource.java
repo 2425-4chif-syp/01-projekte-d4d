@@ -54,17 +54,23 @@ public class ReviewResource {
     }
 
     @GET
-    public Response getReviews() {
+    public Response getAllReviews() {
         List<Review> reviews = ReviewRepository.getAllReviews();
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 
-        for (Review rev : reviews) {
-            jsonArrayBuilder.add(Json.createObjectBuilder()
-                    .add("user", rev.getUserName())
-                    .add("review", rev.getReview())
-                    .add("createdAt", rev.getCreatedAt().toString()));
+        for (Review review : reviews) {
+            JsonObject reviewJson = Json.createObjectBuilder()
+                .add("evaluateeUsername", review.getEvaluateeUsername())
+                .add("evaluatorUsername", review.getEvaluatorUsername())
+                .add("serviceType", review.getServiceType())
+                .add("rating", review.getRating())
+                .add("comment", review.getComment())
+                .add("createdAt", review.getCreatedAt().toString())
+                .build();
+            jsonArrayBuilder.add(reviewJson);
         }
 
         return Response.ok(jsonArrayBuilder.build()).build();
     }
+
 }
