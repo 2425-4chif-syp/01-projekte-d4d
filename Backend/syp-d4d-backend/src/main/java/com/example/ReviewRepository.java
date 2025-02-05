@@ -60,4 +60,15 @@ public class ReviewRepository {
         VALUES (?, ?, ?, ?, ?)
         RETURNING rating_id;
     """;
+    static {
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement()) {
+            System.out.println("Dropping existing tables...");
+            statement.execute(DROP_TABLES);
+            System.out.println("Creating fresh tables...");
+            statement.execute(CREATE_TABLES);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
