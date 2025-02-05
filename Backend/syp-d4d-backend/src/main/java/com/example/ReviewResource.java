@@ -11,7 +11,8 @@ import java.util.List;
 
 import java.util.List;
 
-@Path("/reviews")
+
+@Path("/d4d/reviews")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReviewResource {
