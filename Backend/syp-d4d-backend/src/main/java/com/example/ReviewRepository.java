@@ -137,4 +137,94 @@ public class ReviewRepository {
         return reviews;
     }
 
+    public static void addReview(Review review) {
+        System.out.println("Starte Speicherung der Bewertung...");
+        System.out.println("Bewertungsdaten:");
+        System.out.println("- Evaluatee: " + review.getEvaluateeUsername());
+        System.out.println("- Evaluator: " + review.getEvaluatorUsername());
+        System.out.println("- Service Type: " + review.getServiceType());
+        System.out.println("- Rating: " + review.getRating());
+        System.out.println("- Comment: " + review.getComment());
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            connection.setAutoCommit(false);  // Transaktion starten
+            try {
+                // Insert evaluatee
+                int evaluateeId;
+                try (PreparedStatement ps = connection.prepareStatement(INSERT_USER_SQL)) {
+                    ps.setString(1, review.getEvaluateeUsername());
+                    ResultSet rs = ps.executeQuery();
+                    if (!rs.next()) {
+                        throw new SQLException("Could not create or find evaluatee user");
+                    }
+                    evaluateeId = rs.getInt("id");
+                    System.out.println("Evaluatee ID: " + evaluateeId);
+                }
+
+                // Insert evaluator
+                int evaluatorId;
+                try (PreparedStatement ps = connection.prepareStatement(INSERT_USER_SQL)) {
+                    ps.setString(1, review.getEvaluatorUsername());
+                    ResultSet rs = ps.executeQuery();
+                    if (!rs.next()) {
+                        throw new SQLException("Could not create or find evaluator user");
+                    }
+                    evaluatorId = rs.getInt("id");
+                    System.out.println("Evaluator ID: " + evaluatorId);
+                }
+
+                // Insert service type
+                int serviceTypeId;
+                try (PreparedStatement ps = connection.prepareStatement(INSERT_SERVICETYPE_SQL)) {
+                    ps.setString(1, review.getServiceType());
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next()) {
+                        serviceTypeId = rs.getInt("id");
+                        System.out.println("Service Type ID (neu): " + serviceTypeId);
+                    } else {
+                        // If no id returned, service type already existed, get its id
+                        try (PreparedStatement getPs = connection.prepareStatement("SELECT id FROM servicetype WHERE name = ?")) {
+                            getPs.setString(1, review.getServiceType());
+                            ResultSet getRs = getPs.executeQuery();
+                            if (!getRs.next()) {
+                                throw new SQLException("Could not find or create service type");
+                            }
+                            serviceTypeId = getRs.getInt("id");
+                            System.out.println("Service Type ID (existierend): " + serviceTypeId);
+                        }
+                    }
+                }
+
+                // Insert the review
+                try (PreparedStatement ps = connection.prepareStatement(INSERT_REVIEW_SQL)) {
+                    ps.setInt(1, evaluateeId);
+                    ps.setInt(2, evaluatorId);
+                    ps.setInt(3, serviceTypeId);
+                    ps.setDouble(4, review.getRating());
+                    ps.setString(5, review.getComment());
+
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next()) {
+                        int reviewId = rs.getInt("rating_id");
+                        System.out.println("Bewertung erfolgreich gespeichert mit ID: " + reviewId);
+                        connection.commit();  // Transaktion bestätigen
+                    } else {
+                        throw new SQLException("Bewertung konnte nicht gespeichert werden");
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("Fehler während der Transaktion: " + e.getMessage());
+                connection.rollback();  // Bei Fehler Transaktion zurückrollen
+                throw e;
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Fehler beim Speichern der Bewertung:");
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            System.err.println("Message: " + e.getMessage());
+            e.printStackTrace();
+            throw new jakarta.ws.rs.WebApplicationException("Review creation failed: " + e.getMessage(), e);
+        }
+    }
+
 }
