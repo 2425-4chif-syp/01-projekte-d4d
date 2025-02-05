@@ -1,101 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Reviews - Service Exchange Platform</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Bewertungen</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .rating-input i {
+            font-size: 2.5em;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .rating-input i:hover,
+        .rating-input i:hover ~ i {
+            color: #ffd700;
+        }
+
+        .rating-input i.selected,
+        .rating-input i.selected ~ i {
+            color: #ffd700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        /* Styles für die Bewertungskarten */
+        .review-card {
+            margin-bottom: 20px;
+        }
+
+        .review-card .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .review-card .card-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .review-card .card-body {
+            padding: 15px;
+        }
+
+        .review-rating {
+            margin-bottom: 10px;
+        }
+
+        .review-rating i {
+            font-size: 1.2em;
+            color: #ddd;
+        }
+
+        .review-rating i.selected {
+            color: #ffd700;
+        }
+
+        .review-author {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .review-comment {
+            margin-bottom: 10px;
+        }
+
+        .text-muted {
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="index.html">Service Exchange</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="index.html">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="reviews.html">Reviews</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="makeOffer.html">Make Offer</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="showOffers.html">Show Offers</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-handshake"></i>
+            <span>D4D</span>
+        </div>
+        <div class="nav-buttons">
+            <button onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button onclick="window.location.href='chats_page.html'">
+                <i class="fas fa-comments"></i>
+                Chat
+            </button>
+        </div>
+    </nav>
 
-        <!-- Reviews Section -->
-        <div class="row">
-            <!-- Submit Review Form -->
-            <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Submit a Review</h3>
-                    </div>
-                    <div class="card-body">
-                        <form id="reviewForm">
-                            <div class="mb-3">
-                                <label for="revieweeUsername" class="form-label">Username to Review</label>
-                                <input type="text" class="form-control" id="revieweeUsername" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="serviceType" class="form-label">Service Type</label>
-                                <select class="form-control" id="serviceType" required>
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="rating" class="form-label">Rating</label>
-                                <select class="form-control" id="rating" required>
-                                    <option value="5">⭐⭐⭐⭐⭐ (5 stars)</option>
-                                    <option value="4">⭐⭐⭐⭐ (4 stars)</option>
-                                    <option value="3">⭐⭐⭐ (3 stars)</option>
-                                    <option value="2">⭐⭐ (2 stars)</option>
-                                    <option value="1">⭐ (1 star)</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="reviewText" class="form-label">Review Comments</label>
-                                <textarea class="form-control" id="reviewText" rows="4" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Submit Review</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+    <main class="container">
+        <!-- Dienstleistungen Sektion -->
+        <div class="content-section">
+            <h2><i class="fas fa-list-alt"></i> Dienstleistungen bewerten</h2>
+            <ul id="serviceList"></ul>
+        </div>
 
-            <!-- Display Reviews -->
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>User Reviews</h3>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="searchUsername" placeholder="Search by username">
-                            <button class="btn btn-outline-secondary" type="button" id="searchButton">Search</button>
-                        </div>
+        <!-- Bewertungsformular -->
+        <div id="reviewForm" class="content-section" style="display: none;">
+            <h2><i class="fas fa-star"></i> Bewertung abgeben</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="review-info">
+                        <h3 class="selected-service-info">
+                            <i class="fas fa-user"></i>
+                            <span id="reviewUserName"></span>
+                            <span class="service-type">
+                                <i class="fas fa-book"></i>
+                                <span id="reviewSubject"></span>
+                            </span>
+                        </h3>
                     </div>
-                    <div class="card-body">
-                        <div id="reviewsList" class="list-group">
-                            <!-- Reviews will be populated dynamically -->
+
+                    <form id="reviewSubmitForm">
+                        <div class="form-group">
+                            <label for="rating">Bewertung:</label>
+                            <div class="rating-input">
+                                <i class="fas fa-star" data-rating="5"></i>
+                                <i class="fas fa-star" data-rating="4"></i>
+                                <i class="fas fa-star" data-rating="3"></i>
+                                <i class="fas fa-star" data-rating="2"></i>
+                                <i class="fas fa-star" data-rating="1"></i>
+                            </div>
+                            <input type="hidden" id="rating" required>
                         </div>
-                    </div>
+
+                        <div class="form-group">
+                            <label for="comment">Kommentar:</label>
+                            <textarea id="comment" placeholder="Schreibe einen Kommentar zur Dienstleistung..." required></textarea>
+                            <div id="charCount" class="character-counter">0/250 Zeichen</div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="button" class="secondary-button" onclick="cancelReview()">
+                                <i class="fas fa-times"></i>
+                                Abbrechen
+                            </button>
+                            <button type="submit" class="primary-button">
+                                <i class="fas fa-paper-plane"></i>
+                                Bewertung abschicken
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="scripts/reviews.js"></script>
 </body>
 </html> 
