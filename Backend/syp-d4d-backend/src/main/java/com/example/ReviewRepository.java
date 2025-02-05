@@ -227,4 +227,23 @@ public class ReviewRepository {
         }
     }
 
+    public static Double getAverageRating(String username) {
+        String query = "SELECT AVG(rating) as avg_rating FROM review WHERE evaluatee_username = ? AND deleted_at IS NULL";
+        
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getDouble("avg_rating");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
+
 }
