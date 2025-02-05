@@ -94,4 +94,11 @@ public class ReviewResource {
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 
+     @GET
+    @Path("/rating/{username}")
+    public Response getUserRating(@PathParam("username") String username) {
+        Double averageRating = ReviewRepository.getAverageRating(username);
+        return Response.ok(Json.createObjectBuilder().add("rating", averageRating).build()).build();
+    }
+
 }
