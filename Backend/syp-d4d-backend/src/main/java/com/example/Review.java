@@ -20,15 +20,36 @@ public class Review {
         this.createdAt = LocalDateTime.now();
     }
 
-    public String getUserName() {
-        return userName;
+   public Long getId() {
+        return id;
     }
 
-    public String getReview() {
-        return review;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public String getEvaluateeUsername() {
+        return evaluateeUsername;
     }
+
+    public void setEvaluateeUsername(String evaluateeUsername) {
+        this.evaluateeUsername = evaluateeUsername;
+    }
+
+    public String getEvaluatorUsername() {
+        return evaluatorUsername;
+    }
+
+    public void setEvaluatorUsername(String evaluatorUsername) {
+        this.evaluatorUsername = evaluatorUsername;
+    }
+
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(String serviceType) {
+        this.serviceType = serviceType;
+    }
+
 }
