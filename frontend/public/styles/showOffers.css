@@ -1038,7 +1038,9 @@ input:focus, select:focus, textarea:focus {
 
 /* Landing Page Specific Styles */
 .landing-hero {
-    background: linear-gradient(rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9));
+    background: linear-gradient(rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9)), url('../assets/students-studying.jpg');
+    background-size: cover;
+    background-position: center;
     margin: -2rem -1rem 3rem -1rem;
     padding: 6rem 2rem;
     color: white;
