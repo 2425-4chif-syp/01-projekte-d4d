@@ -18,17 +18,39 @@ import java.util.List;
 public class ReviewResource {
 
     @POST
-    public Response receiveReview(JsonObject reviewJson) {
-        String user = reviewJson.getString("user");
-        String review = reviewJson.getString("review");
-
-        // Save review in the database
-        ReviewRepository.saveReview(user, review);
-
-        return Response.ok(Json.createObjectBuilder()
-                .add("user", user)
-                .add("review", review)
+    public Response createReview(JsonObject reviewJson) {
+        try {
+            System.out.println("Empfangene Review-Daten: " + reviewJson.toString());
+            
+            Review review = new Review(
+                reviewJson.getString("evaluateeUsername"),
+                reviewJson.getString("evaluatorUsername"),
+                reviewJson.getString("serviceType"),
+                reviewJson.getJsonNumber("rating").doubleValue(),
+                reviewJson.getString("comment")
+            );
+            
+            System.out.println("Review-Objekt erstellt: " + 
+                "evaluatee=" + review.getEvaluateeUsername() + ", " +
+                "evaluator=" + review.getEvaluatorUsername() + ", " +
+                "serviceType=" + review.getServiceType() + ", " +
+                "rating=" + review.getRating() + ", " +
+                "comment=" + review.getComment());
+            
+            ReviewRepository.addReview(review);
+            return Response.ok(Json.createObjectBuilder()
+                .add("message", "Review created successfully")
                 .build()).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Json.createObjectBuilder()
+                    .add("error", "Failed to create review")
+                    .add("message", e.getMessage())
+                    .add("details", e.toString())
+                    .build())
+                .build();
+        }
     }
 
     @GET
