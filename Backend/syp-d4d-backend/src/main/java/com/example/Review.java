@@ -11,10 +11,13 @@ public class Review {
     private String comment;
     private LocalDateTime createdAt;
 
-    public Review(String userName, String review, LocalDateTime createdAt) {
-        this.userName = userName;
-        this.review = review;
-        this.createdAt = createdAt;
+      public Review(String evaluateeUsername, String evaluatorUsername, String serviceType, Double rating, String comment) {
+        this.evaluateeUsername = evaluateeUsername;
+        this.evaluatorUsername = evaluatorUsername;
+        this.serviceType = serviceType;
+        this.rating = rating;
+        this.comment = comment;
+        this.createdAt = LocalDateTime.now();
     }
 
     public String getUserName() {
