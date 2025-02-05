@@ -2,113 +2,87 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/png" href="pics/Logo.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D4D</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>D4D - Dienstleistung 4 Dienstleistung</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>D4D - Dienstleistungen</h1>
-        <button id="serviceButton">Dienstleistung anbieten</button>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-handshake"></i>
+            <span>D4D</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button id="reviewButton" onclick="window.location.href='reviews.html'">
+                <i class="fas fa-star"></i>
+                Bewertungen
+            </button>
+            <button id="chatButton" onclick="window.location.href='chats_page.html'">
+                <i class="fas fa-comments"></i>
+                Chat
+            </button>
+            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+                <i class="fas fa-cog"></i>
+                Verwaltung
+            </button>
+        </div>
+    </nav>
 
-        <!-- Filterbereich -->
-        <div class="filter-container">
-            <label for="filterService">Fach filtern:</label>
-            <select id="filterService">
-                <option value="all">Alle Fächer</option>
-                <option value="Biologie">Biologie</option>
-                <option value="Chemie">Chemie</option>
-                <option value="Deutsch">Deutsch</option>
-                <option value="Englisch">Englisch</option>
-                <option value="Informatik">Informatik</option>
-                <option value="Mathematik">Mathematik</option>
-                <option value="Physik">Physik</option>
-                <option value="Projektmanagement">Projektmanagement</option>
-                <option value="Wirtschaft">Wirtschaft</option>
-                <option value="Betriebswirtschaft">Betriebswirtschaft</option>
-                <option value="Elektrotechnik">Elektrotechnik</option>
-                <option value="Maschinenbau">Maschinenbau</option>
-                <option value="Kunst">Kunst</option>
-                <option value="Geschichte">Geschichte</option>
-            </select>
-            <button id="applyFilter">Filtern</button>
-            <button id="clearFilter">Filter zurücksetzen</button>
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="landing-hero">
+            <div class="landing-hero-content">
+                <h1>Nachhilfe leicht gemacht</h1>
+                <p>Tausche Wissen, verbessere deine Noten - kostenlos und einfach!</p>
+                <div class="landing-buttons">
+                    <button onclick="window.location.href='makeOffer.html'">
+                        <i class="fas fa-plus"></i>
+                        Jetzt Nachhilfe anbieten
+                    </button>
+                    <button class="secondary-button" onclick="window.location.href='showOffers.html'">
+                        <i class="fas fa-search"></i>
+                        Nachhilfe finden
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <div class="landing-section-title">
+            <h2><i class="fas fa-star"></i> Unsere Vorteile</h2>
+            <p>Entdecke, was D4D besonders macht</p>
         </div>
 
-        <h2>Angenommene Dienstleistungen</h2>
-        <ul id="serviceList"></ul>
-    </div>
-
-    <div id="serviceModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="closeButton">&times;</span>
-            <h2>Dienstleistung anbieten</h2>
-            <div>
-                <label for="name">Dein Name:</label>
-                <input type="text" id="name" placeholder="Gib deinen Namen ein..." required>
+        <div class="landing-features">
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h3>Wissen tauschen</h3>
+                <p>Hilf anderen in deinen Stärken und erhalte Unterstützung in deinen Schwächen - ein faires System für alle.</p>
             </div>
-
-            <div>
-                <label for="serviceType">Fach:</label>
-                <select id="serviceType" required>
-                    <option value="">Wähle ein Fach aus</option>
-                    <option value="Biologie">Biologie</option>
-                    <option value="Chemie">Chemie</option>
-                    <option value="Deutsch">Deutsch</option>
-                    <option value="Englisch">Englisch</option>
-                    <option value="Informatik">Informatik</option>
-                    <option value="Mathematik">Mathematik</option>
-                    <option value="Physik">Physik</option>
-                    <option value="Projektmanagement">Projektmanagement</option>
-                    <option value="Wirtschaft">Wirtschaft</option>
-                    <option value="Betriebswirtschaft">Betriebswirtschaft</option>
-                    <option value="Elektrotechnik">Elektrotechnik</option>
-                    <option value="Maschinenbau">Maschinenbau</option>
-                    <option value="Kunst">Kunst</option>
-                    <option value="Geschichte">Geschichte</option>
-                </select>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Gemeinschaft</h3>
+                <p>Werde Teil einer hilfsbereiten Community von Schülern, die sich gegenseitig beim Lernen unterstützen.</p>
             </div>
-            
-            <div>
-                <label for="desiredServiceType">Fach im Gegentausch:</label>
-                <select id="desiredServiceType" required>
-                    <option value="">Wähle ein gewünschtes Fach im Gegentausch aus</option>
-                    <option value="Biologie">Biologie</option>
-                    <option value="Chemie">Chemie</option>
-                    <option value="Deutsch">Deutsch</option>
-                    <option value="Englisch">Englisch</option>
-                    <option value="Informatik">Informatik</option>
-                    <option value="Mathematik">Mathematik</option>
-                    <option value="Physik">Physik</option>
-                    <option value="Projektmanagement">Projektmanagement</option>
-                    <option value="Wirtschaft">Wirtschaft</option>
-                    <option value="Betriebswirtschaft">Betriebswirtschaft</option>
-                    <option value="Elektrotechnik">Elektrotechnik</option>
-                    <option value="Maschinenbau">Maschinenbau</option>
-                    <option value="Kunst">Kunst</option>
-                    <option value="Geschichte">Geschichte</option>
-                </select>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>Qualität sichern</h3>
+                <p>Bewerte die erhaltene Hilfe und finde durch unser Bewertungssystem die besten Lernpartner für dich.</p>
             </div>
-
-            <div>
-                <label for="description">Beschreibung:</label>
-                <textarea id="description" placeholder="Gib eine ausführliche Beschreibung deiner Dienstleistung ein..." required></textarea>
-                <div id="charCount" class="character-counter">0/250 Zeichen</div>
-            </div>
-            
-            <button id="submitButton">Einreichen</button>
         </div>
-    </div>
+    </main>
 
-    <div id="serviceModalDetails" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="closeDetailsButton">&times;</span>
-            <h2>Dienstleistungs-Details</h2>
-            <p id="serviceDetails"></p>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+    <script src="scripts/index.js"></script>
 </body>
 </html>
