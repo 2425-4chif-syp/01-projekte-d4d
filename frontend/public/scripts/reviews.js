@@ -50,3 +50,23 @@ function updateStars(rating) {
     });
 }
 
+// Bewertung abbrechen
+function cancelReview() {
+    const reviewForm = document.getElementById('reviewForm');
+    const ratingInput = document.getElementById('rating');
+    const comment = document.getElementById('comment');
+    const charCount = document.getElementById('charCount');
+    
+    if (!reviewForm || !ratingInput || !comment || !charCount) {
+        console.error('Erforderliche Elemente zum Abbrechen nicht gefunden');
+        return;
+    }
+
+    reviewForm.style.display = 'none';
+    ratingInput.value = '';
+    comment.value = '';
+    charCount.textContent = '0/250 Zeichen';
+    updateStars(0);
+}
+
+
