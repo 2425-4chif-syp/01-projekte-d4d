@@ -3,8 +3,12 @@ package com.example;
 import java.time.LocalDateTime;
 
 public class Review {
-    private String userName;
-    private String review;
+    private Long id;
+    private String evaluateeUsername;
+    private String evaluatorUsername;
+    private String serviceType;
+    private Double rating;
+    private String comment;
     private LocalDateTime createdAt;
 
     public Review(String userName, String review, LocalDateTime createdAt) {
