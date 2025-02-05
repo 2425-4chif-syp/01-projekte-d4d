@@ -1,62 +1,295 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chats</title>
-    <link rel="stylesheet" href="styles/showOffers.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chats</title>
+  <link rel="stylesheet" href="styles/showOffers.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    /* Basis-Stile */
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .chat-list {
+      width: 20%;
+      background-color: #f1f1f1;
+      padding: 15px;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+    .chat-item {
+      padding: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+    }
+    .chat-item:hover {
+      background-color: #e0e0e0;
+    }
+    .chat-item.active {
+      background-color: #d4d4d4;
+    }
+    .chat-section {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    .chat-messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 15px;
+      background-color: white;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      max-width: 70%;
+      padding: 10px 15px;
+      border-radius: 10px;
+      word-wrap: break-word;
+    }
+    .message.user {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+    .message.other {
+      background-color: #e0e0e0;
+      color: black;
+      align-self: flex-start;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      width: 200px;
+      text-align: center;
+    }
+    .modal.active {
+      display: block;
+    }
+    .modal input {
+      width: 90%;
+      padding: 6px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .modal button {
+      padding: 6px 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .modal button:first-of-type {
+      background-color: #007bff;
+      color: white;
+    }
+    .modal button:last-of-type {
+      background-color: #ccc;
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">
-            <i class="fas fa-handshake"></i>
-            <span>D4D</span>
-        </div>
-        <div class="nav-buttons">
-            <button id="marketButton" onclick="window.location.href='showOffers.html'">
-                <i class="fas fa-store"></i>
-                Zum Markt
-            </button>
-            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
-                <i class="fas fa-plus"></i>
-                Dienstleistung anbieten
-            </button>
-        </div>
-    </nav>
+  <nav class="navbar">
+    <div class="logo">
+      <i class="fas fa-handshake"></i>
+      <span>D4D</span>
+    </div>
+    <div class="nav-buttons">
+      <button id="marketButton" onclick="window.location.href='showOffers.html'">
+        <i class="fas fa-store"></i> Zum Markt
+      </button>
+      <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+        <i class="fas fa-plus"></i> Dienstleistung anbieten
+      </button>
+    </div>
+  </nav>
+  <main class="container">
+    <div class="chat-list">
+      <h3>Chats</h3>
+      <button onclick="openChatCreation()">+ Neuen Chat erstellen</button>
+      <div id="chatItems"></div>
+    </div>
+    <div class="chat-section">
+      <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-form-container">
+        <form id="chatForm">
+          <div class="chat-input-group">
+            <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+            <button type="submit"><i class="fas fa-paper-plane"></i> Senden</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
 
-    <main class="container">
-        <div class="content-section">
-            <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
-            
-            <div class="card chat-card">
-                <div class="card-header chat-header">
-                    <p id="user-status">Aktueller Benutzer: <span id="currentUser">Gast</span></p>
-                    <button id="switchUser" class="user-switch-btn">
-                        <i class="fas fa-user-switch"></i>
-                        Benutzer wechseln
-                    </button>
-                </div>
-                <div class="card-body chat-body">
-                    <div class="chat-messages" id="chatMessages">
-                        <!-- Nachrichten werden hier dynamisch eingefÃ¼gt -->
-                    </div>
-                    <div class="chat-form-container">
-                        <form id="chatForm">
-                            <div class="chat-input-group">
-                                <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
-                                <button type="submit" id="chatSubmit">
-                                    <i class="fas fa-paper-plane"></i>
-                                    Senden
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+  <div class="modal" id="chatModal">
+    <h3>Neuer Chat</h3>
+    <input type="text" id="chatName" placeholder="Chat Name">
+    <button onclick="createNewChat()">Erstellen</button>
+    <button onclick="closeChatCreation()">Abbrechen</button>
+  </div>
 
-    <script src="scripts/chat-script.js"></script>
+  <script>
+    // Globale Variable für den aktuell gewählten Chat (ID)
+    let currentChatId = null;
+
+    // Modal-Funktionen
+    function openChatCreation() {
+      document.getElementById("chatModal").classList.add("active");
+    }
+    function closeChatCreation() {
+      document.getElementById("chatModal").classList.remove("active");
+    }
+
+    // Lädt alle Chats vom Server und zeigt sie in der Chatliste an
+    async function fetchChats() {
+      try {
+        const response = await fetch("http://localhost:8080/chat/rooms");
+        if (response.ok) {
+          const chats = await response.json();
+          console.log("Fetched chats:", chats);
+          const chatItems = document.getElementById("chatItems");
+          chatItems.innerHTML = "";
+          chats.forEach(chat => {
+            const chatElement = document.createElement("div");
+            chatElement.classList.add("chat-item");
+            chatElement.innerHTML = `<i class="fas fa-user"></i> ${chat.chatName}`;
+            // Beim Klick wird openChat mit der Chat-ID aufgerufen
+            chatElement.setAttribute("onclick", `openChat(${chat.id})`);
+            chatItems.appendChild(chatElement);
+          });
+        } else {
+          console.error("Fehler beim Abrufen der Chats:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Chats:", error);
+      }
+    }
+
+    // Öffnet einen Chat und lädt die zugehörigen Nachrichten
+    function openChat(chatId) {
+      currentChatId = chatId;
+      console.log("Selected chatId:", chatId);
+      fetchChatMessages(chatId);
+    }
+
+    // Lädt Nachrichten für einen bestimmten Chat
+    async function fetchChatMessages(chatId) {
+      try {
+        const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
+        if (response.ok) {
+          const messages = await response.json();
+          console.log("Fetched messages for chat", chatId, ":", messages);
+          const chatMessages = document.getElementById("chatMessages");
+          chatMessages.innerHTML = "";
+          messages.forEach(msg => {
+            const messageElement = document.createElement("div");
+            // Unterschiedliche CSS-Klassen, je nachdem ob die Nachricht von "Me" stammt
+            messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
+            messageElement.textContent = `${msg.user}: ${msg.message}`;
+            chatMessages.appendChild(messageElement);
+          });
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+          console.error("Fehler beim Abrufen der Nachrichten:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Nachrichten:", error);
+      }
+    }
+
+    // Sendet eine neue Nachricht an den aktuell gewählten Chat
+    document.getElementById("chatForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      if (currentChatId === null) {
+        alert("Bitte wähle zuerst einen Chat aus.");
+        return;
+      }
+      const chatInput = document.getElementById("chatInput");
+      const messageText = chatInput.value.trim();
+      if (messageText === "") return;
+      const messageData = { 
+        user: "Me", 
+        message: messageText 
+      };
+      try {
+        const response = await fetch(`http://localhost:8080/chat/rooms/${currentChatId}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(messageData)
+        });
+        if (response.ok) {
+          console.log("Message sent successfully");
+          chatInput.value = "";
+          // Nachrichten für den aktuellen Chat neu laden
+          fetchChatMessages(currentChatId);
+        } else {
+          console.error("Fehler beim Senden der Nachricht:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Senden der Nachricht:", error);
+      }
+    });
+
+    // Beim Laden der Seite werden die Chats abgerufen
+    document.addEventListener("DOMContentLoaded", function() {
+      fetchChats();
+    });
+
+    // Erstellt einen neuen Chat und aktualisiert die Chatliste
+    async function createNewChat() {
+      const chatName = document.getElementById("chatName").value.trim();
+      console.log("Creating new chat:", chatName);
+      if (chatName === "") return;
+      const chatData = { chatName };
+      try {
+        const response = await fetch("http://localhost:8080/chat/rooms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(chatData)
+        });
+        if (response.ok) {
+          console.log("Chat created successfully");
+          fetchChats();
+          closeChatCreation();
+          document.getElementById("chatName").value = "";
+        } else {
+          console.error("Error creating chat room:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Network error:", error);
+      }
+    }
+  </script>
 </body>
 </html>

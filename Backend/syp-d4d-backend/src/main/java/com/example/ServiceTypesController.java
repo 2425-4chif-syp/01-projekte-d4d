@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/d4d")
@@ -22,11 +23,31 @@ public class ServiceTypesController {
     @Path("/serviceTypes")
     @Produces(MediaType.TEXT_PLAIN)
     public String getServiceTypes() {
-        List<String> serviceTypes = ServiceTypesControllerRepository.getServiceTypes();
-        return String.join("|", serviceTypes);
+        List<ServiceType> serviceTypes = ServiceTypesControllerRepository.getServiceTypes();
+        List<String> typeOfServices = new ArrayList<>();
+
+        for (var serviceType : serviceTypes) {
+            if (serviceType.getDeletedAt() == null) {
+                typeOfServices.add(serviceType.getTypeOfService());
+            }
+        }
+        return String.join("|", typeOfServices);
     }
 
-    @DELETE
+    @GET
+    @Path("/allServiceTypes")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getAllServiceTypesFromDb() {
+        List<ServiceType> serviceTypes = ServiceTypesControllerRepository.getServiceTypes();
+        List<String> typeOfServices = new ArrayList<>();
+
+        for (var serviceType : serviceTypes) {
+            typeOfServices.add(serviceType.getTypeOfService());
+        }
+        return String.join("|", typeOfServices);
+    }
+
+    @PUT
     @Path("/serviceType/{typeOfService}")
     @Produces(MediaType.TEXT_PLAIN)
     public Response deleteServiceType(@PathParam("typeOfService") String typeOfService) {

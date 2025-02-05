@@ -13,3 +13,10 @@ document.getElementById("loginButton").addEventListener("click", function () {
 document.getElementById("backButton").addEventListener("click", function () {
     window.history.back();
 });
+
+document.getElementById("password").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById("loginButton").click();
+    }
+});
