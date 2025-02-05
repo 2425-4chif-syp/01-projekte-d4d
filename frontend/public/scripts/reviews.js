@@ -175,3 +175,63 @@ function startReview(serviceId, username, serviceType) {
     reviewForm.scrollIntoView({ behavior: 'smooth' });
 }
 
+// Alle Angebote laden
+async function loadAllOffers() {
+    const serviceList = document.getElementById('serviceList');
+    if (!serviceList) {
+        console.error('Service-Liste nicht gefunden');
+        return;
+    }
+
+    serviceList.innerHTML = '<li class="loading">Laden...</li>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/all`);
+        if (!response.ok) throw new Error('Fehler beim Abrufen der Daten');
+        
+        const users = await response.json();
+        
+        if (users.length === 0) {
+            serviceList.innerHTML = `
+                <li class="service-item">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="no-results">Keine Dienstleistungen gefunden.</p>
+                        </div>
+                    </div>
+                </li>`;
+            return;
+        }
+
+        serviceList.innerHTML = '';
+        users.forEach(user => {
+            const listItem = document.createElement('li');
+            listItem.className = 'service-item';
+            listItem.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="badge">${user.serviceOffer} ➝ ${user.serviceWanted}</span>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> ${user.name}</p>
+                        <p><strong>Beschreibung:</strong> ${user.description}</p>
+                        <button class="review-button" onclick="startReview('${user.id}', '${user.name}', '${user.serviceOffer}')">
+                            <i class="fas fa-star"></i> Bewerten
+                        </button>
+                    </div>
+                </div>
+            `;
+            serviceList.appendChild(listItem);
+        });
+    } catch (error) {
+        console.error('Fehler:', error);
+        serviceList.innerHTML = `
+            <li class="service-item">
+                <div class="card">
+                    <div class="card-body">
+                        <p class="error-message">Fehler beim Laden der Dienstleistungen.</p>
+                    </div>
+                </div>
+            </li>`;
+    }
+}
