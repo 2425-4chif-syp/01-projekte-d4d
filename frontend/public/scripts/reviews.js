@@ -150,3 +150,28 @@ async function submitReview(e) {
     }
 }
 
+// Bewertungsprozess starten
+function startReview(serviceId, username, serviceType) {
+    const reviewForm = document.getElementById('reviewForm');
+    const form = document.getElementById('reviewSubmitForm');
+    const reviewUserName = document.getElementById('reviewUserName');
+    const reviewSubject = document.getElementById('reviewSubject');
+    
+    if (!reviewForm || !form || !reviewUserName || !reviewSubject) {
+        console.error('Erforderliche Elemente für das Bewertungsformular nicht gefunden');
+        return;
+    }
+
+    reviewUserName.textContent = username;
+    reviewSubject.textContent = serviceType;
+    
+    // Speichere die benötigten Informationen im Formular
+    form.setAttribute('data-username', username);
+    form.setAttribute('data-service-type', serviceType);
+    form.setAttribute('data-service-id', serviceId);  // Speichere auch die Service-ID
+    
+    cancelReview();
+    reviewForm.style.display = 'block';
+    reviewForm.scrollIntoView({ behavior: 'smooth' });
+}
+
