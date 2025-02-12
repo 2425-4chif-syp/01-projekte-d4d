@@ -7,18 +7,57 @@
   <link rel="stylesheet" href="styles/showOffers.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    /* Basis-Stile */
+    /* Allgemeine Basis-Stile */
+    * {
+      box-sizing: border-box;
+    }
     body {
       display: flex;
       flex-direction: column;
       height: 100vh;
       margin: 0;
       font-family: Arial, sans-serif;
+      background-color: #f4f7fa;
     }
+    /* Navbar */
+    nav.navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+    }
+    nav.navbar .logo {
+      display: flex;
+      align-items: center;
+      font-size: 1.5em;
+    }
+    nav.navbar .logo i {
+      margin-right: 10px;
+    }
+    nav.navbar .nav-buttons button {
+      background-color: white;
+      color: #007bff;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      margin-left: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    nav.navbar .nav-buttons button:hover {
+      background-color: #e0e0e0;
+    }
+    /* Container und Layout */
     .container {
       display: flex;
       flex: 1;
       overflow: hidden;
+      margin: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      background-color: white;
     }
     .chat-list {
       width: 20%;
@@ -26,6 +65,9 @@
       padding: 15px;
       overflow-y: auto;
       border-right: 1px solid #ccc;
+    }
+    .chat-list h3 {
+      margin-top: 0;
     }
     .chat-item {
       padding: 12px;
@@ -37,6 +79,7 @@
       align-items: center;
       gap: 10px;
       font-weight: bold;
+      transition: background-color 0.3s;
     }
     .chat-item:hover {
       background-color: #e0e0e0;
@@ -49,14 +92,20 @@
       display: flex;
       flex-direction: column;
       padding: 20px;
-      background-color: #f9f9f9;
+      background-color: #fafafa;
     }
+    .chat-section h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    /* Chat Nachrichten */
     .chat-messages {
       flex-grow: 1;
       overflow-y: auto;
       border: 1px solid #ccc;
+      border-radius: 8px;
       padding: 15px;
-      background-color: white;
+      background-color: #ffffff;
       max-height: 70vh;
       display: flex;
       flex-direction: column;
@@ -78,6 +127,42 @@
       color: black;
       align-self: flex-start;
     }
+    .message.system {
+      background-color: #f0f0f0;
+      color: #555;
+      align-self: center;
+      font-style: italic;
+      padding: 8px 12px;
+      border-radius: 8px;
+      max-width: 90%;
+    }
+    /* Chat Eingabebereich */
+    .chat-form-container {
+      margin-top: 10px;
+    }
+    .chat-input-group {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input-group input {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .chat-input-group button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .chat-input-group button:hover {
+      background-color: #0056b3;
+    }
+    /* Modal-Stile */
     .modal {
       display: none;
       position: fixed;
@@ -90,6 +175,7 @@
       border-radius: 8px;
       width: 200px;
       text-align: center;
+      z-index: 100;
     }
     .modal.active {
       display: block;
@@ -203,7 +289,7 @@
       fetchChatMessages(chatId);
     }
 
-    // Lädt Nachrichten für einen bestimmten Chat
+    // Lädt Nachrichten für einen bestimmten Chat und fügt eine Systemnachricht am Anfang ein
     async function fetchChatMessages(chatId) {
       try {
         const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
@@ -212,6 +298,13 @@
           console.log("Fetched messages for chat", chatId, ":", messages);
           const chatMessages = document.getElementById("chatMessages");
           chatMessages.innerHTML = "";
+          
+          // Systemnachricht hinzufügen
+          const systemMessageElement = document.createElement("div");
+          systemMessageElement.classList.add("message", "system");
+          systemMessageElement.textContent = "Chat gestartet – lass uns ins Gespräch kommen!";
+          chatMessages.appendChild(systemMessageElement);
+          
           messages.forEach(msg => {
             const messageElement = document.createElement("div");
             // Unterschiedliche CSS-Klassen, je nachdem ob die Nachricht von "Me" stammt
