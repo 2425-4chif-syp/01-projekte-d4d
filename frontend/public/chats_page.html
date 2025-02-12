@@ -1,144 +1,226 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chats</title>
-  <link rel="stylesheet" href="styles/showOffers.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
   <style>
-    /* Allgemeine Basis-Stile */
+    /* CSS-Variablen für ein konsistentes Farbschema */
+    :root {
+      --primary-color: #007bff;
+      --primary-dark: #0056b3;
+      --secondary-color: #f1f1f1;
+      --light-color: #fafafa;
+      --text-color: #333;
+      --system-bg: #f0f0f0;
+      --system-text: #555;
+      --border-color: #ccc;
+    }
+
     * {
       box-sizing: border-box;
     }
+
     body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e9eff5, #ffffff);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f4f7fa;
     }
+
     /* Navbar */
     nav.navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #007bff;
-      color: white;
       padding: 10px 20px;
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     nav.navbar .logo {
       display: flex;
       align-items: center;
-      font-size: 1.5em;
+      font-size: 1.6em;
+      font-weight: 700;
     }
     nav.navbar .logo i {
       margin-right: 10px;
     }
     nav.navbar .nav-buttons button {
-      background-color: white;
-      color: #007bff;
+      background: #fff;
+      color: var(--primary-color);
       border: none;
       border-radius: 5px;
       padding: 8px 12px;
       margin-left: 10px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.2s;
     }
     nav.navbar .nav-buttons button:hover {
       background-color: #e0e0e0;
+      transform: translateY(-2px);
     }
-    /* Container und Layout */
+
+    /* Hauptcontainer */
     .container {
-      display: flex;
       flex: 1;
+      display: flex;
+      margin: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
       overflow: hidden;
-      margin: 10px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      background-color: white;
     }
+
+    /* Chatliste */
     .chat-list {
-      width: 20%;
-      background-color: #f1f1f1;
-      padding: 15px;
+      width: 25%;
+      background-color: var(--secondary-color);
+      padding: 20px;
+      border-right: 1px solid var(--border-color);
       overflow-y: auto;
-      border-right: 1px solid #ccc;
     }
     .chat-list h3 {
       margin-top: 0;
+      color: var(--text-color);
+    }
+    .chat-list button {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    }
+    .chat-list button:hover {
+      background-color: var(--primary-dark);
     }
     .chat-item {
       padding: 12px;
       border-radius: 5px;
       cursor: pointer;
-      margin-bottom: 8px;
-      background-color: white;
+      margin-bottom: 10px;
+      background-color: #fff;
       display: flex;
       align-items: center;
       gap: 10px;
-      font-weight: bold;
-      transition: background-color 0.3s;
+      font-weight: 500;
+      transition: background-color 0.3s, box-shadow 0.2s;
     }
     .chat-item:hover {
-      background-color: #e0e0e0;
+      background-color: #e9ecef;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .chat-item.active {
       background-color: #d4d4d4;
     }
+
+    /* Chatbereich */
     .chat-section {
       flex-grow: 1;
       display: flex;
       flex-direction: column;
       padding: 20px;
-      background-color: #fafafa;
+      background-color: var(--light-color);
     }
     .chat-section h2 {
       margin-top: 0;
-      color: #333;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    /* Chat Nachrichten */
     .chat-messages {
       flex-grow: 1;
       overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      background-color: #ffffff;
-      max-height: 70vh;
+      padding: 20px;
+      background: linear-gradient(180deg, #fff, #f4f7fa);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      position: relative;
     }
+
+    /* Custom Scrollbar */
+    .chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    .chat-messages::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: var(--primary-color);
+      border-radius: 10px;
+    }
+
+    /* Nachrichten */
     .message {
       max-width: 70%;
-      padding: 10px 15px;
-      border-radius: 10px;
+      padding: 12px 18px;
+      border-radius: 20px;
       word-wrap: break-word;
+      line-height: 1.4;
+      animation: fadeIn 0.3s ease-in;
     }
     .message.user {
-      background-color: #007bff;
-      color: white;
+      background-color: var(--primary-color);
+      color: #fff;
       align-self: flex-end;
+      border-bottom-right-radius: 5px;
     }
     .message.other {
-      background-color: #e0e0e0;
-      color: black;
+      background-color: #e9ecef;
+      color: var(--text-color);
       align-self: flex-start;
+      border-bottom-left-radius: 5px;
     }
     .message.system {
-      background-color: #f0f0f0;
-      color: #555;
+      background-color: var(--system-bg);
+      color: var(--system-text);
       align-self: center;
       font-style: italic;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 10px 16px;
+      border-radius: 15px;
       max-width: 90%;
     }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Chat Eingabebereich */
     .chat-form-container {
-      margin-top: 10px;
+      margin-top: 15px;
     }
     .chat-input-group {
       display: flex;
@@ -146,60 +228,89 @@
     }
     .chat-input-group input {
       flex-grow: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      padding: 12px 15px;
+      border: 1px solid var(--border-color);
+      border-radius: 25px;
+      font-size: 1em;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .chat-input-group input:focus {
+      border-color: var(--primary-color);
     }
     .chat-input-group button {
-      background-color: #007bff;
-      color: white;
+      background-color: var(--primary-color);
+      color: #fff;
       border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
+      padding: 12px 20px;
+      border-radius: 25px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s, transform 0.2s;
+      font-size: 1em;
     }
     .chat-input-group button:hover {
-      background-color: #0056b3;
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
     }
+
     /* Modal-Stile */
     .modal {
       display: none;
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      width: 200px;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      width: 250px;
       text-align: center;
-      z-index: 100;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
     }
     .modal.active {
       display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .modal h3 {
+      margin-top: 0;
+      color: var(--text-color);
     }
     .modal input {
-      width: 90%;
-      padding: 6px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0;
+      border: 1px solid var(--border-color);
       border-radius: 5px;
+      outline: none;
     }
     .modal button {
-      padding: 6px 10px;
+      padding: 10px 15px;
       margin: 5px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.2s;
     }
     .modal button:first-of-type {
-      background-color: #007bff;
-      color: white;
+      background-color: var(--primary-color);
+      color: #fff;
+    }
+    .modal button:first-of-type:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
     }
     .modal button:last-of-type {
+      background-color: #ddd;
+      color: var(--text-color);
+    }
+    .modal button:last-of-type:hover {
       background-color: #ccc;
+      transform: translateY(-2px);
     }
   </style>
 </head>
@@ -218,6 +329,7 @@
       </button>
     </div>
   </nav>
+
   <main class="container">
     <div class="chat-list">
       <h3>Chats</h3>
@@ -230,7 +342,7 @@
       <div class="chat-form-container">
         <form id="chatForm">
           <div class="chat-input-group">
-            <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required>
+            <input type="text" id="chatInput" placeholder="Nachricht schreiben..." required />
             <button type="submit"><i class="fas fa-paper-plane"></i> Senden</button>
           </div>
         </form>
@@ -240,7 +352,7 @@
 
   <div class="modal" id="chatModal">
     <h3>Neuer Chat</h3>
-    <input type="text" id="chatName" placeholder="Chat Name">
+    <input type="text" id="chatName" placeholder="Chat Name" />
     <button onclick="createNewChat()">Erstellen</button>
     <button onclick="closeChatCreation()">Abbrechen</button>
   </div>
@@ -263,7 +375,6 @@
         const response = await fetch("http://localhost:8080/chat/rooms");
         if (response.ok) {
           const chats = await response.json();
-          console.log("Fetched chats:", chats);
           const chatItems = document.getElementById("chatItems");
           chatItems.innerHTML = "";
           chats.forEach(chat => {
@@ -285,7 +396,6 @@
     // Öffnet einen Chat und lädt die zugehörigen Nachrichten
     function openChat(chatId) {
       currentChatId = chatId;
-      console.log("Selected chatId:", chatId);
       fetchChatMessages(chatId);
     }
 
@@ -295,19 +405,17 @@
         const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
         if (response.ok) {
           const messages = await response.json();
-          console.log("Fetched messages for chat", chatId, ":", messages);
           const chatMessages = document.getElementById("chatMessages");
           chatMessages.innerHTML = "";
-          
+
           // Systemnachricht hinzufügen
           const systemMessageElement = document.createElement("div");
           systemMessageElement.classList.add("message", "system");
           systemMessageElement.textContent = "Chat gestartet – lass uns ins Gespräch kommen!";
           chatMessages.appendChild(systemMessageElement);
-          
+
           messages.forEach(msg => {
             const messageElement = document.createElement("div");
-            // Unterschiedliche CSS-Klassen, je nachdem ob die Nachricht von "Me" stammt
             messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
             messageElement.textContent = `${msg.user}: ${msg.message}`;
             chatMessages.appendChild(messageElement);
@@ -322,7 +430,7 @@
     }
 
     // Sendet eine neue Nachricht an den aktuell gewählten Chat
-    document.getElementById("chatForm").addEventListener("submit", async function(e) {
+    document.getElementById("chatForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       if (currentChatId === null) {
         alert("Bitte wähle zuerst einen Chat aus.");
@@ -331,20 +439,15 @@
       const chatInput = document.getElementById("chatInput");
       const messageText = chatInput.value.trim();
       if (messageText === "") return;
-      const messageData = { 
-        user: "Me", 
-        message: messageText 
-      };
+      const messageData = { user: "Me", message: messageText };
       try {
         const response = await fetch(`http://localhost:8080/chat/rooms/${currentChatId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(messageData)
+          body: JSON.stringify(messageData),
         });
         if (response.ok) {
-          console.log("Message sent successfully");
           chatInput.value = "";
-          // Nachrichten für den aktuellen Chat neu laden
           fetchChatMessages(currentChatId);
         } else {
           console.error("Fehler beim Senden der Nachricht:", response.statusText);
@@ -355,24 +458,22 @@
     });
 
     // Beim Laden der Seite werden die Chats abgerufen
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       fetchChats();
     });
 
     // Erstellt einen neuen Chat und aktualisiert die Chatliste
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
-      console.log("Creating new chat:", chatName);
       if (chatName === "") return;
       const chatData = { chatName };
       try {
         const response = await fetch("http://localhost:8080/chat/rooms", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chatData)
+          body: JSON.stringify(chatData),
         });
         if (response.ok) {
-          console.log("Chat created successfully");
           fetchChats();
           closeChatCreation();
           document.getElementById("chatName").value = "";
