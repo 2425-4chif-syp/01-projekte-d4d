@@ -1,4 +1,4 @@
-package com.example;
+package at.htl.d4d;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

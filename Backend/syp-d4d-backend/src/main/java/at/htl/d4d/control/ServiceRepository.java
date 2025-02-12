@@ -1,4 +1,6 @@
-package com.example;
+package at.htl.d4d.control;
+
+import at.htl.d4d.entity.Service;
 
 import java.util.ArrayList;
 import java.util.List;

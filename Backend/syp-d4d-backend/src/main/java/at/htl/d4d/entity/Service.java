@@ -1,4 +1,7 @@
-package com.example;
+package at.htl.d4d.entity;
+
+import at.htl.d4d.control.ServiceRepository;
+
 public class Service {
     private String name;
     private String serviceOffer;

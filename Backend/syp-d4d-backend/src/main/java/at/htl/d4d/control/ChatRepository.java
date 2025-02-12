@@ -1,4 +1,6 @@
-package com.example;
+package at.htl.d4d.control;
+
+import at.htl.d4d.entity.Chat;
 
 import java.sql.*;
 import java.util.ArrayList;

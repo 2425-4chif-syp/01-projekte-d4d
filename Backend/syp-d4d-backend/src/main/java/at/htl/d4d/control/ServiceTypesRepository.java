@@ -1,10 +1,12 @@
-package com.example;
+package at.htl.d4d.control;
+
+import at.htl.d4d.entity.ServiceType;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ServiceTypesControllerRepository {
+public class ServiceTypesRepository {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "d4d-admin";
     private static final String PASSWORD = "d4d1234";

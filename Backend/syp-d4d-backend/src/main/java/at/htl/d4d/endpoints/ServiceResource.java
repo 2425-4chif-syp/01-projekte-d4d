@@ -1,5 +1,9 @@
-package com.example;
+package at.htl.d4d.endpoints;
 
+import at.htl.d4d.control.ServiceControllerRepository;
+import at.htl.d4d.control.ServiceResourceRepository;
+import at.htl.d4d.control.testNewDB_Repository;
+import at.htl.d4d.entity.Service;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
@@ -100,5 +104,23 @@ public class ServiceResource {
         }
 
         return Response.ok(jsonArrayBuilder.build()).build();
+    }
+
+    @POST
+    @Path("/service")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createService(JsonObject userJson) {
+        Service service = new Service(
+                userJson.getString("name"),
+                userJson.getString("serviceOffer"),
+                userJson.getString("serviceWanted"),
+                userJson.getString("description")
+        );
+        System.out.println(service.getName());
+        System.out.println(service.getServiceOffer());
+        System.out.println(service.getDescription());
+        System.out.println(service.getServiceWanted());
+        ServiceControllerRepository.fillServiceDB(service);
+        return Response.ok("Service created successfully").build();
     }
 }

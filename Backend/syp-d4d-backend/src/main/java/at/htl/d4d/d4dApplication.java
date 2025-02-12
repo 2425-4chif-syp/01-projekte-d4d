@@ -1,13 +1,9 @@
-package com.example;
+package at.htl.d4d;
 
-import jakarta.json.Json;
-import jakarta.json.JsonArrayBuilder;
-import jakarta.json.JsonObject;
+import at.htl.d4d.control.ServiceRepository;
+import at.htl.d4d.entity.Service;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
-import java.util.List;
 
 @Path("/d4d")
 public class d4dApplication {

@@ -1,5 +1,7 @@
-package com.example;
+package at.htl.d4d.endpoints;
 
+import at.htl.d4d.control.ChatRepository;
+import at.htl.d4d.entity.Chat;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
