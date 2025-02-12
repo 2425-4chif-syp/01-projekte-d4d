@@ -20,21 +20,19 @@ public class ChatMessageResource {
 
     @GET
     public Response getMessages() {
-        // Rufe die Nachrichten aus der Datenbank für den gegebenen chatId ab.
         List<Message> messages = MessageRepository.getMessagesByChat(chatId);
 
-        // Erstelle ein JSON-Array aus den Nachrichten
         JsonArrayBuilder arr = Json.createArrayBuilder();
         for (Message m : messages) {
             arr.add(Json.createObjectBuilder()
                     .add("id", m.getId())
                     .add("chatId", m.getChatId())
                     .add("user", m.getUserName())
-                    .add("message", m.getMessage())
+                    .add("message", m.getMessage() != null ? m.getMessage() : "")
+                    .add("image", m.getImage() != null ? m.getImage() : "")
                     .add("createdAt", m.getCreatedAt().toString())
             );
         }
-
         return Response.ok(arr.build()).build();
     }
 
@@ -42,18 +40,20 @@ public class ChatMessageResource {
     public Response createMessage(JsonObject messageJson) {
         String user = messageJson.getString("user", "");
         String message = messageJson.getString("message", "");
-        // Debug-Ausgabe, um sicherzustellen, dass der Endpoint aufgerufen wird:
-        System.out.println("Received message for chatId " + chatId + ": " + user + " - " + message);
+        String image = messageJson.containsKey("image") ? messageJson.getString("image") : null;
 
-        // Speichere die Nachricht in der DB
-        MessageRepository.saveMessage(chatId, user, message);
+        System.out.println("Received message for chatId " + chatId + ": "
+                + user + " - " + message + " / image: " + image);
 
-        // Sende eine Erfolgsmeldung zurück:
+        // Speichere die Nachricht inkl. Bild in der DB
+        MessageRepository.saveMessage(chatId, user, message, image);
+
         JsonObject response = Json.createObjectBuilder()
                 .add("status", "created")
                 .add("chatId", chatId)
                 .add("user", user)
                 .add("message", message)
+                .add("image", image != null ? image : "")
                 .build();
         return Response.status(Response.Status.CREATED).entity(response).build();
     }

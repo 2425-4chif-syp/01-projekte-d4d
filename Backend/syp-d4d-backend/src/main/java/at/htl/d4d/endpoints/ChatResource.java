@@ -16,7 +16,6 @@ public class ChatResource {
 
     @GET
     public Response getMessages() {
-        // Beispiel: Standard-Chat-ID 1
         int defaultChatId = 1;
         List<Message> messages = MessageRepository.getMessagesByChat(defaultChatId);
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
@@ -25,7 +24,8 @@ public class ChatResource {
                     .add("id", msg.getId())
                     .add("chatId", msg.getChatId())
                     .add("user", msg.getUserName())
-                    .add("message", msg.getMessage())
+                    .add("message", msg.getMessage() != null ? msg.getMessage() : "")
+                    .add("image", msg.getImage() != null ? msg.getImage() : "")
                     .add("createdAt", msg.getCreatedAt().toString()));
         }
         return Response.ok(jsonArrayBuilder.build()).build();

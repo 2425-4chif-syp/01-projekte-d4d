@@ -1,7 +1,6 @@
 package at.htl.d4d.control;
 
 import at.htl.d4d.entity.Message;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,25 +10,27 @@ public class MessageRepository {
     private static final String USER = "d4d-admin";
     private static final String PASSWORD = "d4d1234";
 
+    // Tabelle mit zusätzlicher Spalte für Bilddaten
     private static final String CREATE_MESSAGES_TABLE = """
     CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         chat_id INT NOT NULL,
         user_name VARCHAR(50) NOT NULL,
-        message TEXT NOT NULL,
+        message TEXT,
+        image TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (chat_id) REFERENCES chats(id)
     );
 """;
 
-
+    // Angepasstes INSERT-Statement (mit image)
     private static final String INSERT_MESSAGE_SQL = """
-        INSERT INTO messages (chat_id, user_name, message)
-        VALUES (?, ?, ?)
+        INSERT INTO messages (chat_id, user_name, message, image)
+        VALUES (?, ?, ?, ?)
     """;
 
     private static final String SELECT_MESSAGES_BY_CHAT_SQL = """
-        SELECT id, chat_id, user_name, message, created_at
+        SELECT id, chat_id, user_name, message, image, created_at
         FROM messages
         WHERE chat_id = ?
         ORDER BY created_at ASC
@@ -45,14 +46,16 @@ public class MessageRepository {
         }
     }
 
-    public static void saveMessage(int chatId, String userName, String message) {
+    public static void saveMessage(int chatId, String userName, String message, String image) {
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement insertStatement = connection.prepareStatement(INSERT_MESSAGE_SQL)) {
 
-            System.out.println("Attempting to save message: " + userName + " - " + message + " in chat: " + chatId);
+            System.out.println("Attempting to save message: " + userName
+                    + " - " + message + " / image: " + image + " in chat: " + chatId);
             insertStatement.setInt(1, chatId);
             insertStatement.setString(2, userName);
             insertStatement.setString(3, message);
+            insertStatement.setString(4, image); // image kann null sein
             int rowsInserted = insertStatement.executeUpdate();
             System.out.println(rowsInserted + " row(s) inserted successfully!");
         } catch (SQLException e) {
@@ -72,8 +75,9 @@ public class MessageRepository {
                     int cId = rs.getInt("chat_id");
                     String userName = rs.getString("user_name");
                     String message = rs.getString("message");
+                    String image = rs.getString("image");
                     Timestamp createdAt = rs.getTimestamp("created_at");
-                    messages.add(new Message(id, cId, userName, message, createdAt.toLocalDateTime()));
+                    messages.add(new Message(id, cId, userName, message, image, createdAt.toLocalDateTime()));
                 }
             }
         } catch (SQLException e) {

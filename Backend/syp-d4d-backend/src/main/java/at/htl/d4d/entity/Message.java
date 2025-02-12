@@ -7,13 +7,15 @@ public class Message {
     private int chatId;
     private String userName;
     private String message;
+    private String image; // Neues Feld für Bilddaten
     private LocalDateTime createdAt;
 
-    public Message(int id, int chatId, String userName, String message, LocalDateTime createdAt) {
+    public Message(int id, int chatId, String userName, String message, String image, LocalDateTime createdAt) {
         this.id = id;
         this.chatId = chatId;
         this.userName = userName;
         this.message = message;
+        this.image = image;
         this.createdAt = createdAt;
     }
 
@@ -31,6 +33,10 @@ public class Message {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getImage() {
+        return image;
     }
 
     public LocalDateTime getCreatedAt() {
