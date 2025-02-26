@@ -7,9 +7,6 @@ import jakarta.persistence.Entity;
 @Entity
 public class Market extends PanacheEntity {
     @Column
-    public Long market_ID;
-
-    @Column
     public Long serviceType_ID;
 
     @Column
@@ -17,4 +14,12 @@ public class Market extends PanacheEntity {
 
     @Column
     public int offer;
+
+    public Market() {}
+
+    public Market(Long serviceType_ID, Long user_ID, int offer) {
+        this.serviceType_ID = serviceType_ID;
+        this.user_ID = user_ID;
+        this.offer = offer;
+    }
 }
