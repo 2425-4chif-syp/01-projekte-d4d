@@ -6,8 +6,15 @@ import org.hibernate.annotations.CollectionIdJavaType;
 
 public class User extends PanacheEntity {
     @Column
-    public Long user_ID;
-
-    @Column
     public String name;
+
+    public User() {}
+
+    public User(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

@@ -116,11 +116,6 @@ public class ServiceResource {
                 userJson.getString("serviceWanted"),
                 userJson.getString("description")
         );
-        System.out.println(service.getName());
-        System.out.println(service.getServiceOffer());
-        System.out.println(service.getDescription());
-        System.out.println(service.getServiceWanted());
-        ServiceControllerRepository.fillServiceDB(service);
         return Response.ok("Service created successfully").build();
     }
 }
