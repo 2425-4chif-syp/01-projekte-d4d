@@ -24,6 +24,22 @@ public class ServiceTypesResource {
     @Path("/serviceTypes")
     @Produces(MediaType.TEXT_PLAIN)
     public String getServiceTypes() {
+        ServiceTypesRepository.fillServiceTypesDB("Computerarchitektur und Betriebssysteme");
+        ServiceTypesRepository.fillServiceTypesDB("Programmierung und Software Engineering");
+        ServiceTypesRepository.fillServiceTypesDB("Datenbanken und Informationssysteme");
+        ServiceTypesRepository.fillServiceTypesDB("Netzwerksysteme & Cyber Security");
+        ServiceTypesRepository.fillServiceTypesDB("Webprogrammierung und Mobile Computing");
+        ServiceTypesRepository.fillServiceTypesDB("Data Science und Artificial Intelligence");
+        ServiceTypesRepository.fillServiceTypesDB("Rechnungswesen");
+        ServiceTypesRepository.fillServiceTypesDB("Betriebliche Organisation");
+        ServiceTypesRepository.fillServiceTypesDB("Recht");
+        ServiceTypesRepository.fillServiceTypesDB("Systemplanung und Projektentwicklung");
+        ServiceTypesRepository.fillServiceTypesDB("Physik");
+        ServiceTypesRepository.fillServiceTypesDB("Chemie");
+        ServiceTypesRepository.fillServiceTypesDB("Angewandte Mathematik");
+        ServiceTypesRepository.fillServiceTypesDB("Deutsch");
+        ServiceTypesRepository.fillServiceTypesDB("Englisch");
+
         List<ServiceType> serviceTypes = ServiceTypesRepository.getServiceTypes();
         List<String> typeOfServices = new ArrayList<>();
 
