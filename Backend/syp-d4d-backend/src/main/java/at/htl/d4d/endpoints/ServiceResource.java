@@ -2,11 +2,15 @@ package at.htl.d4d.endpoints;
 
 import at.htl.d4d.control.ServiceControllerRepository;
 import at.htl.d4d.control.ServiceResourceRepository;
+import at.htl.d4d.control.UserRepository;
 import at.htl.d4d.control.testNewDB_Repository;
 import at.htl.d4d.entity.Service;
+import at.htl.d4d.entity.User;
+import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -106,9 +110,13 @@ public class ServiceResource {
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 
+    @Inject
+    UserRepository userRepository;
+
     @POST
     @Path("/service")
     @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
     public Response createService(JsonObject userJson) {
         Service service = new Service(
                 userJson.getString("name"),
@@ -116,6 +124,15 @@ public class ServiceResource {
                 userJson.getString("serviceWanted"),
                 userJson.getString("description")
         );
+
+        String userName = userJson.getString("name");
+
+        if (!userRepository.existsByName(userName)) {
+            User newUser = new User(userName);
+            userRepository.persist(newUser);
+            return Response.ok("User created successfully!").build();
+        }
+
         return Response.ok("Service created successfully").build();
     }
 }
