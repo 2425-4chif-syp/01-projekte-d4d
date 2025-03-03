@@ -3,7 +3,10 @@ package at.htl.d4d.control;
 import java.util.List;
 import at.htl.d4d.entity.Market;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
+@ApplicationScoped
 public class MarketRepository implements PanacheRepository<Market> {
 
     public MarketRepository(){}
@@ -16,6 +19,7 @@ public class MarketRepository implements PanacheRepository<Market> {
         return find("serviceType", serviceType).list();
     }
 
+    @Transactional
     public Market saveMarket(Market market){
         persist(market);
         return market;

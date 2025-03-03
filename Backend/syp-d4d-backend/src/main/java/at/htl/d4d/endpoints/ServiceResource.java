@@ -1,9 +1,7 @@
 package at.htl.d4d.endpoints;
 
-import at.htl.d4d.control.ServiceControllerRepository;
 import at.htl.d4d.control.ServiceResourceRepository;
 import at.htl.d4d.control.UserRepository;
-import at.htl.d4d.control.testNewDB_Repository;
 import at.htl.d4d.entity.Service;
 import at.htl.d4d.entity.User;
 import jakarta.inject.Inject;
@@ -56,17 +54,6 @@ public class ServiceResource {
                     .build();
             jsonArrayBuilder.add(userJson);
         }
-
-        //Testing new DB
-        //*******
-        testNewDB_Repository.createUserDB();
-        testNewDB_Repository.createTypeOfServiceDB();
-        testNewDB_Repository.createServiceDB();
-        testNewDB_Repository.createMarketDB();
-        testNewDB_Repository.createChatEntryDB();
-        testNewDB_Repository.createReviewTable();
-        //*******
-
         return Response.ok(jsonArrayBuilder.build()).build();
     }
 

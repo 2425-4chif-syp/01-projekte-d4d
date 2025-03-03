@@ -27,7 +27,7 @@ document.getElementById("submitButton").onclick = function () {
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(name)
+        body: JSON.stringify(userData)
     })
         .then(response => {
             if (response.ok) {

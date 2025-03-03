@@ -28,6 +28,9 @@ public class MarketResource {
     @Inject 
     MarketRepository marketRepository;
 
+    @Inject
+    ServiceTypesRepository serviceTypesRepository;
+
     public MarketResource() {
     }
 
@@ -43,12 +46,11 @@ public class MarketResource {
 
         User user = userRepository.findUserByName(userName);
 
-        ServiceType offerServiceType = ServiceTypesRepository.findServiceTypeByName(serviceOffer);
-        ServiceType wantedServiceType = ServiceTypesRepository.findServiceTypeByName(serviceWanted);
+        ServiceType offerServiceType = serviceTypesRepository.findServiceTypeByName(serviceOffer);
+        ServiceType wantedServiceType = serviceTypesRepository.findServiceTypeByName(serviceWanted);
 
         Market offerMarket = new Market(offerServiceType.id, user.id, 1);
         Market wantedMarket = new Market(wantedServiceType.id, user.id, 0);
-
         return Response.ok("Market created successfully").build();
     }
 
