@@ -10,4 +10,8 @@ public class UserRepository implements PanacheRepository<User> {
     public boolean existsByName(String name) {
         return find("name", name).count() > 0;
     }
+
+    public User findUserByName(String name) {
+        return find("name", name).firstResult();
+    }
 }
