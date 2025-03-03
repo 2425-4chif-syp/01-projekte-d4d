@@ -22,12 +22,12 @@ document.getElementById("submitButton").onclick = function () {
         description: description
     };
 
-    fetch("http://localhost:8080/d4d/service", {
+    fetch("http://localhost:8080/d4d/createUserIfNotExists", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(name)
     })
         .then(response => {
             if (response.ok) {
@@ -42,6 +42,28 @@ document.getElementById("submitButton").onclick = function () {
         .catch(error => {
             alert(error.message);
         });
+
+
+        fetch("http://localhost:8080/d4d/createMarket", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(userData)
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error("Fehler beim Erstellen des Angebots");
+                }
+            })
+            .then(message => {
+                alert(message);
+            })
+            .catch(error => {
+                alert(error.message);
+            });
 };
 
 
