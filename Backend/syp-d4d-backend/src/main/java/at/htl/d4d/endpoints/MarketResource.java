@@ -51,6 +51,10 @@ public class MarketResource {
 
         Market offerMarket = new Market(offerServiceType.id, user.id, 1);
         Market wantedMarket = new Market(wantedServiceType.id, user.id, 0);
+
+        marketRepository.persist(offerMarket);
+        marketRepository.persist(wantedMarket);
+        
         return Response.ok("Market created successfully").build();
     }
 
