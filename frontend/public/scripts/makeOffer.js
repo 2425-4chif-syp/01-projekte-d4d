@@ -21,8 +21,7 @@ document.getElementById("submitButton").onclick = function () {
         serviceWanted: desiredServiceType,
         description: description
     };
-
-    fetch("http://localhost:8080/d4d/createUserIfNotExists", {
+    fetch("http://localhost:8080/d4d/createMarket", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -33,7 +32,7 @@ document.getElementById("submitButton").onclick = function () {
             if (response.ok) {
                 return response.text();
             } else {
-                throw new Error("Fehler beim Erstellen des Benutzers");
+                throw new Error("Fehler beim Erstellen des Angebots");
             }
         })
         .then(message => {
@@ -42,30 +41,7 @@ document.getElementById("submitButton").onclick = function () {
         .catch(error => {
             alert(error.message);
         });
-
-
-        fetch("http://localhost:8080/d4d/createMarket", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(userData)
-        })
-            .then(response => {
-                if (response.ok) {
-                    return response.text();
-                } else {
-                    throw new Error("Fehler beim Erstellen des Angebots");
-                }
-            })
-            .then(message => {
-                alert(message);
-            })
-            .catch(error => {
-                alert(error.message);
-            });
 };
-
 
 // Zeichenanzahl im Beschreibungsfeld überwachen
 const descriptionField = document.getElementById("description");

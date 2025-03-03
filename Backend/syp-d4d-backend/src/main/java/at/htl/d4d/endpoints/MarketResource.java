@@ -41,6 +41,12 @@ public class MarketResource {
     public Response createService(JsonObject userJson) {
 
         String userName = userJson.getString("name");
+
+        if (!userRepository.existsByName(userName)) {
+            User newUser = new User(userName);
+            userRepository.persist(newUser);
+        }
+
         String serviceOffer = userJson.getString("serviceOffer");
         String serviceWanted = userJson.getString("serviceWanted");
 
@@ -49,13 +55,17 @@ public class MarketResource {
         ServiceType offerServiceType = serviceTypesRepository.findServiceTypeByName(serviceOffer);
         ServiceType wantedServiceType = serviceTypesRepository.findServiceTypeByName(serviceWanted);
 
+        System.out.println(offerServiceType.id);
+        System.out.println(wantedServiceType.id);
+
         Market offerMarket = new Market(offerServiceType.id, user.id, 1);
         Market wantedMarket = new Market(wantedServiceType.id, user.id, 0);
+
 
         marketRepository.persist(offerMarket);
         marketRepository.persist(wantedMarket);
         
-        return Response.ok("Market created successfully").build();
+        return Response.ok("Successfully").build();
     }
 
 
