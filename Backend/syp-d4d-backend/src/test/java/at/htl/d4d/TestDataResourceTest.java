@@ -12,6 +12,15 @@ import static org.hamcrest.Matchers.is;
 public class TestDataResourceTest {
 
     @Test
+    public void testGenerateServiceTypesTestData() {
+        RestAssured.given()
+                .when().post("d4d/testdata/generate-service-types")
+                .then()
+                .statusCode(200)
+                .body(is("Dienstleistungsarten-Testdaten erfolgreich generiert."));
+    }
+
+    @Test
     public void testGenerateUserTestData() {
         RestAssured.given()
                 .when().post("d4d/testdata/generate-users")

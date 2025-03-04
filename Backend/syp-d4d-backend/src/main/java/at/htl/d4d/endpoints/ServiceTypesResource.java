@@ -30,22 +30,6 @@ public class ServiceTypesResource {
     @Path("/serviceTypes")
     @Produces(MediaType.TEXT_PLAIN)
     public String getServiceTypes() {
-        repository.addServiceType("Computerarchitektur und Betriebssysteme");
-        repository.addServiceType("Programmierung und Software Engineering");
-        repository.addServiceType("Datenbanken und Informationssysteme");
-        repository.addServiceType("Netzwerksysteme & Cyber Security");
-        repository.addServiceType("Webprogrammierung und Mobile Computing");
-        repository.addServiceType("Data Science und Artificial Intelligence");
-        repository.addServiceType("Rechnungswesen");
-        repository.addServiceType("Betriebliche Organisation");
-        repository.addServiceType("Recht");
-        repository.addServiceType("Systemplanung und Projektentwicklung");
-        repository.addServiceType("Physik");
-        repository.addServiceType("Chemie");
-        repository.addServiceType("Angewandte Mathematik");
-        repository.addServiceType("Deutsch");
-        repository.addServiceType("Englisch");
-
         List<String> typeOfServices = repository.getActiveServiceTypes()
                 .stream()
                 .map(serviceType -> serviceType.getTypeOfService())
