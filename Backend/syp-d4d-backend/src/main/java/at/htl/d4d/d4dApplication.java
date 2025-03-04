@@ -12,11 +12,7 @@ public class d4dApplication {
     @Path("/services")
     @Produces(MediaType.TEXT_PLAIN)
     public String allServices() {
-        String usersNames = "";
-        for (Service s : ServiceRepository.getAllServices()) {
-            usersNames += " " + s.getName();
-        }
-        return usersNames;
+        return "";
     }
 
     /*

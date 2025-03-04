@@ -1,51 +1,39 @@
 package at.htl.d4d.entity;
 
-import at.htl.d4d.control.ServiceRepository;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 
-public class Service {
-    private String name;
-    private String serviceOffer;
-    private String serviceWanted;
-    private String description;
+@Entity
+public class Service extends PanacheEntity {
+    @Column
+    private Long marketProvider_ID;
 
-    public void setName(String name) {
-        this.name = name;
+    @Column
+    private Long marketClient_ID;
+
+    public Long getMarketProvider_ID() {
+        return marketProvider_ID;
     }
 
-    public void setServiceOffer(String serviceOffer) {
-        this.serviceOffer = serviceOffer;
+    public void setMarketProvider_ID(Long marketProvider_ID) {
+        this.marketProvider_ID = marketProvider_ID;
     }
 
-    public void setServiceWanted(String serviceWanted) {
-        this.serviceWanted = serviceWanted;
+    public Long getMarketClient_ID() {
+        return marketClient_ID;
     }
 
-    public String getServiceOffer() {
-        return serviceOffer;
+    public void setMarketClient_ID(Long marketClient_ID) {
+        this.marketClient_ID = marketClient_ID;
     }
 
-    public String getName() {
-        return name;
+    public Service() {
+
     }
 
-    public String getServiceWanted() {
-        return serviceWanted;
+    public Service(Long marketProvider_ID, Long marketClient_ID) {
+        this.marketProvider_ID = marketProvider_ID;
+        this.marketClient_ID = marketClient_ID;
     }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Service(String name, String serviceOffer, String serviceWanted, String description) {
-        setName(name);
-        setServiceOffer(serviceOffer);
-        setServiceWanted(serviceWanted);
-        setDescription(description);
-        ServiceRepository.addService(this);
-    }
-
 }

@@ -1,5 +1,6 @@
 package at.htl.d4d.endpoints;
 
+import at.htl.d4d.tests.ServiceTestData;
 import at.htl.d4d.tests.UserTestData;
 import at.htl.d4d.tests.MarketTestData;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,6 +18,9 @@ public class TestDataResource {
     
     @Inject
     MarketTestData marketTestData;
+
+    @Inject
+    ServiceTestData serviceTestData;
     
     @POST
     @Path("/generate-users")
@@ -34,4 +38,13 @@ public class TestDataResource {
         marketTestData.generateMarketTestData();
         return Response.ok("Marktplatz-Testdaten erfolgreich generiert.").build();
     }
+
+    @POST
+    @Path("/generate-service")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response generateServiceTestData() {
+        serviceTestData.generateServiceTestData();
+        return Response.ok("Service-Testdaten erfolgreich generiert.").build();
+    }
+
 }

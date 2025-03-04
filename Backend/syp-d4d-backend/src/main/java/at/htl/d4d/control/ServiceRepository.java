@@ -1,35 +1,10 @@
 package at.htl.d4d.control;
 
 import at.htl.d4d.entity.Service;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.ArrayList;
-import java.util.List;
+@ApplicationScoped
+public class ServiceRepository implements PanacheRepository<Service> {
 
-public abstract class ServiceRepository {
-    private static List<Service> services = new ArrayList<>();
-    public static List<Service> getAllServices() {
-        return services;
-    }
-
-    public static void addService(Service service) {
-        services.add(service);
-    }
-
-    public static List<Service> getServices(String serviceOffer) {
-        List<Service> offers = new ArrayList<>();
-
-        if (serviceOffer.equals("all")) {
-            for (Service s: services) {
-                offers.add(s);
-            }
-            return offers;
-        }
-
-        for (Service s : services) {
-            if (s.getServiceOffer().equals(serviceOffer)) {
-                offers.add(s);
-            }
-        }
-        return offers;
-    }
 }
