@@ -3,6 +3,7 @@ package at.htl.d4d.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import java.time.LocalDateTime;
 
 @Entity
 public class Market extends PanacheEntity {
@@ -14,6 +15,12 @@ public class Market extends PanacheEntity {
 
     @Column
     public int offer;
+
+    @Column
+    public LocalDateTime StartDate;
+
+    @Column
+    public LocalDateTime EndDate;
 
     public Market() {}
 
