@@ -4,7 +4,7 @@
   "description": "Frontend für das D4D Projekt",
   "main": "index.js",
   "scripts": {
-    "start": "http-server ./public -p 8080",
+    "start": "http-server ./public -p 3000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
