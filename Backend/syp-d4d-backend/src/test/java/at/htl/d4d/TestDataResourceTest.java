@@ -4,8 +4,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.Test;
 
-import java.time.format.ResolverStyle;
-
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
@@ -45,5 +43,15 @@ public class TestDataResourceTest {
                 .then()
                 .statusCode(200)
                 .body(is("Service-Testdaten erfolgreich generiert."));
+    }
+
+    // Neuer Test für die Chat-Testdaten
+    @Test
+    public void testGenerateChatTestData() {
+        RestAssured.given()
+                .when().post("d4d/testdata/generate-chat")
+                .then()
+                .statusCode(200)
+                .body(is("Chat-Testdaten erfolgreich generiert."));
     }
 }
