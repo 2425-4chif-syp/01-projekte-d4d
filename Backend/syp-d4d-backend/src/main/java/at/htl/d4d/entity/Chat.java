@@ -1,27 +1,28 @@
 package at.htl.d4d.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import java.time.LocalDateTime;
 
-public class Chat {
-    private int id;
-    private String chatName;
-    private LocalDateTime createdAt;
+@Entity
+public class Chat extends PanacheEntity {
 
-    public Chat(int id, String chatName, LocalDateTime createdAt) {
-        this.id = id;
-        this.chatName = chatName;
-        this.createdAt = createdAt;
-    }
+    // Entsprechend ERD: Der Chat wird durch eine Sender- und eine Empfänger-ID definiert.
+    @Column(name = "sender_id")
+    public Long senderId;
 
-    public int getId() {
-        return id;
-    }
+    @Column(name = "receiver_id")
+    public Long receiverId;
 
-    public String getChatName() {
-        return chatName;
-    }
+    // Zeitpunkt der Chat-Erstellung
+    @Column(name = "created_at")
+    public LocalDateTime createdAt = LocalDateTime.now();
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public Chat() {}
+
+    public Chat(Long senderId, Long receiverId) {
+        this.senderId = senderId;
+        this.receiverId = receiverId;
     }
 }

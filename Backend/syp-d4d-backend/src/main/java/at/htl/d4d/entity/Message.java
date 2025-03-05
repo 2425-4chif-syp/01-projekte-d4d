@@ -1,45 +1,34 @@
 package at.htl.d4d.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import java.time.LocalDateTime;
 
-public class Message {
-    private int id;
-    private int chatId;
-    private String userName;
-    private String message;
-    private String image; // Neues Feld für Bilddaten
-    private LocalDateTime createdAt;
+@Entity
+public class Message extends PanacheEntity {
 
-    public Message(int id, int chatId, String userName, String message, String image, LocalDateTime createdAt) {
-        this.id = id;
+    // Verweist auf den zugehörigen Chat
+    @Column(name = "chat_id")
+    public Long chatId;
+
+    // Sender der Nachricht (kann bei fortlaufendem Chat variieren)
+    @Column(name = "sender_id")
+    public Long senderId;
+
+    // Inhalt der Nachricht
+    @Column(name = "message")
+    public String message;
+
+    // Zeitstempel, wann die Nachricht gesendet wurde
+    @Column(name = "time")
+    public LocalDateTime time = LocalDateTime.now();
+
+    public Message() {}
+
+    public Message(Long chatId, Long senderId, String message) {
         this.chatId = chatId;
-        this.userName = userName;
+        this.senderId = senderId;
         this.message = message;
-        this.image = image;
-        this.createdAt = createdAt;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public int getChatId() {
-        return chatId;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 }
