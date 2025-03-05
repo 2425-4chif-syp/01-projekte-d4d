@@ -5,6 +5,7 @@ import at.htl.d4d.control.ServiceTypesRepository;
 import at.htl.d4d.control.UserRepository;
 import at.htl.d4d.entity.Market;
 import at.htl.d4d.entity.Service;
+import at.htl.d4d.entity.ServiceType;
 import at.htl.d4d.entity.User;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -38,22 +39,22 @@ public class ServiceResource {
 
 
     @GET
-    @Path("{serviceTypeId}/services")
+    @Path("/{serviceTypeId}/type/services")
     public Response getServicesTypeByTypeId(@PathParam("serviceTypeId") Long serviceTypeId) {
         String type = serviceTypesRepository.findServiceTypeById(serviceTypeId);
 
-        if (type.isEmpty()) {
+        if (type == null || type.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(type).build();
     }
 
     @GET
-    @Path("{userId}/services")
+    @Path("/{userId}/username/services")
     public Response getUserNameByUserId(@PathParam("userId") Long userId) {
         String name = userRepository.findUserById(userId);
 
-        if (name.isEmpty()) {
+        if (name == null || name.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(name).build();
