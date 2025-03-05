@@ -4,6 +4,8 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
+import java.sql.Timestamp;
+
 @Entity
 public class Service extends PanacheEntity {
     @Column
@@ -11,6 +13,9 @@ public class Service extends PanacheEntity {
 
     @Column
     private Long marketClient_ID;
+
+    @Column
+    private Timestamp first_service_date;
 
     public Long getMarketProvider_ID() {
         return marketProvider_ID;
@@ -26,6 +31,14 @@ public class Service extends PanacheEntity {
 
     public void setMarketClient_ID(Long marketClient_ID) {
         this.marketClient_ID = marketClient_ID;
+    }
+
+    public Timestamp getFirst_service_date() {
+        return first_service_date;
+    }
+
+    public void setFirst_service_date(Timestamp first_service_date) {
+        this.first_service_date = first_service_date;
     }
 
     public Service() {

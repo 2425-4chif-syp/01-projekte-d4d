@@ -28,4 +28,8 @@ public class MarketRepository implements PanacheRepository<Market> {
     public List<Market> getAllMarkets(){
         return listAll();
     }
+
+    public Market getMarketById(Long id){
+        return findById(id);
+    }
 }
