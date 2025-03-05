@@ -25,14 +25,14 @@ public class ServiceRepository implements PanacheRepository<Service> {
             Long marketProviderId = service.getMarketProvider_ID();
             Long marketClientId = service.getMarketClient_ID();
             Market market = new Market();
-            if (marketRepository.findMarketByUser(marketProviderId).user_ID.equals(user.id)){
+            if (marketRepository.findById(marketProviderId).user_ID.equals(user.id)){
                 //return market from client
-                market = marketRepository.findMarketByUser(marketClientId);
+                market = marketRepository.findById(marketClientId);
                 servicesByUser.add(market);
             }
-            else if(marketRepository.findMarketByUser(marketClientId).user_ID.equals(user.id)){
+            else if(marketRepository.findById(marketClientId).user_ID.equals(user.id)){
                 //return market from provider
-                market = marketRepository.findMarketByUser(marketProviderId);
+                market = marketRepository.findById(marketProviderId);
                 servicesByUser.add(market);
             }
         }
