@@ -29,7 +29,7 @@ public class MarketRepository implements PanacheRepository<Market> {
         return listAll();
     }
 
-    public Market getMarketById(Long id){
-        return findById(id);
+    public Market findMarketByUser(Long userId){
+        return find("user_ID", userId).firstResult();
     }
 }
