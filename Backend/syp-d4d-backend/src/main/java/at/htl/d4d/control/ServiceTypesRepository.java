@@ -55,4 +55,8 @@ public class ServiceTypesRepository implements PanacheRepository<ServiceType> {
         }
         return false;
     }
+
+    public String findServiceTypeById(Long id) {
+        return findById(id).getTypeOfService();
+    }
 }
