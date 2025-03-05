@@ -28,25 +28,15 @@ public class ServiceRepository implements PanacheRepository<Service> {
             Market providerMarket = marketRepository.findById(marketProviderId);
             Market clientMarket = marketRepository.findById(marketClientId);
 
-            /*if (providerMarket.user_ID.equals(user.id)){
+            if (providerMarket.user_ID.equals(user.id)){
                 Market market = marketRepository.findById(marketClientId);
-                System.out.println("Market: " + market);
                 servicesByUser.add(market);
-            }*/
-            if (clientMarket.user_ID.equals(user.id)){
+            }
+            else if (clientMarket.user_ID.equals(user.id)){
                 Market market = marketRepository.findById(marketProviderId);
-                System.out.println("Market: " + market);
                 servicesByUser.add(market);
             }
         }
-        
-        if (servicesByUser.isEmpty()) {
-            System.out.println("Keine Services gefunden");
-        } else {
-            System.out.println("Gefundene Services: " + servicesByUser.size());
-        }
-        
-        System.out.println("==========================================");
         return servicesByUser;
     }
 
