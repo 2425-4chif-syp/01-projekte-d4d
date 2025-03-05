@@ -16,11 +16,11 @@ public class Market extends PanacheEntity {
     @Column
     public int offer;
 
-    @Column(name = "start_date")
-    private LocalDateTime startDate = LocalDateTime.now();
+    @Column
+    private LocalDateTime startDate;
 
-    @Column(name = "end_date")
-    private LocalDateTime endDate = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+    @Column
+    private LocalDateTime endDate;
 
     public Market() {}
 
@@ -28,5 +28,7 @@ public class Market extends PanacheEntity {
         this.serviceType_ID = serviceType_ID;
         this.user_ID = user_ID;
         this.offer = offer;
+        this.startDate = LocalDateTime.now();
+        this.endDate = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
     }
 }

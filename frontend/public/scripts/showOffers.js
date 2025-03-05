@@ -165,7 +165,7 @@ function loadServiceTypes() {
 }
 
 function loadAllOffers() {
-    const url = `http://localhost:8080/d4d/all`;
+    const url = `http://localhost:8080/d4d/allmarkets`;
 
     showLoading();
 
@@ -176,19 +176,11 @@ function loadAllOffers() {
             }
             return response.json();
         })
-        .then(users => {
-            clearLoading();
-            if (users.length === 0) {
-                const messageContainer = document.createElement("div");
-                messageContainer.className = "no-results";
-                messageContainer.innerHTML = `
-                    <p>Es wurden keine gefunden.</p>
-                `;
-                document.getElementById("serviceList").appendChild(messageContainer);
-                return;
-            }
-            users.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
-        })
+        .then(marketDtos => {
+            marketDtos.forEach(m => {
+              addUserToList(m.serviceTypeName, "", m.userName, ""); // oder wie immer du die Felder anzeigen willst
+            });
+          })
         .catch(error => {
             console.error("Fehler:", error);
             clearLoading();
