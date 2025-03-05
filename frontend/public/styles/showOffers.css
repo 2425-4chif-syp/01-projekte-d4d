@@ -1038,7 +1038,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Landing Page Specific Styles */
 .landing-hero {
-    background: linear-gradient(rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9)), url('../assets/students-studying.jpg');
+    background: linear-gradient(rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9));
     background-size: cover;
     background-position: center;
     margin: -2rem -1rem 3rem -1rem;
@@ -1201,4 +1201,9 @@ input:focus, select:focus, textarea:focus {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
+}
+
+.username-highlight {
+    color: #007bff;
+    font-weight: bold;
 }

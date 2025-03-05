@@ -228,6 +228,43 @@ h2 {
     font-size: 14px;
     transition: transform 0.2s;
     cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.service-item .card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.service-item .card-header {
+    padding: 0.5rem 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.service-item .card-body {
+    padding: 1rem;
+}
+
+.service-item .card-body p {
+    margin: 0.25rem 0;
+}
+
+.badge {
+    padding: 0.35em 0.65em;
+    border-radius: 4px;
+    font-size: 0.875em;
+    font-weight: 600;
+}
+
+.badge.provider {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge.client {
+    background-color: #007bff;
+    color: white;
 }
 header.header {
     display: flex;
