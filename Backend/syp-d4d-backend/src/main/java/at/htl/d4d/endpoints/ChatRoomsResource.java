@@ -20,6 +20,7 @@ public class ChatRoomsResource {
     @Inject
     ChatRepository chatRepository;
 
+
     @POST
     @Transactional
     public Response createChat(JsonObject chatJson) {
