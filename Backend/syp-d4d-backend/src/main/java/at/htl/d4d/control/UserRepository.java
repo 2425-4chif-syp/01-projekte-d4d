@@ -20,4 +20,8 @@ public class UserRepository implements PanacheRepository<User> {
     public List<User> getAllUsers() {
         return listAll();
     }
+
+    public String findUserById(Long id) {
+        return findById(id).getName();
+    }
 }
