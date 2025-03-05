@@ -22,6 +22,21 @@ document.getElementById('detailSearchInput').addEventListener('keypress', functi
     }
 });
 
+// Ersetze das Zeitraum-Suchfeld mit einem Datumswähler
+document.getElementById('timeSearchInput').addEventListener('change', function() {
+    const selectedDate = this.value;
+    if (selectedDate) {
+        // Formatiere das Datum für die Anzeige
+        const formattedDate = new Date(selectedDate).toLocaleDateString('de-DE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        addTag(`Datum: ${formattedDate}`);
+        this.value = ''; // Setze das Feld zurück
+    }
+});
+
 function addTag(tag) {
     if (!selectedTags.has(tag)) {
         selectedTags.add(tag);
