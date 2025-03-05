@@ -29,9 +29,14 @@ public class ServiceResource {
     @Path("/{username}/services")
     public Response getUserServices(@PathParam("username") String username) {
         User user = userRepository.findUserByName(username);
+        
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        
         List<Market> services = serviceRepository.getServicesByUser(user);
 
-        if (services.isEmpty()) {
+        if (services == null || services.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(services).build();
