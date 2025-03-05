@@ -1,7 +1,9 @@
 package at.htl.d4d.endpoints;
 
 import at.htl.d4d.control.ServiceRepository;
+import at.htl.d4d.control.ServiceTypesRepository;
 import at.htl.d4d.control.UserRepository;
+import at.htl.d4d.entity.Market;
 import at.htl.d4d.entity.Service;
 import at.htl.d4d.entity.User;
 import jakarta.inject.Inject;
@@ -19,15 +21,41 @@ public class ServiceResource {
     @Inject
     UserRepository userRepository;
 
+    @Inject
+    ServiceTypesRepository serviceTypesRepository;
+
     @GET
     @Path("/{username}/services")
     public Response getUserServices(@PathParam("username") String username) {
         User user = userRepository.findUserByName(username);
-        List<Service> services = serviceRepository.getServicesByUser(user);
+        List<Market> services = serviceRepository.getServicesByUser(user);
 
         if (services.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(services).build();
+    }
+
+
+    @GET
+    @Path("{serviceTypeId}/services")
+    public Response getServicesTypeByTypeId(@PathParam("serviceTypeId") Long serviceTypeId) {
+        String type = serviceTypesRepository.findServiceTypeById(serviceTypeId);
+
+        if (type.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(type).build();
+    }
+
+    @GET
+    @Path("{userId}/services")
+    public Response getUserNameByUserId(@PathParam("userId") Long userId) {
+        String name = userRepository.findUserById(userId);
+
+        if (name.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(name).build();
     }
 }
