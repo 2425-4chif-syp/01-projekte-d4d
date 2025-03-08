@@ -141,7 +141,7 @@
       background-color: #d4d4d4;
     }
 
-    /* Chatbereich (rechts) – kein eigener Scroll, Inhalt wird fest angezeigt */
+    /* Chatbereich (rechts) */
     .chat-section {
       flex-grow: 1;
       display: flex;
@@ -159,7 +159,7 @@
     }
     .chat-messages {
       flex-grow: 1;
-      /* Kein overflow-y: auto, damit hier kein Scrollbalken erscheint */
+      overflow-y: auto; /* Damit Nachrichten gescrollt werden können */
       padding: 20px;
       background: linear-gradient(180deg, #fff, #f4f7fa);
       border: 1px solid var(--border-color);
@@ -596,6 +596,8 @@
     // BEIM LADEN DER SEITE
     document.addEventListener("DOMContentLoaded", function() {
       fetchChats();
+      // Default-Chat (ID 1) automatisch öffnen – falls vorhanden
+      openChat(1);
 
       const generateChatDataBtn = document.getElementById("generateChatDataButton");
       if (generateChatDataBtn) {
