@@ -3,13 +3,14 @@ package at.htl.d4d.endpoints;
 import at.htl.d4d.control.MessageRepository;
 import at.htl.d4d.entity.Message;
 import jakarta.inject.Inject;
-import jakarta.json.Json;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/chat/rooms/{chatId}/messages")
@@ -23,24 +24,29 @@ public class ChatMessageResource {
     @Inject
     MessageRepository messageRepository;
 
+    // GET /chat/rooms/{chatId}/messages
     @GET
     public Response getMessages() {
         List<Message> messages = messageRepository.getMessagesByChat(chatId);
 
-        JsonArrayBuilder arr = Json.createArrayBuilder();
+        // Immer ein Array zurückgeben, auch wenn es leer ist:
+        List<MessageDto> dtos = new ArrayList<>();
         for (Message m : messages) {
-            arr.add(Json.createObjectBuilder()
-                    .add("id", m.getId())
-                    .add("chatId", m.getChatId())
-                    .add("user", m.getUserName())
-                    .add("message", m.getMessageContent() != null ? m.getMessageContent() : "")
-                    .add("image", m.getImage() != null ? m.getImage() : "")
-                    .add("createdAt", m.getCreatedAt().toString())
-            );
+            dtos.add(new MessageDto(
+                    m.getId(),
+                    m.getChatId(),
+                    m.getUserName(),
+                    (m.getMessageContent() != null ? m.getMessageContent() : ""),
+                    (m.getImage() != null ? m.getImage() : ""),
+                    m.getCreatedAt()
+            ));
         }
-        return Response.ok(arr.build()).build();
+
+        // 200 OK, egal ob Nachrichten vorhanden sind oder nicht
+        return Response.ok(dtos).build();
     }
 
+    // POST /chat/rooms/{chatId}/messages
     @POST
     @Transactional
     public Response createMessage(JsonObject messageJson) {
@@ -55,14 +61,27 @@ public class ChatMessageResource {
         Message msg = new Message(chatId, user, messageContent, image);
         messageRepository.persist(msg);
 
-        JsonObject response = Json.createObjectBuilder()
-                .add("status", "created")
-                .add("chatId", chatId)
-                .add("user", user)
-                .add("message", messageContent)
-                .add("image", image != null ? image : "")
-                .build();
+        // Analog zu MarketResource nur "Successfully" zurückgeben
+        return Response.ok("Successfully").build();
+    }
 
-        return Response.status(Response.Status.CREATED).entity(response).build();
+    // Inneres DTO für GET /chat/rooms/{chatId}/messages
+    public static class MessageDto {
+        public Long id;
+        public Long chatId;
+        public String user;
+        public String message;
+        public String image;
+        public LocalDateTime createdAt;
+
+        public MessageDto(Long id, Long chatId, String user,
+                          String message, String image, LocalDateTime createdAt) {
+            this.id = id;
+            this.chatId = chatId;
+            this.user = user;
+            this.message = message;
+            this.image = image;
+            this.createdAt = createdAt;
+        }
     }
 }

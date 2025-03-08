@@ -3,11 +3,11 @@ package at.htl.d4d.endpoints;
 import at.htl.d4d.control.MessageRepository;
 import at.htl.d4d.entity.Message;
 import jakarta.inject.Inject;
-import jakarta.json.Json;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/chat/default/messages")
@@ -23,16 +23,21 @@ public class ChatResource {
         Long defaultChatId = 1L;
         List<Message> messages = messageRepository.getMessagesByChat(defaultChatId);
 
-        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
-        for (Message msg : messages) {
-            jsonArrayBuilder.add(Json.createObjectBuilder()
-                    .add("id", msg.getId())
-                    .add("chatId", msg.getChatId())
-                    .add("user", msg.getUserName())
-                    .add("message", msg.getMessageContent() != null ? msg.getMessageContent() : "")
-                    .add("image", msg.getImage() != null ? msg.getImage() : "")
-                    .add("createdAt", msg.getCreatedAt().toString()));
+        if (messages.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(jsonArrayBuilder.build()).build();
+
+        List<ChatMessageResource.MessageDto> dtos = new ArrayList<>();
+        for (Message m : messages) {
+            dtos.add(new ChatMessageResource.MessageDto(
+                    m.getId(),
+                    m.getChatId(),
+                    m.getUserName(),
+                    (m.getMessageContent() != null ? m.getMessageContent() : ""),
+                    (m.getImage() != null ? m.getImage() : ""),
+                    m.getCreatedAt()
+            ));
+        }
+        return Response.ok(dtos).build();
     }
 }

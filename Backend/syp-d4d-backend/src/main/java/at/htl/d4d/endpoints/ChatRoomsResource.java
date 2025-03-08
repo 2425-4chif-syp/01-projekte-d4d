@@ -12,6 +12,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/chat/rooms")
@@ -22,44 +23,66 @@ public class ChatRoomsResource {
     @Inject
     ChatRepository chatRepository;
 
+    // GET /chat/rooms
     @GET
     public Response getChats() {
         List<Chat> chats = chatRepository.listAll();
-        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
-        for (Chat chat : chats) {
-            // Hier wird chatName direkt als String eingefügt:
-            JsonObjectBuilder obj = Json.createObjectBuilder()
-                    .add("id", chat.id)
-                    .add("chatName", chat.chatName != null ? chat.chatName : "")
-                    .add("createdAt", chat.createdAt.toString());
-            arrayBuilder.add(obj);
+        // Falls keine Chats existieren, analog zu MarketResource 404 liefern
+        if (chats.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(arrayBuilder.build()).build();
+
+        // Baue eine DTO-Liste (ähnlich wie in MarketResource)
+        List<ChatDto> dtos = new ArrayList<>();
+        for (Chat chat : chats) {
+            // Wenn chat.chatName leer oder "Standardchat" ist, ersetze es durch etwas Sinnvolles
+            String displayedName = chat.chatName;
+            if (displayedName == null || displayedName.trim().isEmpty()
+                    || "Standardchat".equalsIgnoreCase(displayedName)) {
+                displayedName = "Unbekannter Chatpartner";
+            }
+
+            dtos.add(new ChatDto(
+                    chat.id,
+                    displayedName,
+                    chat.createdAt != null ? chat.createdAt.toString() : ""
+            ));
+        }
+
+        return Response.ok(dtos).build();
     }
 
+    // POST /chat/rooms
     @POST
     @Transactional
     public Response createChat(JsonObject chatJson) {
         String chatName = chatJson.getString("chatName", "").trim();
         if (chatName.isEmpty()) {
+            // Fehlermeldung, falls kein Name mitgegeben wurde
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Json.createObjectBuilder()
-                            .add("error", "Chat name must not be empty")
-                            .build())
+                    .entity("Chat name must not be empty")
                     .build();
         }
 
-        // Neuer Chat mit normalem String
+        // Neuen Chat anlegen
         Chat chat = new Chat(chatName);
         chatRepository.persist(chat);
 
-        JsonObject response = Json.createObjectBuilder()
-                .add("id", chat.id)
-                .add("chatName", chat.chatName)
-                .add("createdAt", chat.createdAt.toString())
-                .build();
+        // Wie in MarketResource: nur "Successfully" zurückgeben
+        return Response.ok("Successfully").build();
+    }
 
-        return Response.status(Response.Status.CREATED).entity(response).build();
+    // Einfaches DTO, ähnlich wie MarketDto
+    public static class ChatDto {
+        public Long id;
+        public String chatName;
+        public String createdAt;
+
+        public ChatDto(Long id, String chatName, String createdAt) {
+            this.id = id;
+            this.chatName = chatName;
+            this.createdAt = createdAt;
+        }
     }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 public class MessageRepository implements PanacheRepository<Message> {
 
     public List<Message> getMessagesByChat(Long chatId) {
-        return list("chatId", chatId);
+        // Nachrichten chronologisch (aufsteigend) sortieren
+        return list("chatId = ?1 order by createdAt asc", chatId);
     }
 }
