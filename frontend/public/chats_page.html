@@ -16,6 +16,12 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
   />
   <style>
+    /* html und body nehmen immer die volle Höhe ein und verhindern das Browser-Scrolling */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
     /* CSS-Variablen für ein konsistentes Farbschema */
     :root {
       --primary-color: #007bff;
@@ -37,7 +43,6 @@
       margin: 0;
       padding: 0;
       background: linear-gradient(135deg, #e9eff5, #ffffff);
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -77,7 +82,7 @@
       transform: translateY(-2px);
     }
 
-    /* Hauptcontainer */
+    /* Hauptcontainer – feste Höhe basierend auf dem Viewport (Navbar ca. 60px hoch) */
     .container {
       flex: 1;
       display: flex;
@@ -86,16 +91,17 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       background-color: #fff;
       overflow: hidden;
+      height: calc(100vh - 60px);
     }
 
-    /* Chatliste */
+    /* Chatliste (links) – hier bleibt die Scroll-Funktion */
     .chat-list {
-  width: 25%;
-  background-color: var(--secondary-color);
-  padding: 20px;
-  border-right: 1px solid var(--border-color);
-  overflow-y: auto;
-}
+      width: 25%;
+      background-color: var(--secondary-color);
+      padding: 20px;
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+    }
     .chat-list h3 {
       margin-top: 0;
       color: var(--text-color);
@@ -135,13 +141,14 @@
       background-color: #d4d4d4;
     }
 
-    /* Chatbereich */
+    /* Chatbereich (rechts) – kein eigener Scroll, Inhalt wird fest angezeigt */
     .chat-section {
       flex-grow: 1;
       display: flex;
       flex-direction: column;
       padding: 20px;
       background-color: var(--light-color);
+      overflow: hidden;
     }
     .chat-section h2 {
       margin-top: 0;
@@ -151,17 +158,17 @@
       gap: 10px;
     }
     .chat-messages {
-  flex-grow: 1;
-  /* overflow-y: auto;  <-- Diese Zeile entfernt */
-  padding: 20px;
-  background: linear-gradient(180deg, #fff, #f4f7fa);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-}
+      flex-grow: 1;
+      /* Kein overflow-y: auto, damit hier kein Scrollbalken erscheint */
+      padding: 20px;
+      background: linear-gradient(180deg, #fff, #f4f7fa);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
     /* Bilder in Chatnachrichten */
     .chat-messages img {
       max-width: 100%;
@@ -170,15 +177,15 @@
       margin-top: 5px;
     }
 
-    /* Custom Scrollbar */
-    .chat-messages::-webkit-scrollbar {
+    /* Custom Scrollbar – nur für den linken Bereich, falls nötig */
+    .chat-list::-webkit-scrollbar {
       width: 8px;
     }
-    .chat-messages::-webkit-scrollbar-track {
+    .chat-list::-webkit-scrollbar-track {
       background: #f1f1f1;
       border-radius: 10px;
     }
-    .chat-messages::-webkit-scrollbar-thumb {
+    .chat-list::-webkit-scrollbar-thumb {
       background: var(--primary-color);
       border-radius: 10px;
     }
@@ -349,7 +356,6 @@
       background-color: #ccc;
       transform: translateY(-2px);
     }
-    
   </style>
 </head>
 <body>
