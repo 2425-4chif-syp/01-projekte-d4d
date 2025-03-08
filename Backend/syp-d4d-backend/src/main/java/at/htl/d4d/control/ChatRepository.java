@@ -7,7 +7,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class ChatRepository implements PanacheRepository<Chat> {
 
-    // Beispiel-Methode
     public Chat findChatById(Long id) {
         return findById(id);
     }

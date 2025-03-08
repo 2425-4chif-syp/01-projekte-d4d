@@ -6,10 +6,12 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
 
 @Path("/chat/rooms")
@@ -20,7 +22,21 @@ public class ChatRoomsResource {
     @Inject
     ChatRepository chatRepository;
 
+    @GET
+    public Response getChats() {
+        List<Chat> chats = chatRepository.listAll();
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
+        for (Chat chat : chats) {
+            // Hier wird chatName direkt als String eingefügt:
+            JsonObjectBuilder obj = Json.createObjectBuilder()
+                    .add("id", chat.id)
+                    .add("chatName", chat.chatName != null ? chat.chatName : "")
+                    .add("createdAt", chat.createdAt.toString());
+            arrayBuilder.add(obj);
+        }
+        return Response.ok(arrayBuilder.build()).build();
+    }
 
     @POST
     @Transactional
@@ -34,28 +50,16 @@ public class ChatRoomsResource {
                     .build();
         }
 
-        // Neues Chat-Objekt anlegen und speichern
+        // Neuer Chat mit normalem String
         Chat chat = new Chat(chatName);
         chatRepository.persist(chat);
 
-        return Response.status(Response.Status.CREATED)
-                .entity(Json.createObjectBuilder()
-                        .add("chatName", chat.getChatName())
-                        .build())
+        JsonObject response = Json.createObjectBuilder()
+                .add("id", chat.id)
+                .add("chatName", chat.chatName)
+                .add("createdAt", chat.createdAt.toString())
                 .build();
-    }
 
-    @GET
-    public Response getChats() {
-        List<Chat> chats = chatRepository.listAll();
-
-        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
-        for (Chat chat : chats) {
-            jsonArrayBuilder.add(Json.createObjectBuilder()
-                    .add("id", chat.getId())
-                    .add("chatName", chat.getChatName())
-                    .add("createdAt", chat.getCreatedAt().toString()));
-        }
-        return Response.ok(jsonArrayBuilder.build()).build();
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 }
