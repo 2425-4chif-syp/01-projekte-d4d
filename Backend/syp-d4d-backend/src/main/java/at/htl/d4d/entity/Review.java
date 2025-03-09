@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 @Entity
 public class Review extends PanacheEntity {
 
-    // In PanacheEntity ist 'id' bereits dein Primärschlüssel (Long).
-    // Das entspricht deinem rating_ID aus dem ERD.
-
     @Column(name = "evaluatee_username")
     public String evaluateeUsername;
 
@@ -29,8 +26,7 @@ public class Review extends PanacheEntity {
     @Column(name = "created_at")
     public LocalDateTime createdAt = LocalDateTime.now();
 
-    public Review() {
-    }
+    public Review() {}
 
     public Review(String evaluateeUsername, String evaluatorUsername,
                   String serviceType, Double rating, String comment) {
@@ -39,5 +35,30 @@ public class Review extends PanacheEntity {
         this.serviceType = serviceType;
         this.rating = rating;
         this.comment = comment;
+    }
+
+    // Neue Getter
+    public String getEvaluateeUsername() {
+        return evaluateeUsername;
+    }
+
+    public String getEvaluatorUsername() {
+        return evaluatorUsername;
+    }
+
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }
