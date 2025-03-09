@@ -54,4 +54,13 @@ public class TestDataResourceTest {
                 .statusCode(200)
                 .body(is("Chat-Testdaten erfolgreich generiert."));
     }
+    @Test
+    public void testGenerateReviewTestData() {
+        RestAssured.given()
+                .when().post("d4d/testdata/generate-reviews")
+                .then()
+                .statusCode(200)
+                .body(is("Review-Testdaten erfolgreich generiert."));
+    }
+
 }

@@ -4,7 +4,9 @@ import at.htl.d4d.tests.ServiceTestData;
 import at.htl.d4d.tests.ServiceTypesTestData;
 import at.htl.d4d.tests.UserTestData;
 import at.htl.d4d.tests.MarketTestData;
-import at.htl.d4d.tests.ChatTestData; // <-- Neu hinzugefügt
+import at.htl.d4d.tests.ChatTestData;
+import at.htl.d4d.tests.ReviewTestData; // <-- Neu hinzufügen
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -29,7 +31,10 @@ public class TestDataResource {
     ServiceTestData serviceTestData;
 
     @Inject
-    ChatTestData chatTestData; // <-- Neu hinzugefügt
+    ChatTestData chatTestData;
+
+    @Inject
+    ReviewTestData reviewTestData; // <-- Neu hinzugefügt
 
     @POST
     @Path("/generate-service-types")
@@ -64,10 +69,6 @@ public class TestDataResource {
         return Response.ok("Service-Testdaten erfolgreich generiert.").build();
     }
 
-    /**
-     * Neuer Endpunkt für das Generieren von Chat-Testdaten.
-     * Ruft die generateChatTestData() aus deiner ChatTestData-Klasse auf.
-     */
     @POST
     @Path("/generate-chat")
     @Produces(MediaType.TEXT_PLAIN)
@@ -75,5 +76,14 @@ public class TestDataResource {
     public Response generateChatTestData() {
         chatTestData.generateChatTestData();
         return Response.ok("Chat-Testdaten erfolgreich generiert.").build();
+    }
+
+    @POST
+    @Path("/generate-reviews")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    public Response generateReviewTestData() {
+        reviewTestData.generateReviewTestData();
+        return Response.ok("Review-Testdaten erfolgreich generiert.").build();
     }
 }

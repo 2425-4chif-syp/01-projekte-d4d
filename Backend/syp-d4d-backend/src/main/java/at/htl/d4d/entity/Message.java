@@ -1,8 +1,9 @@
 package at.htl.d4d.entity;
 
+import at.htl.d4d.encryption.EncryptionConverter;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,9 +15,11 @@ public class Message extends PanacheEntity {
     @Column(name = "user_name")
     public String userName;
 
+    @Convert(converter = EncryptionConverter.class)  // <-- Verschlüsselung aktiv
     @Column(name = "message")
     public String message;
 
+    @Convert(converter = EncryptionConverter.class)  // <-- Verschlüsselung aktiv
     @Column(name = "image")
     public String image;
 
@@ -26,7 +29,6 @@ public class Message extends PanacheEntity {
     public Message() {
     }
 
-    // Häufig verwendeter Konstruktor
     public Message(Long chatId, String userName, String message, String image) {
         this.chatId = chatId;
         this.userName = userName;
@@ -34,17 +36,9 @@ public class Message extends PanacheEntity {
         this.image = image;
     }
 
-    // Optionaler Konstruktor, falls du den alten Ansatz mit (id, chatId, userName, …) brauchst
-    public Message(Long id, Long chatId, String userName, String message, String image, LocalDateTime createdAt) {
-        this.id = id;
-        this.chatId = chatId;
-        this.userName = userName;
-        this.message = message;
-        this.image = image;
-        this.createdAt = createdAt;
-    }
+    // Getter usw.
 
-    // Getter, damit dein alter Code (getId(), getChatId() etc.) weiterhin funktioniert
+// Getter, damit dein alter Code (getId(), getChatId() etc.) weiterhin funktioniert
     public Long getId() {
         return this.id;
     }
