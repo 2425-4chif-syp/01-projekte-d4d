@@ -64,4 +64,21 @@ public class ServiceResource {
         }
         return Response.ok(name).build();
     }
+
+    @GET
+    @Path("/{username}/services/perfect-match")
+    public Response getPerfectMatches(@PathParam("username") String username) {
+        User user = userRepository.findUserByName(username);
+        
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        
+        List<Market> services = serviceRepository.getPerfectMatchesByUser(user);
+
+        if (services == null || services.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(services).build();
+    }
 }

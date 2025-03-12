@@ -43,4 +43,27 @@ public class ServiceRepository implements PanacheRepository<Service> {
     public List<Service> getAllServices() {
         return listAll();
     }
+
+    public List<Market> getPerfectMatchesByUser(User user) {
+        List<Market> allMarkets = marketRepository.getAllMarkets();
+        List<Market> perfectMatches = new ArrayList<>();
+
+        for (Market market : allMarkets) {
+            if (market.user_ID.equals(user.id)) {
+                continue;
+            }
+
+            Market userMarket = marketRepository.findMarketByUser(user.id);
+
+            if (marketRepository.hasMarketWithOfferAndWant(market.user_ID)) {
+                if (market.offer == 1 && userMarket.offer == 0 && market.serviceType_ID.equals(userMarket.serviceType_ID)) {
+                    perfectMatches.add(market);
+                } else if (market.offer == 0 && userMarket.offer == 1 && market.serviceType_ID.equals(userMarket.serviceType_ID)) {
+                    perfectMatches.add(market);
+                }
+            }
+        }
+
+        return perfectMatches;
+    }
 }

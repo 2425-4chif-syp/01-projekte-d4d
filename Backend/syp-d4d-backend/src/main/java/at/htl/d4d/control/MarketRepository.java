@@ -32,4 +32,9 @@ public class MarketRepository implements PanacheRepository<Market> {
     public Market findMarketByUser(Long userId){
         return find("user_ID", userId).firstResult();
     }
+
+    public Boolean hasMarketWithOfferAndWant(Long userId){
+        return find("user_ID = ?1 and offer = 1", userId).count() > 0
+                && find("user_ID = ?1 and offer = 0", userId).count() > 0;
+    } 
 }
