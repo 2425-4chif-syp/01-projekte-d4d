@@ -1,13 +1,11 @@
 package at.htl.d4d.tests;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import at.htl.d4d.control.MarketRepository;
 import at.htl.d4d.control.UserRepository;
 import at.htl.d4d.entity.Market;
+import at.htl.d4d.entity.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -19,55 +17,88 @@ public class InfosTest {
     @Inject
     UserRepository userRepository;
 
-    public List<String> getPerfektMatch() {
-        List<Market> markets = marketRepository.getAllMarkets();
+    public List<String> getPerfectMatch() {
+        // Hole alle Benutzer, die sowohl Angebote als auch Gesuche haben
+        List<String> usersWithOffersAndWants = getUsersWithOffersAndWants();
         Set<String> uniqueUserNames = new HashSet<>();
-        
-        // Vergleiche alle Markteinträge miteinander
-        for (Market offer1 : markets) {
-            // Nur Angebote betrachten (offer == 1)
-            if (offer1.offer != 1) {
-                continue;
+    
+        // Organisiere Daten in Maps für schnellen Zugriff
+        Map<Long, Set<Long>> userOffers = new HashMap<>(); // user_ID -> Set<serviceType_ID>
+        Map<Long, Set<Long>> userWants = new HashMap<>();  // user_ID -> Set<serviceType_ID>
+    
+        // Erste Schleife: Alle Märkte durchgehen und in Maps organisieren
+        for (Market market : marketRepository.getAllMarkets()) {
+            Long userId = market.user_ID;
+            if (market.offer == 1) {
+                userOffers.computeIfAbsent(userId, k -> new HashSet<>()).add(market.serviceType_ID);
+            } else if (market.offer == 0) {
+                userWants.computeIfAbsent(userId, k -> new HashSet<>()).add(market.serviceType_ID);
             }
-            
-            for (Market want1 : markets) {
-                // Nur Gesuche betrachten (offer == 0) und vom gleichen Benutzer wie offer1
-                if (want1.offer != 0 || !want1.user_ID.equals(offer1.user_ID)) {
-                    continue;
-                }
-                
-                // Suche nach einem zweiten Benutzer mit passendem Angebot und Gesuch
-                for (Market offer2 : markets) {
-                    // Nur Angebote betrachten (offer == 1) und von anderem Benutzer als offer1
-                    if (offer2.offer != 1 || offer2.user_ID.equals(offer1.user_ID)) {
-                        continue;
-                    }
-                    
-                    // Prüfen, ob das Angebot des zweiten Benutzers zum Gesuch des ersten passt
-                    if (offer2.serviceType_ID.equals(want1.serviceType_ID)) {
-                        
-                        for (Market want2 : markets) {
-                            // Nur Gesuche betrachten (offer == 0) vom gleichen Benutzer wie offer2
-                            if (want2.offer != 0 || !want2.user_ID.equals(offer2.user_ID)) {
-                                continue;
-                            }
-                            
-                            // Prüfen, ob das Gesuch des zweiten Benutzers zum Angebot des ersten passt
-                            if (want2.serviceType_ID.equals(offer1.serviceType_ID)) {
-                                // Perfect Match gefunden! Füge die Benutzernamen zum Set hinzu
-                                String user1Name = userRepository.findUserById(offer1.user_ID);
-                                String user2Name = userRepository.findUserById(offer2.user_ID);
-                                
-                                uniqueUserNames.add(user1Name);
-                                uniqueUserNames.add(user2Name);
-                            }
-                        }
-                    }
+        }
+    
+        // Zweite Schleife: Kombinationen von Benutzern überprüfen
+        List<Long> usersWithBoth = new ArrayList<>();
+        for (String userName : usersWithOffersAndWants) {
+            User user = userRepository.findUserByName(userName);
+            Long userId = user.id;
+            if (userId != null && userOffers.containsKey(userId) && userWants.containsKey(userId)) {
+                usersWithBoth.add(userId);
+            }
+        }
+    
+        for (int i = 0; i < usersWithBoth.size(); i++) {
+            Long user1Id = usersWithBoth.get(i);
+            Set<Long> offers1 = userOffers.get(user1Id);
+            Set<Long> wants1 = userWants.get(user1Id);
+    
+            for (int j = i + 1; j < usersWithBoth.size(); j++) {
+                Long user2Id = usersWithBoth.get(j);
+                Set<Long> offers2 = userOffers.get(user2Id);
+                Set<Long> wants2 = userWants.get(user2Id);
+    
+                // Überprüfe Überschneidungen zwischen Angeboten und Gesuchen
+                boolean user1OffersWhatUser2Wants = !Collections.disjoint(offers1, wants2);
+                boolean user2OffersWhatUser1Wants = !Collections.disjoint(offers2, wants1);
+    
+                if (user1OffersWhatUser2Wants && user2OffersWhatUser1Wants) {
+                    // Perfect Match gefunden! Füge die Benutzernamen zum Set hinzu
+                    uniqueUserNames.add(userRepository.findUserById(user1Id));
+                    uniqueUserNames.add(userRepository.findUserById(user2Id));
                 }
             }
         }
-        
+    
         // Konvertiere das Set in eine Liste
         return new ArrayList<>(uniqueUserNames);
+    }
+
+    public List<String> getUsersWithOffersAndWants() {
+        List<Market> markets = marketRepository.getAllMarkets();
+        Set<Long> usersWithOffers = new HashSet<>();
+        Set<Long> usersWithWants = new HashSet<>();
+    
+        // Erste Schleife: Identifiziere Benutzer mit Angeboten und Gesuchen
+        for (Market market : markets) {
+            Long userId = market.user_ID;
+            if (market.offer == 1) {
+                usersWithOffers.add(userId); // Benutzer hat ein Angebot
+            } else if (market.offer == 0) {
+                usersWithWants.add(userId); // Benutzer hat ein Gesuch
+            }
+        }
+    
+        // Finde die Schnittmenge von Benutzern, die sowohl Angebote als auch Gesuche haben
+        usersWithOffers.retainAll(usersWithWants);
+    
+        // Zweite Schleife: Hole die Namen der Benutzer aus der Schnittmenge
+        List<String> userNames = new ArrayList<>();
+        for (Long userId : usersWithOffers) {
+            String userName = userRepository.findUserById(userId);
+            if (userName != null) { // Sicherstellen, dass der Name nicht null ist
+                userNames.add(userName);
+            }
+        }
+    
+        return userNames;
     }
 }

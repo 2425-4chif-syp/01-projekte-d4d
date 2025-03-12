@@ -15,17 +15,35 @@ public class GetInfosTest {
             public void testGetPerfektMatchInfos() {
                 Response response = given()
                         .when()
-                        .get("/infos/perfekt-match")
+                        .get("/infos/perfect-match")
                         .then()
                         .statusCode(200) // Überprüfe, ob der Statuscode 200 ist
                         .extract().response();
         
                 // Extrahiere die Liste von Strings aus der Antwort
-                List<String> perfektMatches = response.jsonPath().getList("$");
+                List<String> perfectMatches = response.jsonPath().getList("$");
         
-                System.out.println(perfektMatches);
+                System.out.println(perfectMatches);
 
                 // Validiere, dass die Liste nicht leer ist
-                assertEquals(true, perfektMatches.size() > 0, "Liste ist leer");
+                assertEquals(true, perfectMatches.size() > 0, "Liste ist leer");
+            }
+
+            @Test
+            public void testGetUsersWithOffersAndWants() {
+                Response response = given()
+                        .when()
+                        .get("/infos/users-with-offers-and-wants")
+                        .then()
+                        .statusCode(200) // Überprüfe, ob der Statuscode 200 ist
+                        .extract().response();
+        
+                // Extrahiere die Liste von Strings aus der Antwort
+                List<String> usersWithOffersAndWants = response.jsonPath().getList("$");
+        
+                System.out.println(usersWithOffersAndWants);
+
+                // Validiere, dass die Liste nicht leer ist
+                assertEquals(true, usersWithOffersAndWants.size() > 0, "Liste ist leer");
             }
 }

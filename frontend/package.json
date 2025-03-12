@@ -2,7 +2,6 @@
   "name": "d4d-frontend",
   "version": "1.0.0",
   "description": "Frontend für das D4D Projekt",
-  "main": "index.js",
   "scripts": {
     "start": "http-server ./public -p 3000",
     "test": "echo \"Error: no test specified\" && exit 1"

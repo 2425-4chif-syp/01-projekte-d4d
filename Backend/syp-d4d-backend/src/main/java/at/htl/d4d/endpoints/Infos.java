@@ -17,11 +17,20 @@ public class Infos {
     InfosTest infosTest;
 
     @GET
-    @Path("/perfekt-match")
+    @Path("/perfect-match")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<String> getPerfektMatch() {
-        List<String> perfektMatches = infosTest.getPerfektMatch();
+    public List<String> getPerfectMatch() {
+        List<String> perfectMatches = infosTest.getPerfectMatch();
 
-        return perfektMatches;
+        return perfectMatches;
+    }
+
+    @GET
+    @Path("/users-with-offers-and-wants")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getUsersWithOffersAndWants() {
+        List<String> usersWithOffersAndWants = infosTest.getUsersWithOffersAndWants();
+
+        return usersWithOffersAndWants;
     }
 }
