@@ -7,7 +7,9 @@ import at.htl.d4d.entity.Market;
 import at.htl.d4d.entity.ServiceType;
 import at.htl.d4d.entity.User;
 import jakarta.inject.Inject;
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -67,6 +69,40 @@ public class MarketResource {
 
         return Response.ok("Successfully").build();
     }
+
+    @POST
+    @Path("/createMultipleMarkets")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
+    public Response createMarketOffer(JsonObject jsonMarket) {
+        String username = jsonMarket.getString("username");
+        User user = userRepository.findUserByName(username);
+
+        JsonArray jsonOffers = jsonMarket.getJsonArray("offers");
+        List<String> serviceOffers = jsonOffers.getValuesAs(JsonString.class)
+                .stream()
+                .map(JsonString::getString)
+                .toList();
+
+        for (String serviceOffer : serviceOffers) {
+            ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(serviceOffer);
+            marketRepository.persist(new Market(serviceType.id, user.id, 1));
+        }
+
+        JsonArray jsonDemands = jsonMarket.getJsonArray("demands");
+        List<String> serviceDemands = jsonDemands.getValuesAs(JsonString.class)
+                .stream()
+                .map(JsonString::getString)
+                .toList();
+
+        for (String serviceDemand : serviceDemands) {
+            ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(serviceDemand);
+            marketRepository.persist(new Market(serviceType.id, user.id, 0));
+        }
+        return Response.ok("Successfully").build();
+    }
+
 
     @GET
     @Path("/allmarkets")
