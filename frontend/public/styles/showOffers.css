@@ -1826,3 +1826,24 @@ input:focus, select:focus, textarea:focus {
     font-weight: 500;
 }
 
+.logo-button {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    padding: 0;
+    cursor: pointer;
+}
+
+.logo-button:hover {
+    background: none;
+    transform: scale(1.05);
+}
+
+.logo-button i {
+    font-size: 1.8rem;
+}
