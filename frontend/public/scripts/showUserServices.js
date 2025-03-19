@@ -444,6 +444,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return response.json();
             })
+            .then(matches => {
+                // Wandle die rohen Perfect Matches in ein erweitertes Format um
+                return Promise.all(matches.map(match =>
+                    Promise.all([
+                        getServiceTypeName(match.serviceType_ID),
+                        getUserName(match.user_ID)
+                    ]).then(([serviceTypeName, username]) => ({
+                        ...match,
+                        serviceTypeName,
+                        username,
+                        offer: match.offer
+                    }))
+                ));
+            })
             .catch(error => {
                 console.error('Fehler beim Abrufen der perfekten Übereinstimmungen:', error);
                 throw error;
@@ -491,6 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card perfect-match-card">
                 <div class="card-header">
                     <span class="badge perfect-match">Perfect-Match</span>
+                                        <span class="badge ${service.offer === 1 ? 'provider' : 'client'}">${service.offer === 1 ? 'Angebot' : 'Nachfrage'}</span>
                 </div>
                 <div class="card-body">
                     <div class="service-info">

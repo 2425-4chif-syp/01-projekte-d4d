@@ -14,7 +14,7 @@
     --success-color: #28a745;
     --error-color: #dc3545;
     --offer-color: #b15df5;
-    --demand-color: #7eff5e;
+    --demand-color: #2c8a15;
     --perfect-color: #ffd700;
     --perfect-bg-color: #fff7cc;
     --hover-bg: #f8fafc;
@@ -1351,12 +1351,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 .badge.provider {
-    background-color: #28a745;
+    background-color: var(--offer-color);
     color: white;
 }
 
 .badge.client {
-    background-color: #007bff;
+    background-color: var(--demand-color);
     color: white;
 }
 
