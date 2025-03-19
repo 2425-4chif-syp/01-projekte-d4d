@@ -32,13 +32,34 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage('Suche nach Dienstleistungen...', 'info');
         userServiceResults.innerHTML = '';
         
-        getUserServices(username)
-            .then(services => {
-                if (services && services.length > 0) {
-                    displayServices(services, username);
-                    showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
+        // Zuerst perfekte Übereinstimmungen holen
+        getPerfectMatches(username)
+            .then(pm => {
+                if (pm && pm.length > 0) {
+                    showPerfectMatches(pm);
+                    showMessage(`Perfekte Übereinstimmungen für ${username}`, 'success');
                 } else {
-                    showMessage(`Keine Dienstleistungen für Benutzer "${username}" gefunden.`, 'error');
+                    const perfectMatchContainer = document.getElementById('perfectMatchContainer');
+                    if (perfectMatchContainer) {
+                        perfectMatchContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine perfekten Übereinstimmungen gefunden.</div>';
+                    }
+                }
+                
+                // Danach alle normalen Services holen
+                return Promise.all([getUserServices(username), Promise.resolve(pm || [])]);
+            })
+            .then(([services, perfectMatches]) => {
+                if (services && services.length > 0) {
+                    // Filtere die Perfect Matches aus den normalen Services heraus
+                    const filteredServices = removePerfectMatches(services, perfectMatches);
+                    
+                    if (filteredServices.length > 0) {
+                        displayServices(filteredServices, username);
+                        showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
+                    } else {
+                        userServiceResults.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Alle Dienstleistungen sind Perfect Matches.</div>';
+                    }
+                } else {
                     userServiceResults.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Dienstleistungen für diesen Benutzer gefunden.</div>';
                 }
             })
@@ -107,6 +128,81 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Function to get perfect matches
+    function getPerfectMatches(username) {
+        const backendUrl = 'http://localhost:8080';
+        return fetch(`${backendUrl}/d4d/${encodeURIComponent(username)}/services/perfect-match`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Perfect matches fetch failed: ${response.status}`);
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Fehler beim Abrufen der perfekten Übereinstimmungen:', error);
+                throw error;
+            });
+    }
+
+    // Function to show perfect-matches as cards -> gold
+    function showPerfectMatches(pm) {
+        const perfectMatchContainer = document.getElementById('perfectMatchContainer');
+        if (!perfectMatchContainer) {
+            console.error('perfectMatchContainer element not found in the DOM');
+            return;
+        }
+        
+        perfectMatchContainer.innerHTML = ''; // Clear previous results
+        if (!pm || pm.length === 0) {
+            perfectMatchContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine perfekten Übereinstimmungen gefunden.</div>';
+            return;
+        }
+
+        pm.forEach(market => {
+            Promise.all([
+                getServiceTypeName(market.serviceType_ID),
+                getUserName(market.user_ID)
+            ])
+            .then(([serviceTypeName, username]) => {
+                const card = createPerfectMatchCard({
+                    username: username,
+                    serviceTypeName: serviceTypeName
+                });
+                perfectMatchContainer.appendChild(card);
+            })
+            .catch(error => {
+                console.error('Fehler beim Anzeigen des Perfect Matches:', error);
+            });
+        });
+    }
+
+    // Function to create a perfect-match service card -> gold, kein Angebot, Nachfrage
+    function createPerfectMatchCard(service) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'service-item';
+        
+        cardDiv.innerHTML = `
+            <div class="card perfect-match-card">
+                <div class="card-header">
+                    <span class="badge perfect-match">Perfect-Match</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>${service.username}</strong></p>
+                    <p>${service.serviceTypeName}</p>
+                </div>
+            </div>
+        `;
+        
+        return cardDiv;
+    }
+
+    // Function to remove perfect matches from normal services
+    function removePerfectMatches(services, perfectMatches) {
+        return services.filter(service => {
+            return !perfectMatches.some(pm => pm.serviceType_ID === service.serviceType_ID && pm.user_ID === service.user_ID);
+        });
+    }
+
     // Function to display the services
     function displayServices(services, currentUsername) {
         userServiceResults.innerHTML = ''; // Clear previous results
@@ -139,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         cardDiv.className = 'service-item';
         
         cardDiv.innerHTML = `
-            <div class="card">
+            <div class="card ${isOffer ? 'offer-card' : 'demand-card'}">
                 <div class="card-header">
                     <span class="badge ${isOffer ? 'provider' : 'client'}">${isOffer ? 'Angebot' : 'Nachfrage'}</span>
                 </div>
