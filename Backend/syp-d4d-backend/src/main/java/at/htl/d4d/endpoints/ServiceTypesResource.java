@@ -61,4 +61,15 @@ public class ServiceTypesResource {
             return Response.status(Response.Status.NOT_FOUND).entity("ServiceType not found").build();
         }
     }
+
+    @GET
+    @Path("/serviceType/{id}")
+    public Response getServiceTypeById(@PathParam("id") Long id) {
+        String serviceType = repository.findServiceTypeById(id);
+
+        if (serviceType == null || serviceType.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(serviceType).build();
+    }
 }

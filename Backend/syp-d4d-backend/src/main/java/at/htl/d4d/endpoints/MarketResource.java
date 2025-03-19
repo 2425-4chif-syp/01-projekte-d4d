@@ -18,6 +18,7 @@ import org.hibernate.query.spi.SelectQueryPlan;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Path("d4d")
 @Produces(MediaType.APPLICATION_JSON)
@@ -103,6 +104,21 @@ public class MarketResource {
         return Response.ok("Successfully").build();
     }
 
+    @GET
+    @Path("/getMarkets/{username}")
+    public Response getMarketsByUser(@PathParam("username") String username) {
+        User user = userRepository.findUserByName(username);
+
+        List<Market> marketsByUser = new ArrayList<>();
+        List<Market> allMarkets = marketRepository.getAllMarkets();
+
+        for (Market market : allMarkets) {
+            if (Objects.equals(market.user_ID, user.id)) {
+                marketsByUser.add(market);
+            }
+        }
+        return Response.ok(marketsByUser).build();
+    }
 
     @GET
     @Path("/allmarkets")
