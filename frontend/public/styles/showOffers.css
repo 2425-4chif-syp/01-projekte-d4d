@@ -12,7 +12,9 @@
     --transition: all 0.3s ease;
     --success-color: #28a745;
     --error-color: #dc3545;
-    --perfect-color: #c9b500;
+    --offer-color: #b15df5;
+    --demand-color: #7eff5e;
+    --perfect-color: #fdec58;
 }
 
 /* Base Styles */
@@ -268,6 +270,34 @@ input:focus, select:focus, textarea:focus {
 
 .card-body p strong {
     color: var(--primary-color);
+}
+
+.perfect-match-card {
+    border: 3px solid var(--perfect-color);
+    box-shadow: 0 0 10px rgba(201, 181, 0, 0.3);
+}
+
+.perfect-match-card:hover {
+    box-shadow: 0 0 15px rgba(201, 181, 0, 0.5);
+}
+
+/* Rahmenfarben für normale Services */
+.offer-card {
+    border: 3px solid var(--offer-color);/* Grün für Angebote */
+    box-shadow: 0 0 10px #64239a;
+}
+
+.offer-card:hover {
+    box-shadow: 0 0 15px #64239a;
+}
+
+.demand-card {
+    border: 3px solid var(--demand-color);
+    box-shadow: 0 0 10px #55a840;
+}
+
+.demand-card:hover {
+    box-shadow: 0 0 15px #55a840;
 }
 
 /* Make Offer Specific Styles */
@@ -1208,3 +1238,4 @@ input:focus, select:focus, textarea:focus {
     color: #007bff;
     font-weight: bold;
 }
+
