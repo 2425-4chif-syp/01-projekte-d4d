@@ -86,9 +86,41 @@ public class MarketResource {
                 .map(JsonString::getString)
                 .toList();
 
+        // deutsch, mathe, englisch
+
+        List<Market> offers = marketRepository.findMarketOffersByUser(user.id);
+        boolean found = false;
+        // deutsch, mathe, englisch, syp
+
+        for (Market market : offers) {
+            found = false;
+
+            for (String offer: serviceOffers) {
+                ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(offer);
+
+                if (market.serviceType_ID.equals(serviceType.id)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                marketRepository.deleteById(market.id);
+            }
+        }
+
         for (String serviceOffer : serviceOffers) {
             ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(serviceOffer);
-            marketRepository.persist(new Market(serviceType.id, user.id, 1));
+            found = false;
+
+            for (Market market : offers) {
+                if (market.serviceType_ID.equals(serviceType.id)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                marketRepository.persist(new Market(serviceType.id, user.id, 1));
+            }
         }
 
         JsonArray jsonDemands = jsonMarket.getJsonArray("demands");
@@ -97,9 +129,37 @@ public class MarketResource {
                 .map(JsonString::getString)
                 .toList();
 
+        List<Market> demands = marketRepository.findMarketDemandsByUser(user.id);
+
+        for (Market market : demands) {
+            found = false;
+
+            for (String demand: serviceDemands) {
+                ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(demand);
+
+                if (market.serviceType_ID.equals(serviceType.id)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                marketRepository.deleteById(market.id);
+            }
+        }
+
         for (String serviceDemand : serviceDemands) {
             ServiceType serviceType = serviceTypesRepository.findServiceTypeByName(serviceDemand);
-            marketRepository.persist(new Market(serviceType.id, user.id, 0));
+            found = false;
+
+            for (Market market : demands) {
+                if (market.serviceType_ID.equals(serviceType.id)) {
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                marketRepository.persist(new Market(serviceType.id, user.id, 0));
+            }
         }
         return Response.ok("Successfully").build();
     }

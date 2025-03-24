@@ -38,7 +38,7 @@ public class ServiceTypesRepository implements PanacheRepository<ServiceType> {
     }
 
     public List<ServiceType> getActiveServiceTypes() {
-        return list("deletedAt IS NULL");
+        return list("deletedAt IS NULL ORDER BY typeOfService");
     }
 
     public ServiceType findServiceTypeByName(String typeOfService) {

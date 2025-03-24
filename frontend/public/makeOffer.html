@@ -35,33 +35,30 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label for="name">Dein Name:</label>
-                        <input type="text" id="name" placeholder="Gib deinen Namen ein..." required>
+                        <input type="text" id="name" placeholder="Gib deinen Namen ein und drücke Enter..." required>
                     </div>
-                        <p class="instruction">Klicke auf die Dienstleistungen, die du anbieten oder in Anspruch nehmen möchtest.</p>
-                        
-                        <div class="service-categories">
-                            <div class="service-category">
-                                <h4>Angebote</h4>
-                                <div id="offeredServicesList" class="service-list">
-                                    <!-- Wird dynamisch mit JS befüllt -->
-                                </div>
+                    <p class="instruction">Klicke auf die Dienstleistungen, die du anbieten oder in Anspruch nehmen möchtest.</p>
+                    
+                    <div class="service-categories">
+                        <div class="service-category">
+                            <h4>Angebote</h4>
+                            <div id="offeredServicesList" class="service-list">
                             </div>
-                            
-                            <div class="service-category">
-                                <h4>Nachfragen</h4>
-                                <div id="demandedServicesList" class="service-list">
-                                    <!-- Wird dynamisch mit JS befüllt -->
-                                </div>
+                        </div>
+                        
+                        <div class="service-category">
+                            <h4>Nachfragen</h4>
+                            <div id="demandedServicesList" class="service-list">
                             </div>
                         </div>
                     </div>
-                    
-                    <button id="submitButton">
-                        <i class="fas fa-paper-plane"></i>
-                        Einreichen
-                    </button>
-                    <div class="response-message"></div>
                 </div>
+                
+                <button id="submitButton">
+                    <i class="fas fa-paper-plane"></i>
+                    Einreichen
+                </button>
+                <div class="response-message"></div>
             </div>
         </div>
     </main>
