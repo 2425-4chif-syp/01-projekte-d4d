@@ -271,6 +271,8 @@ input:focus, select:focus, textarea:focus {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
+    display: flex;
+    flex-direction: column;
 }
 
 .service-item .card:hover {
@@ -283,7 +285,8 @@ input:focus, select:focus, textarea:focus {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 16px;
-    height: 200px;
+    height: auto;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     transition: transform 0.2s ease-in-out;
@@ -316,24 +319,20 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-body {
-    padding: 1.5rem;
-}
-
-.card-body {
-    padding: 16px;
+    padding: 1rem;
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    overflow-wrap: break-word;
 }
 
 .card-body p {
-    margin: 0.5rem 0;
-    line-height: 1.5;
+    margin: 0 0 0.5rem;
+    line-height: 1.3;
 }
 
-.card-body p strong {
-    color: var(--primary-color);
+.card-body p:last-child {
+    margin-bottom: 0;
 }
 
 .service-info {

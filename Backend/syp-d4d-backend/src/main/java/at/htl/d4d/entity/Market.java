@@ -29,6 +29,6 @@ public class Market extends PanacheEntity {
         this.user_ID = user_ID;
         this.offer = offer;
         this.startDate = LocalDateTime.now();
-        this.endDate = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+        this.endDate = LocalDateTime.of(2100, 12, 31, 23, 59, 59);
     }
 }

@@ -63,11 +63,10 @@ function removeTag(tag) {
 }
 
 function applyFilters() {
-    const serviceFilter = document.getElementById('filterService').value;
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     showLoading();
 
-    fetch(`http://localhost:8080/d4d/${serviceFilter === 'all' ? 'all' : encodeURIComponent(serviceFilter)}`)
+    fetch(`http://localhost:8080/d4d/allmarkets`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -75,6 +74,7 @@ function applyFilters() {
             return response.json();
         })
         .then(users => {
+            console.log(response.json());
             // Filtere die Ergebnisse basierend auf den ausgewählten Tags und der Namenssuche
             const filteredUsers = users.filter(user => {
                 const matchesName = nameSearch === '' || user.name.toLowerCase().includes(nameSearch);
@@ -223,22 +223,157 @@ function loadAllOffers() {
                 document.getElementById("serviceList").appendChild(messageContainer);
                 return;
             }
+            
+            // Aufteilung in zwei Listen basierend auf isOffer
+            const offersContainer = document.createElement("div");
+            offersContainer.className = "services-container";
+            offersContainer.style.display = "flex";
+            offersContainer.style.gap = "20px";
+            
+            // Container für isOffer = false (links)
+            const falseContainer = document.createElement("div");
+            falseContainer.className = "services-column false-offers";
+            falseContainer.style.flex = "1";
+            
+            // Überschrift für isOffer = false
+            const falseHeader = document.createElement("h3");
+            falseHeader.innerHTML = '<i class="fas fa-hand-holding"></i> Gesuchte Dienste';
+            falseHeader.style.marginBottom = "15px";
+            falseContainer.appendChild(falseHeader);
+            
+            // Liste für isOffer = false
+            const falseList = document.createElement("ul");
+            falseList.className = "service-list";
+            falseList.style.padding = "0";
+            falseList.style.margin = "0";
+            falseList.style.listStyle = "none";
+            falseContainer.appendChild(falseList);
+            
+            // Container für isOffer = true (rechts)
+            const trueContainer = document.createElement("div");
+            trueContainer.className = "services-column true-offers";
+            trueContainer.style.flex = "1";
+            
+            // Überschrift für isOffer = true
+            const trueHeader = document.createElement("h3");
+            trueHeader.innerHTML = '<i class="fas fa-hands-helping"></i> Angebotene Dienste';
+            trueHeader.style.marginBottom = "15px";
+            trueContainer.appendChild(trueHeader);
+            
+            // Liste für isOffer = true
+            const trueList = document.createElement("ul");
+            trueList.className = "service-list";
+            trueList.style.padding = "0";
+            trueList.style.margin = "0";
+            trueList.style.listStyle = "none";
+            trueContainer.appendChild(trueList);
+            
+            // Sortieren und Hinzufügen der Dienste
             marketDtos.forEach(m => {
-                addUserToList(
+                // Element erstellen
+                const listItem = createServiceCard(
                     m.serviceTypeName, 
                     "", 
                     m.userName, 
                     m.description || "",
                     m.startDate,
-                    m.endDate
+                    m.endDate,
+                    m.isOffer
                 );
+                
+                // Zum richtigen Container hinzufügen
+                if (m.isOffer) {
+                    trueList.appendChild(listItem);
+                } else {
+                    falseList.appendChild(listItem);
+                }
             });
+            
+            // Container zum Layout hinzufügen
+            offersContainer.appendChild(falseContainer);
+            offersContainer.appendChild(trueContainer);
+            
+            // Zum Hauptcontainer hinzufügen
+            const serviceList = document.getElementById("serviceList");
+            serviceList.appendChild(offersContainer);
         })
         .catch(error => {
             console.error("Fehler:", error);
             clearLoading();
             alert("Es gab ein Problem beim Abrufen der Daten.");
         });
+}
+
+function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer) {
+    const listItem = document.createElement("li");
+    listItem.className = "service-item";
+
+    // Format dates for display
+    let dateRange = 'Zeitraum nicht angegeben';
+    
+    // Format startdate and enddate if they exist
+    if (startdate || enddate) {
+        try {
+            let formattedStartDate = 'Nicht angegeben';
+            let formattedEndDate = 'Nicht angegeben';
+            
+            // Format startdate if exists
+            if (startdate) {
+                try {
+                    const startDateTime = new Date(startdate);
+                    if (!isNaN(startDateTime.getTime())) {
+                        formattedStartDate = startDateTime.toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error formatting startdate:", e);
+                }
+            }
+        
+            if (enddate) {
+                try {
+                    const endDateTime = new Date(enddate);
+                    if (!isNaN(endDateTime.getTime())) {
+                        formattedEndDate = endDateTime.toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error formatting enddate:", e);
+                }
+            }
+            
+            // Create date range string
+            dateRange = `${formattedStartDate}-${formattedEndDate}`;
+        } catch (e) {
+            console.error("Error formatting dates:", e);
+        }
+    }
+
+    // Klassenname je nach isOffer-Wert
+    const cardClassName = isOffer ? "offer-card" : "demand-card";
+    const badgeText = isOffer ? "Angebot" : "Gesucht";
+
+    listItem.innerHTML = `
+        <div class="card ${cardClassName}" style="height: auto; min-height: 200px;">
+            <div class="card-header">
+                <h3 style="margin: 0 0 8px 0; font-size: 1rem; color: #333;">${serviceOffer}</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: #666;">${dateRange}</p>
+                <span class="badge">${badgeText}</span>
+            </div>
+            <div class="card-body">
+                <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${name}</p>
+                <p style="margin: 0;"><strong>Beschreibung: </strong> ${description}</p>
+            </div>
+        </div>
+    `;
+
+    return listItem;
 }
 
 document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
