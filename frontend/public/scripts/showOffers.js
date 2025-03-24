@@ -22,20 +22,9 @@ document.getElementById('detailSearchInput').addEventListener('keypress', functi
     }
 });
 
-// Ersetze das Zeitraum-Suchfeld mit einem Datumswähler
-document.getElementById('timeSearchInput').addEventListener('change', function() {
-    const selectedDate = this.value;
-    if (selectedDate) {
-        // Formatiere das Datum für die Anzeige
-        const formattedDate = new Date(selectedDate).toLocaleDateString('de-DE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        addTag(`Datum: ${formattedDate}`);
-        this.value = ''; // Setze das Feld zurück
-    }
-});
+// Event-Listener für Datumsfelder
+document.getElementById('fromDateInput').addEventListener('change', applyFilters);
+document.getElementById('toDateInput').addEventListener('change', applyFilters);
 
 function addTag(tag) {
     if (!selectedTags.has(tag)) {
@@ -65,6 +54,8 @@ function removeTag(tag) {
 function applyFilters() {
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     const selectedServiceType = document.getElementById('filterService').value;
+    const fromDate = document.getElementById('fromDateInput').value;
+    const toDate = document.getElementById('toDateInput').value;
     showLoading();
 
     fetch(`http://localhost:8080/d4d/allmarkets`)
@@ -81,11 +72,36 @@ function applyFilters() {
                 const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
                 // Prüfe, ob das Fach übereinstimmt (ignoriere den Filter, wenn "all" ausgewählt ist)
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
+                
+                // Datumsfilterung hinzugefügt - geändert, um nach Startdatum im Bereich zu filtern
+                let matchesDateRange = true;
+                if (fromDate || toDate) {
+                    // Wenn das User-Startdatum existiert, nutzen wir es für die Filterung
+                    if (user.startDate) {
+                        const userStartDate = new Date(user.startDate);
+                        
+                        // Wenn ein Von-Datum gesetzt ist, überprüfe, ob das Angebot nach oder am selben Tag beginnt
+                        if (fromDate) {
+                            const filterFromDate = new Date(fromDate);
+                            matchesDateRange = matchesDateRange && userStartDate >= filterFromDate;
+                        }
+                        
+                        // Wenn ein Bis-Datum gesetzt ist, überprüfe, ob das Angebot vor oder am selben Tag beginnt
+                        if (toDate) {
+                            const filterToDate = new Date(toDate);
+                            matchesDateRange = matchesDateRange && userStartDate <= filterToDate;
+                        }
+                    } else {
+                        // Wenn kein Startdatum vorhanden ist und ein Datum-Filter aktiv ist, wird der Eintrag nicht angezeigt
+                        matchesDateRange = false;
+                    }
+                }
+                
                 // Passe Tags-Filter an deine Felder an
                 const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
                     user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
-                return matchesName && matchesTags && matchesServiceType;
+                return matchesName && matchesTags && matchesServiceType && matchesDateRange;
             });
 
             clearLoading();
@@ -99,16 +115,19 @@ function applyFilters() {
                 return;
             }
 
-            // Bereich für die Aufteilung in Angebote und Gesuche
+            // Container für beide Listen mit festgelegter Breite
             const offersContainer = document.createElement("div");
             offersContainer.className = "services-container";
             offersContainer.style.display = "flex";
             offersContainer.style.gap = "20px";
+            offersContainer.style.width = "100%"; // Volle Breite nutzen
+            offersContainer.style.margin = "0 auto"; // Zentriert den Container
             
             // Container für isOffer = false (Gesuche - links)
             const falseContainer = document.createElement("div");
             falseContainer.className = "services-column false-offers";
             falseContainer.style.flex = "1";
+            falseContainer.style.minWidth = "45%"; // Mindestbreite für Gesuche-Container
             
             // Überschrift für isOffer = false
             const falseHeader = document.createElement("h3");
@@ -122,12 +141,14 @@ function applyFilters() {
             falseList.style.padding = "0";
             falseList.style.margin = "0";
             falseList.style.listStyle = "none";
+            falseList.style.width = "100%"; // Volle Breite der Spalte
             falseContainer.appendChild(falseList);
             
             // Container für isOffer = true (Angebote - rechts)
             const trueContainer = document.createElement("div");
             trueContainer.className = "services-column true-offers";
             trueContainer.style.flex = "1";
+            trueContainer.style.minWidth = "45%"; // Mindestbreite für Angebote-Container
             
             // Überschrift für isOffer = true
             const trueHeader = document.createElement("h3");
@@ -141,6 +162,7 @@ function applyFilters() {
             trueList.style.padding = "0";
             trueList.style.margin = "0";
             trueList.style.listStyle = "none";
+            trueList.style.width = "100%"; // Volle Breite der Spalte
             trueContainer.appendChild(trueList);
             
             // Sortieren und Hinzufügen der gefilterten Dienste
@@ -299,11 +321,13 @@ function loadAllOffers() {
                 return;
             }
             
-            // Aufteilung in zwei Listen basierend auf isOffer
+            // Aufteilung in zwei Listen basierend auf isOffer mit festgelegter Breite
             const offersContainer = document.createElement("div");
             offersContainer.className = "services-container";
             offersContainer.style.display = "flex";
             offersContainer.style.gap = "20px";
+            offersContainer.style.maxWidth = "100%"; // Gleiche Breite wie die Suchfelder
+            offersContainer.style.margin = "0 auto"; // Zentriert den Container
             
             // Container für isOffer = false (links)
             const falseContainer = document.createElement("div");
@@ -401,7 +425,7 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric'
-                        });
+                        }).replace(/\./g, '/');
                     }
                 } catch (e) {
                     console.error("Error formatting startdate:", e);
@@ -416,7 +440,7 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric'
-                        });
+                        }).replace(/\./g, '/');
                     }
                 } catch (e) {
                     console.error("Error formatting enddate:", e);
@@ -424,7 +448,7 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
             }
             
             // Create date range string
-            dateRange = `${formattedStartDate}-${formattedEndDate}`;
+            dateRange = `${formattedStartDate} - ${formattedEndDate}`;
         } catch (e) {
             console.error("Error formatting dates:", e);
         }

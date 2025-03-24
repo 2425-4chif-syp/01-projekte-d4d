@@ -45,42 +45,51 @@
                         <i class="fas fa-user search-icon"></i>
                         <input type="text" id="nameSearchInput" placeholder="Nach Namen suchen...">
                     </div>
-                    
+                </div>
+                <div class="search-row date-search-row">
+                    <!-- Zeitraum Suche - Von Datum -->
+                    <div class="search-box date-box">
+                        <i class="fas fa-calendar-alt search-icon"></i>
+                        <input type="date" 
+                               id="fromDateInput" 
+                               placeholder="Von Datum...">
+                        <label for="fromDateInput">Von</label>
+                    </div>
+
+                    <!-- Zeitraum Suche - Bis Datum -->
+                    <div class="search-box date-box">
+                        <i class="fas fa-calendar-check search-icon"></i>
+                        <input type="date" 
+                               id="toDateInput" 
+                               placeholder="Bis Datum...">
+                        <label for="toDateInput">Bis</label>
+                    </div>
+                </div>
+                <div class="search-row">
                     <!-- Erweiterte Suche -->
                     <div class="search-box">
                         <i class="fas fa-search search-icon"></i>
                         <input type="text" id="detailSearchInput" placeholder="In Beschreibung suchen...">
                     </div>
-
-                    <!-- Zeitraum Suche -->
-                    <div class="search-box">
-                        <i class="fas fa-calendar search-icon"></i>
-                        <input type="date" 
-                               id="timeSearchInput" 
-                               placeholder="Datum wählen..."
-                               lang="de"
-                               pattern="\d{4}-\d{2}-\d{2}">
+                </div>
+                
+                <!-- Checkbox für geschlossene Märkte -->
+                <div class="search-row checkbox-row">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showClosedMarkets" name="showClosedMarkets">
+                        <label for="showClosedMarkets">Geschlossene Märkte anzeigen</label>
                     </div>
                 </div>
+                
                 <!-- Such-Tags -->
                 <div class="search-tags">
                     <div id="selectedTags" class="selected-tags"></div>
                 </div>
             </div>
-
-            <!-- Filterbereich -->
-            <div class="filter-container">
-                <div class="filter-box">
-                    <i class="fas fa-filter filter-icon"></i>
-                    <select id="filterService">
-                        <!-- dynamic serviceTypes -->
-                    </select>
-                </div>
-            </div>
         </div>
 
         <div class="content-section">
-            <h2><i class="fas fa-list-alt"></i> Dienstleistungen</h2>
+            <h2><i class="fas fa-list-alt"></i> Markt</h2>
             <ul id="serviceList"></ul>
         </div>
     </main>

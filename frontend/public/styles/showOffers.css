@@ -13,8 +13,8 @@
     --transition: all 0.3s ease;
     --success-color: #28a745;
     --error-color: #dc3545;
-    --offer-color: #b15df5;
-    --demand-color: #2c8a15;
+    --offer-color: #add8e6; /* Changed to light blue */
+    --demand-color: #90ee90; /* Changed to light green */
     --perfect-color: #ffd700;
     --perfect-bg-color: #fff7cc;
     --hover-bg: #f8fafc;
@@ -148,6 +148,7 @@ input:focus, select:focus, textarea:focus {
 .search-row {
     display: flex;
     gap: 1rem;
+    margin-bottom: 15px;  /* Mehr Abstand zwischen den Suchzeilen */
 }
 
 .search-box {
@@ -364,7 +365,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .offer-card:hover {
-    box-shadow: 0 0 15px #64239a;
+    box-shadow: 0 0 20px #64239a;
+    transform: scale(1.02);
 }
 
 .demand-card {
@@ -373,7 +375,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .demand-card:hover {
-    box-shadow: 0 0 15px #55a840;
+    box-shadow: 0 0 20px #55a840;
+    transform: scale(1.02);
 }
 
 /* Make Offer Specific Styles */
@@ -447,8 +450,8 @@ input:focus, select:focus, textarea:focus {
     padding: 2rem;
     background-color: var(--card-background);
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    color: var(--secondary-color);
+    box-shadow: var (--shadow-sm);
+    color: var (--secondary-color);
 }
 
 .no-results {
@@ -1845,4 +1848,91 @@ input:focus, select:focus, textarea:focus {
 
 .logo-button i {
     font-size: 1.8rem;
+}
+
+/* Verbesserte Datumsfelder Styling */
+.date-search-row {
+    display: flex;
+    gap: 20px;  /* Mehr Abstand zwischen den Datumsfeldern */
+    margin-bottom: 15px;  /* Mehr Abstand nach unten */
+}
+
+.date-box {
+    flex: 1;
+    position: relative;
+    padding: 8px;  /* Mehr Innenabstand */
+    display: flex;
+    align-items: center; /* Align label and input vertically */
+    gap: 10px; /* Add spacing between label and input */
+    flex-direction: row; /* Ensure label and input are in a row */
+}
+
+.date-box label {
+    position: static; /* Ensure label is inline */
+    margin-bottom: 0; /* Remove bottom margin */
+    font-size: 1rem; /* Keep font size consistent */
+    color: #333; /* Standard text color */
+    font-weight: bold; /* Make the label text bold */
+}
+
+.date-box input[type="date"] {
+    padding: 10px; /* Maintain padding for input fields */
+    font-size: 1rem; /* Keep font size consistent */
+    border: 2px solid #00796b; /* Retain the border styling */
+    border-radius: 8px; /* Keep rounded corners */
+}
+
+/* Restliches CSS bleibt unverändert */
+
+.checkbox-row {
+    margin-bottom: 15px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.checkbox-container:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.checkbox-container label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    display: inline;
+}
+
+.services-container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 1800px; /* Noch breiter als vorher */
+    margin: 0 auto; /* Zentriert den Container */
+}
+
+.services-column {
+    flex: 1;
+    min-width: 60%; /* Noch breitere Spalten */
+}
+
+.service-list {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
 }
