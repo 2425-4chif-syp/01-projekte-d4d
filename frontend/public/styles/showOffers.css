@@ -1917,17 +1917,18 @@ input:focus, select:focus, textarea:focus {
     display: inline;
 }
 
+/* Ensure the lists remain equally wide regardless of the checkbox state */
 .services-container {
     display: flex;
     gap: 20px;
     width: 100%;
-    max-width: 1800px; /* Noch breiter als vorher */
-    margin: 0 auto; /* Zentriert den Container */
+    max-width: 1800px; /* Increased maximum width */
+    margin: 0 auto; /* Center the container */
 }
 
 .services-column {
     flex: 1;
-    min-width: 60%; /* Noch breitere Spalten */
+    min-width: 55%; /* Further increased column width */
 }
 
 .service-list {

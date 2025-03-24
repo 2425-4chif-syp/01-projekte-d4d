@@ -70,42 +70,32 @@ function applyFilters() {
             return response.json();
         })
         .then(users => {
-            console.log(users);  // <-- Korrekt
-
             const filteredUsers = users.filter(user => {
                 const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
-                // Prüfe, ob das Fach übereinstimmt (ignoriere den Filter, wenn "all" ausgewählt ist)
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
                 
-                // Prüfe, ob inaktive Märkte angezeigt werden sollen (isActive=false)
-                // Wenn showClosedMarkets true ist, werden alle angezeigt, sonst nur aktive
-                const matchesActive = showClosedMarkets || user.isActive !== false;
+                // Adjusted logic to filter closed markets
+                const matchesActive = showClosedMarkets ? !user.isActive : user.isActive;
                 
-                // Datumsfilterung hinzugefügt - geändert, um nach Startdatum im Bereich zu filtern
                 let matchesDateRange = true;
                 if (fromDate || toDate) {
-                    // Wenn das User-Startdatum existiert, nutzen wir es für die Filterung
                     if (user.startDate) {
                         const userStartDate = new Date(user.startDate);
                         
-                        // Wenn ein Von-Datum gesetzt ist, überprüfe, ob das Angebot nach oder am selben Tag beginnt
                         if (fromDate) {
                             const filterFromDate = new Date(fromDate);
                             matchesDateRange = matchesDateRange && userStartDate >= filterFromDate;
                         }
                         
-                        // Wenn ein Bis-Datum gesetzt ist, überprüfe, ob das Angebot vor oder am selben Tag beginnt
                         if (toDate) {
                             const filterToDate = new Date(toDate);
                             matchesDateRange = matchesDateRange && userStartDate <= filterToDate;
                         }
                     } else {
-                        // Wenn kein Startdatum vorhanden ist und ein Datum-Filter aktiv ist, wird der Eintrag nicht angezeigt
                         matchesDateRange = false;
                     }
                 }
                 
-                // Passe Tags-Filter an deine Felder an
                 const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
                     user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
