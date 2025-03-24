@@ -64,6 +64,7 @@ function removeTag(tag) {
 
 function applyFilters() {
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
+    const selectedServiceType = document.getElementById('filterService').value;
     showLoading();
 
     fetch(`http://localhost:8080/d4d/allmarkets`)
@@ -74,27 +75,101 @@ function applyFilters() {
             return response.json();
         })
         .then(users => {
-            console.log(response.json());
-            // Filtere die Ergebnisse basierend auf den ausgewählten Tags und der Namenssuche
+            console.log(users);  // <-- Korrekt
+
             const filteredUsers = users.filter(user => {
-                const matchesName = nameSearch === '' || user.name.toLowerCase().includes(nameSearch);
+                const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
+                // Prüfe, ob das Fach übereinstimmt (ignoriere den Filter, wenn "all" ausgewählt ist)
+                const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
+                // Passe Tags-Filter an deine Felder an
                 const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
-                    user.description.toLowerCase().includes(tag.toLowerCase())
+                    user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
-                return matchesName && matchesTags;
+                return matchesName && matchesTags && matchesServiceType;
             });
 
             clearLoading();
+            const serviceList = document.getElementById("serviceList");
+            serviceList.innerHTML = ''; // Liste leeren vor neuem Rendern
             if (filteredUsers.length === 0) {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
-                messageContainer.innerHTML = `
-                    <p>Keine Ergebnisse gefunden.</p>
-                `;
-                document.getElementById("serviceList").appendChild(messageContainer);
+                messageContainer.innerHTML = `<p>Keine Ergebnisse gefunden.</p>`;
+                serviceList.appendChild(messageContainer);
                 return;
             }
-            filteredUsers.forEach(user => addUserToList(user.serviceOffer, user.serviceWanted, user.name, user.description));
+
+            // Bereich für die Aufteilung in Angebote und Gesuche
+            const offersContainer = document.createElement("div");
+            offersContainer.className = "services-container";
+            offersContainer.style.display = "flex";
+            offersContainer.style.gap = "20px";
+            
+            // Container für isOffer = false (Gesuche - links)
+            const falseContainer = document.createElement("div");
+            falseContainer.className = "services-column false-offers";
+            falseContainer.style.flex = "1";
+            
+            // Überschrift für isOffer = false
+            const falseHeader = document.createElement("h3");
+            falseHeader.innerHTML = '<i class="fas fa-hand-holding"></i> Gesuchte Dienste';
+            falseHeader.style.marginBottom = "15px";
+            falseContainer.appendChild(falseHeader);
+            
+            // Liste für isOffer = false
+            const falseList = document.createElement("ul");
+            falseList.className = "service-list";
+            falseList.style.padding = "0";
+            falseList.style.margin = "0";
+            falseList.style.listStyle = "none";
+            falseContainer.appendChild(falseList);
+            
+            // Container für isOffer = true (Angebote - rechts)
+            const trueContainer = document.createElement("div");
+            trueContainer.className = "services-column true-offers";
+            trueContainer.style.flex = "1";
+            
+            // Überschrift für isOffer = true
+            const trueHeader = document.createElement("h3");
+            trueHeader.innerHTML = '<i class="fas fa-hands-helping"></i> Angebotene Dienste';
+            trueHeader.style.marginBottom = "15px";
+            trueContainer.appendChild(trueHeader);
+            
+            // Liste für isOffer = true
+            const trueList = document.createElement("ul");
+            trueList.className = "service-list";
+            trueList.style.padding = "0";
+            trueList.style.margin = "0";
+            trueList.style.listStyle = "none";
+            trueContainer.appendChild(trueList);
+            
+            // Sortieren und Hinzufügen der gefilterten Dienste
+            filteredUsers.forEach(m => {
+                // Element erstellen
+                const listItem = createServiceCard(
+                    m.serviceTypeName, 
+                    "", 
+                    m.userName, 
+                    m.description || "",
+                    m.startDate,
+                    m.endDate,
+                    m.isOffer
+                );
+                
+                // Zum richtigen Container hinzufügen
+                if (m.isOffer) {
+                    trueList.appendChild(listItem);
+                } else {
+                    falseList.appendChild(listItem);
+                }
+            });
+            
+            // Container zum Layout hinzufügen
+            offersContainer.appendChild(falseContainer);
+            offersContainer.appendChild(trueContainer);
+            
+            // Zum Hauptcontainer hinzufügen
+            serviceList.appendChild(offersContainer);
         })
         .catch(error => {
             console.error("Fehler:", error);
