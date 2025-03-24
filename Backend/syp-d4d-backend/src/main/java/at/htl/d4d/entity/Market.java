@@ -22,6 +22,9 @@ public class Market extends PanacheEntity {
     @Column
     public LocalDateTime endDate;
 
+    @Column
+    public boolean isActive;
+
     public Market() {}
 
     public Market(Long serviceType_ID, Long user_ID, int offer) {
@@ -30,5 +33,6 @@ public class Market extends PanacheEntity {
         this.offer = offer;
         this.startDate = LocalDateTime.now();
         this.endDate = LocalDateTime.of(2100, 12, 31, 23, 59, 59);
+        this.isActive = true;
     }
 }

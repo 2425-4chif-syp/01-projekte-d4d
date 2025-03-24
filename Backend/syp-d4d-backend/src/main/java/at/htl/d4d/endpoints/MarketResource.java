@@ -204,7 +204,7 @@ public class MarketResource {
             String serviceName = (st != null) ? st.getTypeOfService() : "Unbekannter Service";
             boolean isOffer = (m.offer == 1);
 
-            dtos.add(new MarketDto(userName, serviceName, isOffer, m.startDate, m.endDate));
+            dtos.add(new MarketDto(userName, serviceName, isOffer, m.startDate, m.endDate, m.isActive));
         }
 
         return Response.ok(dtos).build();
@@ -216,14 +216,17 @@ public class MarketResource {
         public boolean isOffer; // offer == 1 => true
         public LocalDateTime startDate;
         public LocalDateTime endDate;
+        public boolean isActive;
 
         // Beliebige weitere Felder
-        public MarketDto(String userName, String serviceTypeName, boolean isOffer, LocalDateTime startDate, LocalDateTime endDate) {
+        public MarketDto(String userName, String serviceTypeName, boolean isOffer, LocalDateTime startDate,
+                         LocalDateTime endDate, boolean isActive) {
             this.userName = userName;
             this.serviceTypeName = serviceTypeName;
             this.isOffer = isOffer;
             this.startDate = startDate;
             this.endDate = endDate;
+            this.isActive = isActive;
         }
     }
 

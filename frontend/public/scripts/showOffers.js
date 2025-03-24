@@ -5,6 +5,9 @@ document.getElementById('createOfferButton').addEventListener('click', function 
 // Tag-Verwaltung
 let selectedTags = new Set();
 
+// Event-Listener für "Geschlossene Märkte anzeigen" Checkbox
+document.getElementById('showClosedMarkets').addEventListener('change', applyFilters);
+
 // Suchfunktionalität für beide Suchleisten
 document.getElementById('nameSearchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
@@ -56,6 +59,7 @@ function applyFilters() {
     const selectedServiceType = document.getElementById('filterService').value;
     const fromDate = document.getElementById('fromDateInput').value;
     const toDate = document.getElementById('toDateInput').value;
+    const showClosedMarkets = document.getElementById('showClosedMarkets').checked;
     showLoading();
 
     fetch(`http://localhost:8080/d4d/allmarkets`)
@@ -72,6 +76,10 @@ function applyFilters() {
                 const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
                 // Prüfe, ob das Fach übereinstimmt (ignoriere den Filter, wenn "all" ausgewählt ist)
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
+                
+                // Prüfe, ob inaktive Märkte angezeigt werden sollen (isActive=false)
+                // Wenn showClosedMarkets true ist, werden alle angezeigt, sonst nur aktive
+                const matchesActive = showClosedMarkets || user.isActive !== false;
                 
                 // Datumsfilterung hinzugefügt - geändert, um nach Startdatum im Bereich zu filtern
                 let matchesDateRange = true;
@@ -101,7 +109,7 @@ function applyFilters() {
                 const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
                     user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
-                return matchesName && matchesTags && matchesServiceType && matchesDateRange;
+                return matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
             });
 
             clearLoading();
