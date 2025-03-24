@@ -10,12 +10,14 @@ import jakarta.inject.Inject;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.persistence.Column;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.hibernate.query.spi.SelectQueryPlan;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -202,7 +204,7 @@ public class MarketResource {
             String serviceName = (st != null) ? st.getTypeOfService() : "Unbekannter Service";
             boolean isOffer = (m.offer == 1);
 
-            dtos.add(new MarketDto(userName, serviceName, isOffer));
+            dtos.add(new MarketDto(userName, serviceName, isOffer, m.startDate, m.endDate));
         }
 
         return Response.ok(dtos).build();
@@ -212,12 +214,16 @@ public class MarketResource {
         public String userName;
         public String serviceTypeName;
         public boolean isOffer; // offer == 1 => true
+        public LocalDateTime startDate;
+        public LocalDateTime endDate;
 
         // Beliebige weitere Felder
-        public MarketDto(String userName, String serviceTypeName, boolean isOffer) {
+        public MarketDto(String userName, String serviceTypeName, boolean isOffer, LocalDateTime startDate, LocalDateTime endDate) {
             this.userName = userName;
             this.serviceTypeName = serviceTypeName;
             this.isOffer = isOffer;
+            this.startDate = startDate;
+            this.endDate = endDate;
         }
     }
 

@@ -17,10 +17,10 @@ public class Market extends PanacheEntity {
     public int offer;
 
     @Column
-    private LocalDateTime startDate;
+    public LocalDateTime startDate;
 
     @Column
-    private LocalDateTime endDate;
+    public LocalDateTime endDate;
 
     public Market() {}
 

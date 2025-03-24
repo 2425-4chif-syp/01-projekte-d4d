@@ -103,25 +103,61 @@ function applyFilters() {
         });
 }
 
-function addUserToList(serviceOffer, serviceWanted, name, description) {
+function addUserToList(serviceOffer, serviceWanted, name, description, startdate, enddate) {
     const serviceList = document.getElementById("serviceList");
     const listItem = document.createElement("li");
     listItem.className = "service-item";
 
+    let formattedStartDate = '';
+    let formattedEndDate = '';
+
+    if (startdate) {
+        try {
+            const startDateTime = new Date(startdate);
+            if (!isNaN(startDateTime.getTime())) {
+                formattedStartDate = startDateTime.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+        } catch (e) {
+            console.error("Error formatting startdate:", e);
+        }
+    }
+
+    if (enddate) {
+        try {
+            const endDateTime = new Date(enddate);
+            if (!isNaN(endDateTime.getTime())) {
+                formattedEndDate = endDateTime.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+        } catch (e) {
+            console.error("Error formatting enddate:", e);
+        }
+    }
+
     listItem.innerHTML = `
-        <div class="card">
+        <div class="card" style="height: auto; min-height: 240px;">
             <div class="card-header">
                 <span class="badge">${serviceOffer} ➝ ${serviceWanted}</span>
             </div>
             <div class="card-body">
                 <p><strong>Name:</strong> ${name}</p>
                 <p><strong>Beschreibung:</strong> ${description}</p>
+                <p><strong>Von:</strong> ${formattedStartDate}</p>
+                <p><strong>Bis:</strong> ${formattedEndDate}</p>
             </div>
         </div>
     `;
 
     serviceList.appendChild(listItem);
 }
+
 
 function showLoading(message = "Laden...") {
     const serviceList = document.getElementById("serviceList");
@@ -177,10 +213,27 @@ function loadAllOffers() {
             return response.json();
         })
         .then(marketDtos => {
+            clearLoading();
+            if (marketDtos.length === 0) {
+                const messageContainer = document.createElement("div");
+                messageContainer.className = "no-results";
+                messageContainer.innerHTML = `
+                    <p><i class="fas fa-search"></i> Keine Angebote gefunden.</p>
+                `;
+                document.getElementById("serviceList").appendChild(messageContainer);
+                return;
+            }
             marketDtos.forEach(m => {
-              addUserToList(m.serviceTypeName, "", m.userName, ""); // oder wie immer du die Felder anzeigen willst
+                addUserToList(
+                    m.serviceTypeName, 
+                    "", 
+                    m.userName, 
+                    m.description || "",
+                    m.startDate,
+                    m.endDate
+                );
             });
-          })
+        })
         .catch(error => {
             console.error("Fehler:", error);
             clearLoading();
