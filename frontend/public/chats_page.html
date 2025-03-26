@@ -17,11 +17,12 @@
   />
   <style>
     /* html und body nehmen immer die volle Höhe ein und verhindern das Browser-Scrolling */
-    html, body {
+    html,
+    body {
       height: 100%;
       overflow: hidden;
     }
-    
+
     /* CSS-Variablen für ein konsistentes Farbschema */
     :root {
       --primary-color: #007bff;
@@ -39,7 +40,7 @@
     }
 
     body {
-      font-family: 'Roboto', sans-serif;
+      font-family: "Roboto", sans-serif;
       margin: 0;
       padding: 0;
       background: linear-gradient(135deg, #e9eff5, #ffffff);
@@ -53,19 +54,26 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px 20px;
-      background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+      background: linear-gradient(
+        90deg,
+        var(--primary-color),
+        var(--primary-dark)
+      );
       color: #fff;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
+
     nav.navbar .logo {
       display: flex;
       align-items: center;
       font-size: 1.6em;
       font-weight: 700;
     }
+
     nav.navbar .logo i {
       margin-right: 10px;
     }
+
     nav.navbar .nav-buttons button {
       background: #fff;
       color: var(--primary-color);
@@ -77,6 +85,7 @@
       font-weight: 500;
       transition: background-color 0.3s, transform 0.2s;
     }
+
     nav.navbar .nav-buttons button:hover {
       background-color: #e0e0e0;
       transform: translateY(-2px);
@@ -102,10 +111,12 @@
       border-right: 1px solid var(--border-color);
       overflow-y: auto;
     }
+
     .chat-list h3 {
       margin-top: 0;
       color: var(--text-color);
     }
+
     .chat-list input#searchInput {
       width: 100%;
       margin-bottom: 10px;
@@ -113,6 +124,7 @@
       border-radius: 4px;
       border: 1px solid var(--border-color);
     }
+
     .chat-list button {
       width: 100%;
       padding: 10px;
@@ -125,9 +137,11 @@
       font-weight: 500;
       transition: background-color 0.3s;
     }
+
     .chat-list button:hover {
       background-color: var(--primary-dark);
     }
+
     .chat-item {
       padding: 12px;
       border-radius: 5px;
@@ -140,10 +154,12 @@
       font-weight: 500;
       transition: background-color 0.3s, box-shadow 0.2s;
     }
+
     .chat-item:hover {
       background-color: #e9ecef;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+
     .chat-item.active {
       background-color: #d4d4d4;
     }
@@ -157,6 +173,7 @@
       background-color: var(--light-color);
       overflow: hidden;
     }
+
     .chat-section h2 {
       margin-top: 0;
       color: var(--text-color);
@@ -164,13 +181,16 @@
       align-items: center;
       gap: 10px;
     }
+
     /* Hier ändern wir "Chat-Bereich" auf <span id="chatTitle"> */
     .chat-section h2 i {
       color: var(--primary-color);
     }
+
     .chat-messages {
       flex-grow: 1;
-      overflow-y: auto; /* Damit Nachrichten gescrollt werden können */
+      overflow-y: auto;
+      /* Damit Nachrichten gescrollt werden können */
       padding: 20px;
       background: linear-gradient(180deg, #fff, #f4f7fa);
       border: 1px solid var(--border-color);
@@ -180,6 +200,7 @@
       gap: 12px;
       position: relative;
     }
+
     /* Bilder in Chatnachrichten */
     .chat-messages img {
       max-width: 100%;
@@ -192,10 +213,12 @@
     .chat-list::-webkit-scrollbar {
       width: 8px;
     }
+
     .chat-list::-webkit-scrollbar-track {
       background: #f1f1f1;
       border-radius: 10px;
     }
+
     .chat-list::-webkit-scrollbar-thumb {
       background: var(--primary-color);
       border-radius: 10px;
@@ -210,18 +233,21 @@
       line-height: 1.4;
       animation: fadeIn 0.3s ease-in;
     }
+
     .message.user {
       background-color: var(--primary-color);
       color: #fff;
       align-self: flex-end;
       border-bottom-right-radius: 5px;
     }
+
     .message.other {
       background-color: #e9ecef;
       color: var(--text-color);
       align-self: flex-start;
       border-bottom-left-radius: 5px;
     }
+
     .message.system {
       background-color: var(--system-bg);
       color: var(--system-text);
@@ -247,11 +273,13 @@
     .chat-form-container {
       margin-top: 15px;
     }
+
     .chat-input-group {
       display: flex;
       gap: 10px;
       align-items: center;
     }
+
     /* Versteckter Datei-Upload mit Label als Button */
     .chat-input-group label.image-upload {
       cursor: pointer;
@@ -259,9 +287,11 @@
       color: var(--primary-color);
       transition: color 0.3s;
     }
+
     .chat-input-group label.image-upload:hover {
       color: var(--primary-dark);
     }
+
     .chat-input-group input[type="text"] {
       flex-grow: 1;
       padding: 12px 15px;
@@ -271,9 +301,11 @@
       outline: none;
       transition: border-color 0.3s;
     }
+
     .chat-input-group input[type="text"]:focus {
       border-color: var(--primary-color);
     }
+
     .chat-input-group button {
       background-color: var(--primary-color);
       color: #fff;
@@ -284,18 +316,22 @@
       transition: background-color 0.3s, transform 0.2s;
       font-size: 1em;
     }
+
     .chat-input-group button:hover {
       background-color: var(--primary-dark);
       transform: translateY(-2px);
     }
+
     /* Vorschau für hochgeladene Bilder */
     #imagePreview {
       margin-bottom: 10px;
     }
+
     #imagePreview img {
       max-width: 200px;
       border-radius: 10px;
     }
+
     #imagePreview span {
       position: absolute;
       top: -10px;
@@ -325,15 +361,18 @@
       opacity: 0;
       transition: opacity 0.3s, transform 0.3s;
     }
+
     .modal.active {
       display: block;
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
     }
+
     .modal h3 {
       margin-top: 0;
       color: var(--text-color);
     }
+
     .modal input {
       width: 100%;
       padding: 10px;
@@ -342,6 +381,7 @@
       border-radius: 5px;
       outline: none;
     }
+
     .modal button {
       padding: 10px 15px;
       margin: 5px;
@@ -351,24 +391,29 @@
       font-weight: 500;
       transition: background-color 0.3s, transform 0.2s;
     }
+
     .modal button:first-of-type {
       background-color: var(--primary-color);
       color: #fff;
     }
+
     .modal button:first-of-type:hover {
       background-color: var(--primary-dark);
       transform: translateY(-2px);
     }
+
     .modal button:last-of-type {
       background-color: #ddd;
       color: var(--text-color);
     }
+
     .modal button:last-of-type:hover {
       background-color: #ccc;
       transform: translateY(-2px);
     }
   </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="logo">
@@ -393,12 +438,17 @@
     <div class="chat-list">
       <h3>Chats</h3>
       <!-- Suchanzeige für Kontakte -->
-      <input type="text" id="searchInput" placeholder="Kontakte durchsuchen..." oninput="filterContacts()" />
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Kontakte durchsuchen..."
+        oninput="filterContacts()"
+      />
       <button onclick="openChatCreation()">+ Neuen Chat erstellen</button>
       <div id="chatItems"></div>
     </div>
+
     <div class="chat-section">
-      <!-- Statt "Chat-Bereich" verwenden wir nun ein <span id="chatTitle">, das wir per JS setzen -->
       <h2>
         <i class="fas fa-comments"></i>
         <span id="chatTitle">Bitte wähle einen Chat</span>
@@ -412,9 +462,20 @@
             <label for="chatImage" class="image-upload">
               <i class="fas fa-image"></i>
             </label>
-            <input type="file" id="chatImage" accept="image/*" style="display: none;" />
-            <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
-            <button type="submit"><i class="fas fa-paper-plane"></i> Senden</button>
+            <input
+              type="file"
+              id="chatImage"
+              accept="image/*"
+              style="display: none;"
+            />
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="Nachricht schreiben..."
+            />
+            <button type="submit">
+              <i class="fas fa-paper-plane"></i> Senden
+            </button>
           </div>
         </form>
       </div>
@@ -438,12 +499,12 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onerror = (error) => reject(error);
         reader.readAsDataURL(file);
       });
     }
 
-    // Modal öffnen/schließen (optional, da keine ChatRoom-Entität existiert)
+    // Modal öffnen/schließen (optional)
     function openChatCreation() {
       document.getElementById("chatModal").classList.add("active");
     }
@@ -454,7 +515,6 @@
     // Gesprächspartner-Liste laden
     async function fetchChats() {
       try {
-        // Holt alle Kontakte (User), die in ChatEntry vorkommen
         const response = await fetch("http://localhost:8080/chat/contacts");
         if (!response.ok) {
           console.error("Fehler beim Abrufen der Chats:", response.statusText);
@@ -467,7 +527,7 @@
         chatItems.innerHTML = "";
 
         // Kontakte (User) in der Reihenfolge anzeigen, wie sie vom Backend kommen
-        contacts.forEach(contact => {
+        contacts.forEach((contact) => {
           // contact hat Felder: { id, name, ... }
           const chatElement = document.createElement("div");
           chatElement.classList.add("chat-item");
@@ -486,9 +546,11 @@
     // "Active"-Zustand setzen und Chat öffnen
     function setActiveChat(partnerId, chatElement) {
       // Alle chat-items von "active" befreien
-      document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+      document
+        .querySelectorAll(".chat-item")
+        .forEach((el) => el.classList.remove("active"));
       // Geklicktes Item als "active" markieren
-      chatElement.classList.add('active');
+      chatElement.classList.add("active");
 
       // Den Namen in der Überschrift setzen
       const userName = chatElement.dataset.name;
@@ -510,27 +572,32 @@
         const chatMessages = document.getElementById("chatMessages");
         chatMessages.innerHTML = "";
 
-        // Optionale Systemnachricht
-        const systemMessageElement = document.createElement("div");
-        systemMessageElement.classList.add("message", "system");
-        systemMessageElement.textContent = "Chat gestartet – lass uns ins Gespräch kommen!";
-        chatMessages.appendChild(systemMessageElement);
+        // Wenn keine Nachrichten vorhanden sind
+        if (messages.length === 0) {
+          const noMessagesElement = document.createElement("div");
+          noMessagesElement.classList.add("message", "system");
+          noMessagesElement.textContent = "Keine Nachrichten vorhanden.";
+          chatMessages.appendChild(noMessagesElement);
+        } else {
+          // Vorhandene Nachrichten anzeigen
+          messages.forEach((msg) => {
+            const isCurrentUser = msg.sender_ID === CURRENT_USER_ID;
+            const messageElement = document.createElement("div");
+            messageElement.classList.add(
+              "message",
+              isCurrentUser ? "user" : "other"
+            );
 
-        messages.forEach(msg => {
-          // msg: ChatEntry-Objekt mit sender_ID, receiver_ID, message, time, ...
-          const isCurrentUser = (msg.sender_ID === CURRENT_USER_ID);
-          const messageElement = document.createElement("div");
-          messageElement.classList.add("message", isCurrentUser ? "user" : "other");
-
-          if (msg.message) {
-            const textElement = document.createElement("p");
-            textElement.style.margin = "0";
-            const senderLabel = isCurrentUser ? "Ich" : "Partner";
-            textElement.textContent = `${senderLabel}: ${msg.message}`;
-            messageElement.appendChild(textElement);
-          }
-          chatMessages.appendChild(messageElement);
-        });
+            if (msg.message) {
+              const textElement = document.createElement("p");
+              textElement.style.margin = "0";
+              const senderLabel = isCurrentUser ? "Ich" : "Partner";
+              textElement.textContent = `${senderLabel}: ${msg.message}`;
+              messageElement.appendChild(textElement);
+            }
+            chatMessages.appendChild(messageElement);
+          });
+        }
         chatMessages.scrollTop = chatMessages.scrollHeight;
       } catch (error) {
         console.error("Netzwerkfehler beim Abrufen der Nachrichten:", error);
@@ -538,82 +605,97 @@
     }
 
     // Bild-Upload-Vorschau
-    document.getElementById("chatImage").addEventListener("change", function(event) {
-      const file = event.target.files[0];
-      const previewContainer = document.getElementById("imagePreview");
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          previewContainer.innerHTML = `
-            <div style="position: relative; display: inline-block;">
-              <img src="${e.target.result}" alt="Vorschau" />
-              <span id="removeImage">&times;</span>
-            </div>`;
-          previewContainer.style.display = "block";
-          document.getElementById("removeImage").addEventListener("click", function() {
-            previewContainer.innerHTML = "";
-            previewContainer.style.display = "none";
-            document.getElementById("chatImage").value = "";
-          });
-        };
-        reader.readAsDataURL(file);
-      } else {
-        previewContainer.innerHTML = "";
-        previewContainer.style.display = "none";
-      }
-    });
+    document
+      .getElementById("chatImage")
+      .addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        const previewContainer = document.getElementById("imagePreview");
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            previewContainer.innerHTML = `
+              <div style="position: relative; display: inline-block;">
+                <img src="${e.target.result}" alt="Vorschau" />
+                <span id="removeImage">&times;</span>
+              </div>`;
+            previewContainer.style.display = "block";
+            document
+              .getElementById("removeImage")
+              .addEventListener("click", function () {
+                previewContainer.innerHTML = "";
+                previewContainer.style.display = "none";
+                document.getElementById("chatImage").value = "";
+              });
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewContainer.innerHTML = "";
+          previewContainer.style.display = "none";
+        }
+      });
 
     // Nachricht senden
-    document.getElementById("chatForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      if (currentChatId === null) {
-        alert("Bitte wähle zuerst einen Chat aus.");
-        return;
-      }
-      const chatInput = document.getElementById("chatInput");
-      const messageText = chatInput.value.trim();
-      const imageInput = document.getElementById("chatImage");
+    document
+      .getElementById("chatForm")
+      .addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (currentChatId === null) {
+          alert("Bitte wähle zuerst einen Chat aus.");
+          return;
+        }
+        const chatInput = document.getElementById("chatInput");
+        const messageText = chatInput.value.trim();
+        const imageInput = document.getElementById("chatImage");
 
-      // Wir senden nur das Feld 'message', das deine ChatEntry-Entity kennt
-      let messageData = {
-        message: messageText
-      };
+        // Nur das Feld 'message' (deine ChatEntry-Entity) senden
+        let messageData = {
+          message: messageText,
+        };
 
-      // Optional: Bild in Base64 konvertieren (falls im Backend unterstützt)
-      if (imageInput.files[0]) {
+        // Optional: Bild in Base64 konvertieren (falls im Backend unterstützt)
+        if (imageInput.files[0]) {
+          try {
+            const base64 = await getBase64(imageInput.files[0]);
+            // Falls du ein Feld "image" im ChatEntry hättest:
+            // messageData.image = base64;
+          } catch (error) {
+            console.error("Fehler beim Konvertieren des Bildes:", error);
+          }
+        }
+
+        // Wenn kein Text und kein Bild -> Abbruch
+        if (!messageText && !imageInput.files[0]) {
+          return;
+        }
+
         try {
-          const base64 = await getBase64(imageInput.files[0]);
-          // Falls du ein Feld "image" im ChatEntry hättest:
-          // messageData.image = base64;
+          const response = await fetch(
+            `http://localhost:8080/chat/${currentChatId}/messages`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(messageData),
+            }
+          );
+          if (response.ok) {
+            chatInput.value = "";
+            imageInput.value = "";
+            document.getElementById("imagePreview").innerHTML = "";
+            document.getElementById("imagePreview").style.display = "none";
+            fetchChatMessages(currentChatId);
+          } else {
+            console.error(
+              "Fehler beim Senden der Nachricht:",
+              response.statusText
+            );
+          }
         } catch (error) {
-          console.error("Fehler beim Konvertieren des Bildes:", error);
+          console.error("Netzwerkfehler beim Senden der Nachricht:", error);
         }
-      }
-
-      if (messageText === "") return; // Falls wir kein Bild haben und Text leer ist, Abbruch
-
-      try {
-        const response = await fetch(`http://localhost:8080/chat/${currentChatId}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(messageData)
-        });
-        if (response.ok) {
-          chatInput.value = "";
-          imageInput.value = "";
-          document.getElementById("imagePreview").innerHTML = "";
-          document.getElementById("imagePreview").style.display = "none";
-          fetchChatMessages(currentChatId);
-        } else {
-          console.error("Fehler beim Senden der Nachricht:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Netzwerkfehler beim Senden der Nachricht:", error);
-      }
-    });
+      });
 
     // Beim Laden der Seite
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       fetchChats();
 
       // Button: Chat-Testdaten generieren
@@ -621,14 +703,20 @@
       if (generateChatDataBtn) {
         generateChatDataBtn.addEventListener("click", async () => {
           try {
-            const response = await fetch("http://localhost:8080/d4d/testdata/generate-chat", {
-              method: "POST"
-            });
+            const response = await fetch(
+              "http://localhost:8080/d4d/testdata/generate-chat",
+              {
+                method: "POST",
+              }
+            );
             if (response.ok) {
               alert("Chat-Testdaten erfolgreich generiert!");
               fetchChats(); // Liste neu laden
             } else {
-              console.error("Fehler beim Generieren der Chat-Testdaten:", response.statusText);
+              console.error(
+                "Fehler beim Generieren der Chat-Testdaten:",
+                response.statusText
+              );
             }
           } catch (error) {
             console.error("Netzwerkfehler:", error);
@@ -641,7 +729,7 @@
     function filterContacts() {
       const query = document.getElementById("searchInput").value.toLowerCase();
       const chatItems = document.querySelectorAll(".chat-item");
-      chatItems.forEach(item => {
+      chatItems.forEach((item) => {
         const name = item.dataset.name.toLowerCase();
         // Wenn der Name den Suchbegriff enthält -> anzeigen, sonst verstecken
         if (name.includes(query)) {
@@ -652,7 +740,7 @@
       });
     }
 
-    // Neuen Chat erstellen (hier nur Symbolik, da wir keine ChatRoom-Entität haben)
+    // Neuen Chat erstellen (Platzhalter, da keine ChatRoom-Entität)
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
       if (chatName === "") return;
