@@ -74,13 +74,18 @@
       margin-right: 10px;
     }
 
+    nav.navbar .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     nav.navbar .nav-buttons button {
       background: #fff;
       color: var(--primary-color);
       border: none;
       border-radius: 5px;
       padding: 8px 12px;
-      margin-left: 10px;
       cursor: pointer;
       font-weight: 500;
       transition: background-color 0.3s, transform 0.2s;
@@ -89,6 +94,18 @@
     nav.navbar .nav-buttons button:hover {
       background-color: #e0e0e0;
       transform: translateY(-2px);
+    }
+
+    /* Stil für das User-Auswahl-Dropdown */
+    #currentUserSelect {
+      background: #fff;
+      color: var(--primary-color);
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 500;
+      outline: none;
     }
 
     /* Hauptcontainer – feste Höhe basierend auf dem Viewport (Navbar ca. 60px hoch) */
@@ -182,7 +199,6 @@
       gap: 10px;
     }
 
-    /* Hier ändern wir "Chat-Bereich" auf <span id="chatTitle"> */
     .chat-section h2 i {
       color: var(--primary-color);
     }
@@ -190,7 +206,6 @@
     .chat-messages {
       flex-grow: 1;
       overflow-y: auto;
-      /* Damit Nachrichten gescrollt werden können */
       padding: 20px;
       background: linear-gradient(180deg, #fff, #f4f7fa);
       border: 1px solid var(--border-color);
@@ -280,7 +295,6 @@
       align-items: center;
     }
 
-    /* Versteckter Datei-Upload mit Label als Button */
     .chat-input-group label.image-upload {
       cursor: pointer;
       font-size: 1.4em;
@@ -344,7 +358,7 @@
       font-weight: bold;
     }
 
-    /* Modal-Stile (optional, hier "Neuen Chat erstellen" ohne ChatRoom-Funktion) */
+    /* Modal-Stile (optional) */
     .modal {
       display: none;
       position: fixed;
@@ -421,6 +435,13 @@
       <span>D4D</span>
     </div>
     <div class="nav-buttons">
+      <!-- NEU: Dropdown zum Wechseln des aktuellen Nutzers -->
+      <select id="currentUserSelect" title="Aktuellen Nutzer wählen">
+        <option value="1" selected>User 1 (Du)</option>
+        <option value="2">Felix Holzmann</option>
+        <option value="3">Max Mustermann</option>
+      </select>
+
       <button id="marketButton" onclick="window.location.href='showOffers.html'">
         <i class="fas fa-store"></i> Zum Markt
       </button>
@@ -491,8 +512,16 @@
   </div>
 
   <script>
-    let currentChatId = null; // speichert die ID des Gesprächspartners
-    const CURRENT_USER_ID = 1; // Im Backend hartkodiert, hier nur zur Demo
+    // Globale Variable für den "aktuellen" (eingeloggten) Nutzer:
+    let currentUserId = 1; // Standard = 1
+
+    let currentChatId = null; // ID des Gesprächspartners
+
+    // Beim Ändern des Dropdowns -> User wechseln
+    document.getElementById("currentUserSelect").addEventListener("change", function() {
+      currentUserId = parseInt(this.value);
+      console.log("Aktueller Nutzer gewechselt zu ID:", currentUserId);
+    });
 
     // Datei -> Base64
     function getBase64(file) {
@@ -526,12 +555,10 @@
         const chatItems = document.getElementById("chatItems");
         chatItems.innerHTML = "";
 
-        // Kontakte (User) in der Reihenfolge anzeigen, wie sie vom Backend kommen
         contacts.forEach((contact) => {
-          // contact hat Felder: { id, name, ... }
           const chatElement = document.createElement("div");
           chatElement.classList.add("chat-item");
-          chatElement.dataset.name = contact.name; // für die Suche
+          chatElement.dataset.name = contact.name; // Für die Suche
           chatElement.innerHTML = `<i class="fas fa-user"></i> ${contact.name}`;
           chatElement.onclick = () => {
             setActiveChat(contact.id, chatElement);
@@ -545,14 +572,11 @@
 
     // "Active"-Zustand setzen und Chat öffnen
     function setActiveChat(partnerId, chatElement) {
-      // Alle chat-items von "active" befreien
       document
         .querySelectorAll(".chat-item")
         .forEach((el) => el.classList.remove("active"));
-      // Geklicktes Item als "active" markieren
       chatElement.classList.add("active");
 
-      // Den Namen in der Überschrift setzen
       const userName = chatElement.dataset.name;
       document.getElementById("chatTitle").textContent = userName;
 
@@ -563,7 +587,11 @@
     // Chat öffnen -> Nachrichten laden
     async function fetchChatMessages(partnerId) {
       try {
-        const response = await fetch(`http://localhost:8080/chat/${partnerId}/messages`);
+        // Wichtig: currentUserId als Query-Parameter anhängen,
+        // damit das Backend weiß, WER gerade liest
+        const response = await fetch(
+          `http://localhost:8080/chat/${partnerId}/messages?currentUserId=${currentUserId}`
+        );
         if (!response.ok) {
           console.error("Fehler beim Abrufen der Nachrichten:", response.statusText);
           return;
@@ -581,7 +609,8 @@
         } else {
           // Vorhandene Nachrichten anzeigen
           messages.forEach((msg) => {
-            const isCurrentUser = msg.sender_ID === CURRENT_USER_ID;
+            // msg.sender_ID wird mit currentUserId verglichen
+            const isCurrentUser = msg.sender_ID === currentUserId;
             const messageElement = document.createElement("div");
             messageElement.classList.add(
               "message",
@@ -647,23 +676,24 @@
         const messageText = chatInput.value.trim();
         const imageInput = document.getElementById("chatImage");
 
-        // Nur das Feld 'message' (deine ChatEntry-Entity) senden
+        // Wir senden jetzt auch die sender_ID = currentUserId mit
         let messageData = {
-          message: messageText,
+          sender_ID: currentUserId,
+          message: messageText
         };
 
         // Optional: Bild in Base64 konvertieren (falls im Backend unterstützt)
         if (imageInput.files[0]) {
           try {
             const base64 = await getBase64(imageInput.files[0]);
-            // Falls du ein Feld "image" im ChatEntry hättest:
+            // Falls du ein Feld "image" im ChatEntry hast:
             // messageData.image = base64;
           } catch (error) {
             console.error("Fehler beim Konvertieren des Bildes:", error);
           }
         }
 
-        // Wenn kein Text und kein Bild -> Abbruch
+        // Wenn weder Text noch Bild -> Abbruch
         if (!messageText && !imageInput.files[0]) {
           return;
         }
@@ -678,10 +708,12 @@
             }
           );
           if (response.ok) {
+            // Eingabefelder zurücksetzen
             chatInput.value = "";
             imageInput.value = "";
             document.getElementById("imagePreview").innerHTML = "";
             document.getElementById("imagePreview").style.display = "none";
+            // Chat neu laden
             fetchChatMessages(currentChatId);
           } else {
             console.error(
@@ -731,7 +763,6 @@
       const chatItems = document.querySelectorAll(".chat-item");
       chatItems.forEach((item) => {
         const name = item.dataset.name.toLowerCase();
-        // Wenn der Name den Suchbegriff enthält -> anzeigen, sonst verstecken
         if (name.includes(query)) {
           item.style.display = "flex";
         } else {
@@ -740,7 +771,7 @@
       });
     }
 
-    // Neuen Chat erstellen (Platzhalter, da keine ChatRoom-Entität)
+    // Neuen Chat erstellen (Platzhalter)
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
       if (chatName === "") return;
