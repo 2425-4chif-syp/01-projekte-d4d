@@ -74,9 +74,7 @@ function applyFilters() {
                 const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
                 
-                // Adjusted logic to filter closed markets
-                const matchesActive = showClosedMarkets ? !user.isActive : user.isActive;
-                
+                // Adjusted logic to filter closed markets                
                 let matchesDateRange = true;
                 if (fromDate || toDate) {
                     if (user.startDate) {

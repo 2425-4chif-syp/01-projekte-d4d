@@ -13,8 +13,8 @@
     --transition: all 0.3s ease;
     --success-color: #28a745;
     --error-color: #dc3545;
-    --offer-color: #add8e6; /* Changed to light blue */
-    --demand-color: #90ee90; /* Changed to light green */
+    --offer-color: #b15df5;
+    --demand-color: #7eff5e;
     --perfect-color: #ffd700;
     --perfect-bg-color: #fff7cc;
     --hover-bg: #f8fafc;
