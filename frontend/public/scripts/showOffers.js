@@ -71,7 +71,8 @@ function applyFilters() {
         })
         .then(users => {
             const filteredUsers = users.filter(user => {
-                const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
+                // CHANGED: Exclude users matching the name search instead of including them
+                const matchesName = nameSearch === '' || !user.userName.toLowerCase().includes(nameSearch);
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
                 
                 // Adjusted logic to filter closed markets                
@@ -97,6 +98,11 @@ function applyFilters() {
                 const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
                     user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
+                
+                // Fix the undefined matchesActive variable by setting it to true by default
+                // or checking if the market is active based on showClosedMarkets value
+                const matchesActive = showClosedMarkets || (user.endDate === null || new Date(user.endDate) > new Date());
+                
                 return matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
             });
 
