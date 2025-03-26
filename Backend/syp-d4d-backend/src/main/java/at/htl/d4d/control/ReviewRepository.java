@@ -24,18 +24,17 @@ public class ReviewRepository implements PanacheRepository<Review> {
     }
 
     /**
-     * Liefert alle Reviews, bei denen evaluateeUsername = username
-     * (oder passe an, wenn du evaluatorUsername etc. auch willst).
+     * Liefert alle Reviews zurück, bei denen der Service-Typ (serviceType) übereinstimmt.
      */
-    public List<Review> getReviewsByUsername(String username) {
-        return list("evaluateeUsername", username);
+    public List<Review> getReviewsByServiceType(String serviceType) {
+        return list("serviceType", serviceType);
     }
 
     /**
-     * Durchschnitts-Rating anhand evaluateeUsername.
+     * Durchschnitts-Rating anhand des Service-Typs.
      */
-    public Double getAverageRating(String username) {
-        List<Review> reviews = getReviewsByUsername(username);
+    public Double getAverageRatingForServiceType(String serviceType) {
+        List<Review> reviews = getReviewsByServiceType(serviceType);
         return reviews.stream()
                 .mapToDouble(r -> r.rating != null ? r.rating : 0.0)
                 .average()

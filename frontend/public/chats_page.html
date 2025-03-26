@@ -106,6 +106,13 @@
       margin-top: 0;
       color: var(--text-color);
     }
+    .chat-list input#searchInput {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
     .chat-list button {
       width: 100%;
       padding: 10px;
@@ -156,6 +163,10 @@
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+    /* Hier ändern wir "Chat-Bereich" auf <span id="chatTitle"> */
+    .chat-section h2 i {
+      color: var(--primary-color);
     }
     .chat-messages {
       flex-grow: 1;
@@ -297,7 +308,7 @@
       font-weight: bold;
     }
 
-    /* Modal-Stile */
+    /* Modal-Stile (optional, hier "Neuen Chat erstellen" ohne ChatRoom-Funktion) */
     .modal {
       display: none;
       position: fixed;
@@ -381,11 +392,17 @@
   <main class="container">
     <div class="chat-list">
       <h3>Chats</h3>
+      <!-- Suchanzeige für Kontakte -->
+      <input type="text" id="searchInput" placeholder="Kontakte durchsuchen..." oninput="filterContacts()" />
       <button onclick="openChatCreation()">+ Neuen Chat erstellen</button>
       <div id="chatItems"></div>
     </div>
     <div class="chat-section">
-      <h2><i class="fas fa-comments"></i> Chat-Bereich</h2>
+      <!-- Statt "Chat-Bereich" verwenden wir nun ein <span id="chatTitle">, das wir per JS setzen -->
+      <h2>
+        <i class="fas fa-comments"></i>
+        <span id="chatTitle">Bitte wähle einen Chat</span>
+      </h2>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-form-container">
         <!-- Vorschau für Bild-Upload -->
@@ -404,6 +421,7 @@
     </div>
   </main>
 
+  <!-- Modal: Neuen Chat erstellen (optional) -->
   <div class="modal" id="chatModal">
     <h3>Neuer Chat</h3>
     <input type="text" id="chatName" placeholder="Chat Name" />
@@ -412,7 +430,8 @@
   </div>
 
   <script>
-    let currentChatId = null;
+    let currentChatId = null; // speichert die ID des Gesprächspartners
+    const CURRENT_USER_ID = 1; // Im Backend hartkodiert, hier nur zur Demo
 
     // Datei -> Base64
     function getBase64(file) {
@@ -424,6 +443,7 @@
       });
     }
 
+    // Modal öffnen/schließen (optional, da keine ChatRoom-Entität existiert)
     function openChatCreation() {
       document.getElementById("chatModal").classList.add("active");
     }
@@ -431,55 +451,57 @@
       document.getElementById("chatModal").classList.remove("active");
     }
 
-    // CHAT-LISTE LADEN
+    // Gesprächspartner-Liste laden
     async function fetchChats() {
       try {
-        const response = await fetch("http://localhost:8080/chat/rooms");
+        // Holt alle Kontakte (User), die in ChatEntry vorkommen
+        const response = await fetch("http://localhost:8080/chat/contacts");
         if (!response.ok) {
           console.error("Fehler beim Abrufen der Chats:", response.statusText);
           return;
         }
-        const chats = await response.json();
-        console.log("Empfangene Chats:", chats);
+        const contacts = await response.json();
+        console.log("Empfangene Kontakte:", contacts);
 
         const chatItems = document.getElementById("chatItems");
         chatItems.innerHTML = "";
 
-        chats.forEach(chat => {
-          // Falls chatName ein Objekt mit .chars ist, nimm das:
-          let nameToShow;
-          if (typeof chat.chatName === 'object' && chat.chatName.chars) {
-            nameToShow = chat.chatName.chars;
-          }
-          else if (typeof chat.chatName === 'string') {
-            nameToShow = chat.chatName;
-          }
-          else {
-            // Fallback: gib das JSON aus, falls noch was anderes kommt
-            nameToShow = JSON.stringify(chat.chatName);
-          }
-
+        // Kontakte (User) in der Reihenfolge anzeigen, wie sie vom Backend kommen
+        contacts.forEach(contact => {
+          // contact hat Felder: { id, name, ... }
           const chatElement = document.createElement("div");
           chatElement.classList.add("chat-item");
-          chatElement.innerHTML = `<i class="fas fa-user"></i> ${nameToShow}`;
-          chatElement.onclick = () => openChat(chat.id);
+          chatElement.dataset.name = contact.name; // für die Suche
+          chatElement.innerHTML = `<i class="fas fa-user"></i> ${contact.name}`;
+          chatElement.onclick = () => {
+            setActiveChat(contact.id, chatElement);
+          };
           chatItems.appendChild(chatElement);
         });
       } catch (error) {
-        console.error("Netzwerkfehler beim Abrufen der Chats:", error);
+        console.error("Netzwerkfehler beim Abrufen der Kontakte:", error);
       }
     }
 
-    // CHAT ÖFFNEN
-    function openChat(chatId) {
-      currentChatId = chatId;
-      fetchChatMessages(chatId);
+    // "Active"-Zustand setzen und Chat öffnen
+    function setActiveChat(partnerId, chatElement) {
+      // Alle chat-items von "active" befreien
+      document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+      // Geklicktes Item als "active" markieren
+      chatElement.classList.add('active');
+
+      // Den Namen in der Überschrift setzen
+      const userName = chatElement.dataset.name;
+      document.getElementById("chatTitle").textContent = userName;
+
+      currentChatId = partnerId;
+      fetchChatMessages(partnerId);
     }
 
-    // NACHRICHTEN LADEN
-    async function fetchChatMessages(chatId) {
+    // Chat öffnen -> Nachrichten laden
+    async function fetchChatMessages(partnerId) {
       try {
-        const response = await fetch(`http://localhost:8080/chat/rooms/${chatId}/messages`);
+        const response = await fetch(`http://localhost:8080/chat/${partnerId}/messages`);
         if (!response.ok) {
           console.error("Fehler beim Abrufen der Nachrichten:", response.statusText);
           return;
@@ -488,35 +510,25 @@
         const chatMessages = document.getElementById("chatMessages");
         chatMessages.innerHTML = "";
 
-        // Systemnachricht
+        // Optionale Systemnachricht
         const systemMessageElement = document.createElement("div");
         systemMessageElement.classList.add("message", "system");
         systemMessageElement.textContent = "Chat gestartet – lass uns ins Gespräch kommen!";
         chatMessages.appendChild(systemMessageElement);
 
         messages.forEach(msg => {
+          // msg: ChatEntry-Objekt mit sender_ID, receiver_ID, message, time, ...
+          const isCurrentUser = (msg.sender_ID === CURRENT_USER_ID);
           const messageElement = document.createElement("div");
-          messageElement.classList.add("message", msg.user === "Me" ? "user" : "other");
+          messageElement.classList.add("message", isCurrentUser ? "user" : "other");
 
           if (msg.message) {
             const textElement = document.createElement("p");
             textElement.style.margin = "0";
-            textElement.textContent = `${msg.user}: ${msg.message}`;
+            const senderLabel = isCurrentUser ? "Ich" : "Partner";
+            textElement.textContent = `${senderLabel}: ${msg.message}`;
             messageElement.appendChild(textElement);
-          } else {
-            const userElement = document.createElement("span");
-            userElement.style.fontWeight = "bold";
-            userElement.textContent = `${msg.user}: `;
-            messageElement.appendChild(userElement);
           }
-
-          if (msg.image) {
-            const imgElement = document.createElement("img");
-            imgElement.src = msg.image;
-            imgElement.alt = "Bildnachricht";
-            messageElement.appendChild(imgElement);
-          }
-
           chatMessages.appendChild(messageElement);
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -525,7 +537,7 @@
       }
     }
 
-    // BILD-UPLOAD-VORSCHAU
+    // Bild-Upload-Vorschau
     document.getElementById("chatImage").addEventListener("change", function(event) {
       const file = event.target.files[0];
       const previewContainer = document.getElementById("imagePreview");
@@ -551,7 +563,7 @@
       }
     });
 
-    // NACHRICHT SENDEN
+    // Nachricht senden
     document.getElementById("chatForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       if (currentChatId === null) {
@@ -561,20 +573,27 @@
       const chatInput = document.getElementById("chatInput");
       const messageText = chatInput.value.trim();
       const imageInput = document.getElementById("chatImage");
-      let messageData = { user: "Me", message: messageText };
 
+      // Wir senden nur das Feld 'message', das deine ChatEntry-Entity kennt
+      let messageData = {
+        message: messageText
+      };
+
+      // Optional: Bild in Base64 konvertieren (falls im Backend unterstützt)
       if (imageInput.files[0]) {
         try {
           const base64 = await getBase64(imageInput.files[0]);
-          messageData.image = base64;
+          // Falls du ein Feld "image" im ChatEntry hättest:
+          // messageData.image = base64;
         } catch (error) {
           console.error("Fehler beim Konvertieren des Bildes:", error);
         }
       }
-      if (messageText === "" && !messageData.image) return;
+
+      if (messageText === "") return; // Falls wir kein Bild haben und Text leer ist, Abbruch
 
       try {
-        const response = await fetch(`http://localhost:8080/chat/rooms/${currentChatId}/messages`, {
+        const response = await fetch(`http://localhost:8080/chat/${currentChatId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(messageData)
@@ -593,12 +612,11 @@
       }
     });
 
-    // BEIM LADEN DER SEITE
+    // Beim Laden der Seite
     document.addEventListener("DOMContentLoaded", function() {
       fetchChats();
-      // Default-Chat (ID 1) automatisch öffnen – falls vorhanden
-      openChat(1);
 
+      // Button: Chat-Testdaten generieren
       const generateChatDataBtn = document.getElementById("generateChatDataButton");
       if (generateChatDataBtn) {
         generateChatDataBtn.addEventListener("click", async () => {
@@ -619,28 +637,28 @@
       }
     });
 
-    // NEUEN CHAT ERSTELLEN
+    // Filter-Funktion für Kontakte
+    function filterContacts() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const chatItems = document.querySelectorAll(".chat-item");
+      chatItems.forEach(item => {
+        const name = item.dataset.name.toLowerCase();
+        // Wenn der Name den Suchbegriff enthält -> anzeigen, sonst verstecken
+        if (name.includes(query)) {
+          item.style.display = "flex";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    }
+
+    // Neuen Chat erstellen (hier nur Symbolik, da wir keine ChatRoom-Entität haben)
     async function createNewChat() {
       const chatName = document.getElementById("chatName").value.trim();
       if (chatName === "") return;
-
-      const chatData = { chatName };
-      try {
-        const response = await fetch("http://localhost:8080/chat/rooms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chatData)
-        });
-        if (response.ok) {
-          fetchChats();
-          closeChatCreation();
-          document.getElementById("chatName").value = "";
-        } else {
-          console.error("Error creating chat room:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Network error:", error);
-      }
+      alert("Funktion 'Neuen Chat erstellen' ist momentan nicht implementiert.");
+      closeChatCreation();
+      document.getElementById("chatName").value = "";
     }
   </script>
 </body>

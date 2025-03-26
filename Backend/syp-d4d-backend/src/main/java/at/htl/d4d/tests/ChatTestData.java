@@ -2,18 +2,16 @@ package at.htl.d4d.tests;
 
 import at.htl.d4d.control.ChatRepository;
 import at.htl.d4d.control.MarketRepository;
-import at.htl.d4d.control.MessageRepository;
 import at.htl.d4d.control.UserRepository;
-import at.htl.d4d.control.ServiceTypesRepository; // <-- NEU
-import at.htl.d4d.entity.Chat;
+import at.htl.d4d.control.ServiceTypesRepository;
 import at.htl.d4d.entity.Market;
-import at.htl.d4d.entity.Message;
 import at.htl.d4d.entity.User;
-import at.htl.d4d.entity.ServiceType; // <-- NEU
+import at.htl.d4d.entity.ServiceType;
+import at.htl.d4d.entity.ChatEntry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,13 +26,10 @@ public class ChatTestData {
     MarketRepository marketRepository;
 
     @Inject
-    MessageRepository messageRepository;
-
-    @Inject
     UserRepository userRepository;
 
     @Inject
-    ServiceTypesRepository serviceTypesRepository; // <-- Neu, um Fach (ServiceType) zu holen
+    ServiceTypesRepository serviceTypesRepository;
 
     private static final int MAX_CHAT_ENTRIES = 315;
 
@@ -42,61 +37,59 @@ public class ChatTestData {
     public void generateChatTestData() {
         System.out.println("[INFO] Starting generation of chat test data...");
 
-        // 1) Alle Markets laden
+        List<ChatEntry> chatEntryList = new ArrayList<>();
+
+        // Erzeuge einen Admin-Chat: Admin (ID 0) sendet eine Nachricht an den aktuell angemeldeten User (ID 1)
+        ChatEntry adminChat = new ChatEntry();
+        adminChat.setSender_ID(0L); // 0 repräsentiert den Admin bzw. das System
+        adminChat.setReceiver_ID(1L); // Aktueller User (hier hartkodiert als 1)
+        adminChat.setMessage("Hallo, ich bin der Admin. Wie kann ich dir helfen?");
+        adminChat.setTime(new Timestamp(System.currentTimeMillis()));
+        chatEntryList.add(adminChat);
+
+        // 1) Alle Market-Einträge laden
         List<Market> allMarkets = marketRepository.getAllMarkets();
         System.out.println("[DEBUG] Found " + allMarkets.size() + " Market entries in DB.");
 
-        List<Chat> chatList = new ArrayList<>();
         Random random = new Random();
 
-        // 2) Für ~50% der Markets einen Chat anlegen
+        // 2) Für ca. 50% der Market-Einträge einen ChatEntry anlegen (als Willkommensnachricht)
         for (Market market : allMarkets) {
             if (random.nextDouble() < 0.5) {
-                // Hole User
+                // Zugehörigen User laden
                 User user = userRepository.findById(market.user_ID);
                 String userName = (user != null) ? user.name : "UnknownUser";
 
-                // Hole Service/Fach
+                // Zugehöriges Fach (ServiceType) laden
                 ServiceType st = serviceTypesRepository.findById(market.serviceType_ID);
                 String fachName = (st != null) ? st.getTypeOfService() : "UnknownService";
 
-                // Chatname => "Chat with <User> for <Fach>"
-                String chatName = "Chat with " + userName + " for " + fachName;
+                // Erstelle eine Chat-Nachricht vom System an den User
+                ChatEntry chatEntry = new ChatEntry();
+                chatEntry.setSender_ID(0L); // System als Sender
+                chatEntry.setReceiver_ID(market.user_ID);
+                chatEntry.setMessage("Willkommen im Chat! (Fach: " + fachName + ", User: " + userName + ")");
+                chatEntry.setTime(new Timestamp(System.currentTimeMillis()));
 
-                Chat chat = new Chat();
-                chat.chatName = chatName;
-
-                chatList.add(chat);
+                chatEntryList.add(chatEntry);
             }
         }
 
-        // 3) Beschränke Anzahl
-        if (chatList.size() > MAX_CHAT_ENTRIES) {
-            chatList = chatList.subList(0, MAX_CHAT_ENTRIES);
+        // 3) Anzahl der Einträge begrenzen
+        if (chatEntryList.size() > MAX_CHAT_ENTRIES) {
+            chatEntryList = chatEntryList.subList(0, MAX_CHAT_ENTRIES);
         }
 
-        System.out.println("[DEBUG] About to persist " + chatList.size() + " chat entries");
+        System.out.println("[DEBUG] About to persist " + chatEntryList.size() + " chat entries");
 
-        // 4) Chats persistieren
+        // 4) Persistiere alle ChatEntry-Objekte
         int count = 0;
-        for (Chat chat : chatList) {
-            chatRepository.persist(chat);
-            System.out.println("[DEBUG] Persisted chat entry " + count + ": " + chat.chatName);
+        for (ChatEntry entry : chatEntryList) {
+            chatRepository.persist(entry);
+            System.out.println("[DEBUG] Persisted chat entry " + count + " with message: " + entry.getMessage());
             count++;
         }
 
-        // 5) Für ~50% dieser Chats Willkommensnachricht anlegen
-        int welcomeCount = 0;
-        for (Chat chat : chatList) {
-            if (random.nextDouble() < 0.5) {
-                Message welcome = new Message(chat.id, "System", "Willkommen im Chat!", null);
-                messageRepository.persist(welcome);
-                System.out.println("[DEBUG] Persisted WELCOME message for chat ID " + chat.id);
-                welcomeCount++;
-            }
-        }
-
-        System.out.println("[INFO] Finished generating chats. Total created: " + chatList.size());
-        System.out.println("[INFO] Created " + welcomeCount + " welcome messages in those chats.");
+        System.out.println("[INFO] Finished generating chat entries. Total created: " + chatEntryList.size());
     }
 }

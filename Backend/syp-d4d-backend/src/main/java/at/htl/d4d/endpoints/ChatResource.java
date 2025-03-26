@@ -1,43 +1,96 @@
 package at.htl.d4d.endpoints;
 
-import at.htl.d4d.control.MessageRepository;
-import at.htl.d4d.entity.Message;
+import at.htl.d4d.control.ChatRepository;
+import at.htl.d4d.control.UserRepository;
+import at.htl.d4d.entity.ChatEntry;
+import at.htl.d4d.entity.User;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-@Path("/chat/default/messages")
+import java.sql.Timestamp;
+import java.util.*;
+
+@Path("/chat")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ChatResource {
 
     @Inject
-    MessageRepository messageRepository;
+    ChatRepository chatRepository;
+
+    @Inject
+    UserRepository userRepository;
+
+    private final Long CURRENT_USER_ID = 1L; // "Eingeloggter" Nutzer
+    private final Long ADMIN_ID = 0L;       // Admin
 
     @GET
-    public Response getMessages() {
-        Long defaultChatId = 1L;
-        List<Message> messages = messageRepository.getMessagesByChat(defaultChatId);
+    @Path("/contacts")
+    public Response getAllContacts() {
+        // Alle ChatEntry-Einträge laden
+        List<ChatEntry> entries = chatRepository.listAll();
 
-        if (messages.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        // In diesem Set sammeln wir alle beteiligten User-IDs
+        Set<Long> userIds = new LinkedHashSet<>();
+        for (ChatEntry entry : entries) {
+            userIds.add(entry.getSender_ID());
+            userIds.add(entry.getReceiver_ID());
         }
 
-        List<ChatMessageResource.MessageDto> dtos = new ArrayList<>();
-        for (Message m : messages) {
-            dtos.add(new ChatMessageResource.MessageDto(
-                    m.getId(),
-                    m.getChatId(),
-                    m.getUserName(),
-                    (m.getMessageContent() != null ? m.getMessageContent() : ""),
-                    (m.getImage() != null ? m.getImage() : ""),
-                    m.getCreatedAt()
-            ));
+        // Für jede User-ID das zugehörige User-Objekt finden
+        List<User> contacts = new ArrayList<>();
+        for (Long uid : userIds) {
+            // Admin-ID 0 überspringen (falls du sie nicht anzeigen möchtest)
+            if (uid == ADMIN_ID) {
+                continue;
+            }
+            User u = userRepository.findById(uid);
+            if (u == null) {
+                // Falls kein User-Objekt existiert, Dummy erzeugen
+                u = new User();
+                u.id = uid;
+                u.name = "Unbekannt (" + uid + ")";
+            }
+            contacts.add(u);
         }
-        return Response.ok(dtos).build();
+
+        return Response.ok(contacts).build();
+    }
+
+    @GET
+    @Path("/{partnerId}/messages")
+    public Response getMessages(@PathParam("partnerId") Long partnerId) {
+        List<ChatEntry> messages = chatRepository.getMessagesBetween(CURRENT_USER_ID, partnerId);
+        // Wenn keine Nachrichten gefunden, geben wir eine leere Liste zurück
+        if (messages == null || messages.isEmpty()) {
+            return Response.ok(Collections.emptyList()).build();
+        }
+        return Response.ok(messages).build();
+    }
+
+    @POST
+    @Path("/{partnerId}/messages")
+    @Transactional
+    public Response sendMessage(@PathParam("partnerId") Long partnerId, ChatEntry incoming) {
+        // incoming enthält nur das Feld 'message' (und evtl. weitere)
+        if (incoming.getMessage() == null || incoming.getMessage().trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Nachricht darf nicht leer sein")
+                    .build();
+        }
+
+        ChatEntry chatEntry = new ChatEntry();
+        chatEntry.setSender_ID(CURRENT_USER_ID);
+        chatEntry.setReceiver_ID(partnerId);
+        chatEntry.setMessage(incoming.getMessage());
+        chatEntry.setTime(new Timestamp(System.currentTimeMillis()));
+
+        // Hier brauchen wir eine laufende Transaktion:
+        chatRepository.persist(chatEntry);
+
+        return Response.status(Response.Status.CREATED).entity(chatEntry).build();
     }
 }

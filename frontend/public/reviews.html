@@ -1,285 +1,354 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bewertungen</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- FontAwesome Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #e9eff5, #ffffff);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        nav.navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        nav.navbar .logo {
-            display: flex;
-            align-items: center;
-            font-size: 1.6em;
-            font-weight: 700;
-        }
-
-        nav.navbar .logo i {
-            margin-right: 10px;
-        }
-
-        nav.navbar .nav-buttons button {
-            background: #fff;
-            color: #007bff;
-            border: none;
-            border-radius: 5px;
-            padding: 8px 12px;
-            margin-left: 10px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-
-        nav.navbar .nav-buttons button:hover {
-            background-color: #e0e0e0;
-            transform: translateY(-2px);
-        }
-
-        .container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            margin: 15px;
-            border-radius: 10px;
-            background-color: #fff;
-            overflow: hidden;
-        }
-
-        .content-section {
-            margin: 15px;
-        }
-
-        .review-card {
-            margin-bottom: 20px;
-        }
-
-        .review-card .card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-
-        .review-card .card-header {
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-        }
-
-        .review-card .card-body {
-            padding: 15px;
-        }
-
-        .review-rating i {
-            font-size: 1.2em;
-            color: #ddd;
-        }
-
-        .review-rating i.selected {
-            color: #ffd700;
-        }
-
-        .review-author {
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .review-comment {
-            margin-bottom: 10px;
-        }
-
-        .text-muted {
-            color: #888;
-            font-size: 0.9em;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bewertungen</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <!-- FontAwesome Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e9eff5, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    nav.navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #007bff, #0056b3);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    nav.navbar .logo {
+      display: flex;
+      align-items: center;
+      font-size: 1.6em;
+      font-weight: 700;
+    }
+    nav.navbar .logo i {
+      margin-right: 10px;
+    }
+    nav.navbar .nav-buttons button {
+      background: #fff;
+      color: #007bff;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      margin-left: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    nav.navbar .nav-buttons button:hover {
+      background-color: #e0e0e0;
+      transform: translateY(-2px);
+    }
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin: 15px;
+      border-radius: 10px;
+      background-color: #fff;
+      overflow: hidden;
+    }
+    .content-section {
+      margin: 15px;
+    }
+    .review-card {
+      margin-bottom: 20px;
+    }
+    .review-card .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .review-card .card-header {
+      background-color: #f8f9fa;
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      font-weight: bold;
+    }
+    .review-card .card-body {
+      padding: 15px;
+    }
+    .review-rating i {
+      font-size: 1.2em;
+      color: #ddd;
+    }
+    .review-rating i.selected {
+      color: #ffd700 !important; /* Zwingt die gelbe Farbe */
+    }
+    .review-author {
+      margin-bottom: 10px;
+      color: #666;
+    }
+    .review-comment {
+      margin-bottom: 10px;
+    }
+    .text-muted {
+      color: #888;
+      font-size: 0.9em;
+    }
+    /* Neuer Abschnitt für Service-Typ-Reviews */
+    .service-section {
+      margin: 15px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #fefefe;
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">
-            <i class="fas fa-handshake"></i>
-            <span>D4D</span>
-        </div>
-        <div class="nav-buttons">
-            <button onclick="window.location.href='showOffers.html'">
-                <i class="fas fa-store"></i>
-                Zum Markt
-            </button>
-            <button onclick="window.location.href='makeOffer.html'">
-                <i class="fas fa-plus"></i>
-                Dienstleistung anbieten
-            </button>
-            <button onclick="window.location.href='chats_page.html'">
-                <i class="fas fa-comments"></i>
-                Chat
-            </button>
-            <!-- Neuer Button, um Review-Testdaten zu generieren -->
-            <button onclick="generateReviewTestData()">
-                <i class="fas fa-database"></i>
-                Review-Daten generieren
-            </button>
-        </div>
-    </nav>
+  <nav class="navbar">
+    <div class="logo">
+      <i class="fa-solid fa-handshake"></i>
+      <span>D4D</span>
+    </div>
+    <div class="nav-buttons">
+      <button onclick="window.location.href='showOffers.html'">
+        <i class="fa-solid fa-store"></i>
+        Zum Markt
+      </button>
+      <button onclick="window.location.href='makeOffer.html'">
+        <i class="fa-solid fa-plus"></i>
+        Dienstleistung anbieten
+      </button>
+      <button onclick="window.location.href='chats_page.html'">
+        <i class="fa-solid fa-comments"></i>
+        Chat
+      </button>
+      <!-- Neuer Button, um Review-Testdaten zu generieren -->
+      <button onclick="generateReviewTestData()">
+        <i class="fa-solid fa-database"></i>
+        Review-Daten generieren
+      </button>
+    </div>
+  </nav>
 
-    <main class="container">
-        <!-- Abschnitt: Vorhandene Bewertungen anzeigen -->
-        <div class="content-section">
-            <h2><i class="fas fa-star"></i> Vorhandene Bewertungen</h2>
-            <button onclick="fetchAllReviews()">
-                <i class="fas fa-sync"></i> Alle Reviews anzeigen
-            </button>
-            <div id="reviewList"></div>
-        </div>
-    </main>
+  <main class="container">
+    <!-- Abschnitt: Vorhandene Bewertungen anzeigen -->
+    <div class="content-section">
+      <h2><i class="fa-solid fa-star"></i> Vorhandene Bewertungen</h2>
+      <button onclick="fetchAllReviews()">
+        <i class="fa-solid fa-sync"></i> Alle Reviews anzeigen
+      </button>
+      <div id="reviewList"></div>
+    </div>
 
-    <script>
-      // 1) Review-Testdaten generieren
-      async function generateReviewTestData() {
-        try {
-          const response = await fetch("http://localhost:8080/d4d/testdata/generate-reviews", {
-            method: "POST"
-          });
-          if (response.ok) {
-            alert("Review-Testdaten erfolgreich generiert!");
-            // Optional: direkt im Anschluss alle Reviews laden
-            // fetchAllReviews();
-          } else {
-            console.error("Fehler beim Generieren der Review-Testdaten:", response.statusText);
-          }
-        } catch (error) {
-          console.error("Netzwerkfehler beim Generieren der Review-Testdaten:", error);
+    <!-- Neuer Abschnitt: Bewertungen nach Service-Typ abrufen -->
+    <div class="service-section">
+      <h2><i class="fa-solid fa-tools"></i> Bewertungen nach Service-Typ</h2>
+      <input type="text" id="serviceTypeInput" placeholder="Geben Sie den Service-Typ ein" />
+      <button onclick="fetchReviewsByServiceType()">Reviews abrufen</button>
+      <button onclick="fetchServiceRating()">Durchschnittsbewertung abrufen</button>
+      <div id="serviceReviewList"></div>
+      <div id="serviceRatingDisplay"></div>
+    </div>
+  </main>
+
+  <script>
+    // 1) Review-Testdaten generieren
+    async function generateReviewTestData() {
+      try {
+        const response = await fetch("http://localhost:8080/d4d/testdata/generate-reviews", {
+          method: "POST"
+        });
+        if (response.ok) {
+          alert("Review-Testdaten erfolgreich generiert!");
+        } else {
+          console.error("Fehler beim Generieren der Review-Testdaten:", response.statusText);
         }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Generieren der Review-Testdaten:", error);
       }
+    }
 
-      // 2) Alle Reviews vom Server abrufen
-      async function fetchAllReviews() {
-        try {
-          const response = await fetch("http://localhost:8080/d4d/reviews");
-          if (response.ok) {
-            const reviews = await response.json();
-            console.log("Empfangene Reviews:", reviews);
-            displayReviews(reviews);
-          } else {
-            console.error("Fehler beim Abrufen der Reviews:", response.statusText);
-          }
-        } catch (error) {
-          console.error("Netzwerkfehler beim Abrufen der Reviews:", error);
+    // 2) Alle Reviews vom Server abrufen
+    async function fetchAllReviews() {
+      try {
+        const response = await fetch("http://localhost:8080/d4d/reviews");
+        if (response.ok) {
+          const reviews = await response.json();
+          console.log("Empfangene Reviews:", reviews);
+          displayReviews(reviews);
+        } else {
+          console.error("Fehler beim Abrufen der Reviews:", response.statusText);
         }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Reviews:", error);
       }
+    }
 
-      // 3) Reviews im Frontend darstellen
-      function displayReviews(reviews) {
-        const reviewList = document.getElementById("reviewList");
-        reviewList.innerHTML = ""; // Clear old content
+    // 3) Reviews im Frontend darstellen (inkl. Anzeige des Service-Typs)
+    function displayReviews(reviews) {
+      const reviewList = document.getElementById("reviewList");
+      reviewList.innerHTML = ""; // Alten Inhalt löschen
 
-        reviews.forEach((rev) => {
-          const evaluatee = parseStringField(rev.evaluateeUsername);
-          const evaluator = parseStringField(rev.evaluatorUsername);
-          const comment = parseStringField(rev.comment);
+      reviews.forEach((rev) => {
+        const evaluatee = parseStringField(rev.evaluateeUsername);
+        const evaluator = parseStringField(rev.evaluatorUsername);
+        const comment = parseStringField(rev.comment);
+        const ratingVal = parseFloatField(rev.rating);
+        const serviceType = parseStringField(rev.serviceType);
 
-          // Falls rating ein Objekt oder String ist, in Number konvertieren
-          const ratingVal = parseFloatField(rev.rating);
+        const reviewCard = document.createElement("div");
+        reviewCard.classList.add("review-card");
 
-          const reviewCard = document.createElement("div");
-          reviewCard.classList.add("review-card");
-
-          // Baue das HTML
-          reviewCard.innerHTML = `
-            <div class="card">
-              <div class="card-header">
-                Bewertung für: ${evaluatee}
-                <br>
-                <small>Erstellt von: ${evaluator}</small>
+        reviewCard.innerHTML = `
+          <div class="card">
+            <div class="card-header">
+              Bewertung für: ${evaluatee}<br>
+              <small>Service: ${serviceType}</small><br>
+              <small>Erstellt von: ${evaluator}</small>
+            </div>
+            <div class="card-body">
+              <div class="review-rating">
+                ${generateStarHTML(ratingVal)}
               </div>
-              <div class="card-body">
-                <div class="review-rating">
-                  ${generateStarHTML(ratingVal)}
-                </div>
-                <div class="review-comment">
-                  ${comment}
-                </div>
-                <div class="text-muted">
-                  Erstellt am: ${parseStringField(rev.createdAt)}
-                </div>
+              <div class="review-comment">
+                ${comment}
+              </div>
+              <div class="text-muted">
+                Erstellt am: ${parseStringField(rev.createdAt)}
               </div>
             </div>
-          `;
-          reviewList.appendChild(reviewCard);
-        });
+          </div>
+        `;
+        reviewList.appendChild(reviewCard);
+      });
+    }
+
+    // 4) Neue Funktion: Reviews nach Service-Typ abrufen
+    async function fetchReviewsByServiceType() {
+      const serviceType = document.getElementById("serviceTypeInput").value;
+      if (!serviceType) {
+        alert("Bitte geben Sie einen Service-Typ ein");
+        return;
       }
-
-      // 4) Star-Rating-HTML generieren
-      function generateStarHTML(rating) {
-        // Runden
-        const roundedRating = Math.round(rating);
-        let starsHTML = "";
-        for (let i = 1; i <= 5; i++) {
-          if (i <= roundedRating) {
-            starsHTML += `<i class="fas fa-star selected"></i>`;
-          } else {
-            starsHTML += `<i class="fas fa-star"></i>`;
-          }
-        }
-        return `${starsHTML} (${rating.toFixed(1)})`;
-      }
-
-      // --- Hilfsfunktionen, um [object Object] zu vermeiden ---
-
-      // Falls evaluateeUsername etc. kein reiner String ist, hole .chars / .string oder fallback
-      function parseStringField(field) {
-        if (!field) return "";
-        if (typeof field === "object") {
-          if (field.chars) return field.chars;
-          if (field.string) return field.string;
-          return JSON.stringify(field);
-        }
-        // normaler String oder Number
-        return String(field);
-      }
-
-      // Falls rating ein Objekt/String ist, parse es zu float
-      function parseFloatField(field) {
-        if (!field) return 0.0;
-        let numericVal = 0.0;
-        if (typeof field === "object") {
-          if (field.chars) numericVal = parseFloat(field.chars);
-          else if (field.string) numericVal = parseFloat(field.string);
-          else numericVal = parseFloat(field);
+      try {
+        const response = await fetch("http://localhost:8080/d4d/reviews/service/" + encodeURIComponent(serviceType));
+        if (response.ok) {
+          const reviews = await response.json();
+          console.log("Empfangene Service-Reviews:", reviews);
+          displayServiceReviews(reviews);
         } else {
-          numericVal = parseFloat(field);
+          console.error("Fehler beim Abrufen der Reviews für Service-Typ:", response.statusText);
         }
-        if (isNaN(numericVal)) numericVal = 0.0;
-        return numericVal;
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Reviews für Service-Typ:", error);
       }
-    </script>
+    }
+
+    // Darstellung der Reviews nach Service-Typ
+    function displayServiceReviews(reviews) {
+      const reviewList = document.getElementById("serviceReviewList");
+      reviewList.innerHTML = ""; // Alten Inhalt löschen
+
+      reviews.forEach((rev) => {
+        const evaluator = parseStringField(rev.evaluatorUsername);
+        const comment = parseStringField(rev.comment);
+        const ratingVal = parseFloatField(rev.rating);
+
+        const reviewCard = document.createElement("div");
+        reviewCard.classList.add("review-card");
+
+        reviewCard.innerHTML = `
+          <div class="card">
+            <div class="card-header">
+              Bewertung für Service-Typ: ${parseStringField(rev.serviceType)}<br>
+              <small>Erstellt von: ${evaluator}</small>
+            </div>
+            <div class="card-body">
+              <div class="review-rating">
+                ${generateStarHTML(ratingVal)}
+              </div>
+              <div class="review-comment">
+                ${comment}
+              </div>
+              <div class="text-muted">
+                Erstellt am: ${parseStringField(rev.createdAt)}
+              </div>
+            </div>
+          </div>
+        `;
+        reviewList.appendChild(reviewCard);
+      });
+    }
+
+    // 5) Durchschnittsbewertung für einen Service-Typ abrufen
+    async function fetchServiceRating() {
+      const serviceType = document.getElementById("serviceTypeInput").value;
+      if (!serviceType) {
+        alert("Bitte geben Sie einen Service-Typ ein");
+        return;
+      }
+      try {
+        const response = await fetch("http://localhost:8080/d4d/reviews/rating/service/" + encodeURIComponent(serviceType));
+        if (response.ok) {
+          const ratingData = await response.json();
+          displayServiceRating(ratingData);
+        } else {
+          console.error("Fehler beim Abrufen der Durchschnittsbewertung:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Netzwerkfehler beim Abrufen der Durchschnittsbewertung:", error);
+      }
+    }
+
+    function displayServiceRating(ratingData) {
+      const display = document.getElementById("serviceRatingDisplay");
+      display.innerHTML = `<h3>Durchschnittsbewertung: ${parseFloatField(ratingData.rating).toFixed(1)}</h3>`;
+    }
+
+    // 6) Star-Rating-HTML generieren (aktualisiert für FontAwesome 6)
+    function generateStarHTML(rating) {
+      const roundedRating = Math.round(rating);
+      let starsHTML = "";
+      for (let i = 1; i <= 5; i++) {
+        if (i <= roundedRating) {
+          starsHTML += `<i class="fa-solid fa-star selected"></i>`;
+        } else {
+          starsHTML += `<i class="fa-solid fa-star"></i>`;
+        }
+      }
+      return `${starsHTML} (${rating.toFixed(1)})`;
+    }
+
+    // --- Hilfsfunktionen ---
+
+    function parseStringField(field) {
+      if (field === null || field === undefined) return "";
+      if (typeof field === "object") {
+        if (field.chars) return field.chars;
+        if (field.string) return field.string;
+        return JSON.stringify(field);
+      }
+      return String(field);
+    }
+
+    // Hier prüfen wir explizit auf null/undefined statt falsy
+    function parseFloatField(field) {
+      if (field === null || field === undefined) return 0.0;
+      let numericVal = Number(field);
+      return isNaN(numericVal) ? 0.0 : numericVal;
+    }
+  </script>
 </body>
 </html>

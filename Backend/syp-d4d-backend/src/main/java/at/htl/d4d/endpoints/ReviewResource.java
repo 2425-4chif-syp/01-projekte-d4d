@@ -39,7 +39,7 @@ public class ReviewResource {
                     reviewJson.getString("comment", "")
             );
 
-            reviewRepository.addReview(review); // Panache-Methoden oder wie du es implementiert hast
+            reviewRepository.addReview(review);
 
             return Response.ok(
                     Json.createObjectBuilder()
@@ -63,14 +63,13 @@ public class ReviewResource {
         JsonArrayBuilder arr = Json.createArrayBuilder();
 
         for (Review review : reviews) {
-            // Falls rating null ist, ersetze durch 0.0
             double ratingVal = (review.getRating() != null) ? review.getRating() : 0.0;
 
             JsonObjectBuilder obj = Json.createObjectBuilder()
                     .add("evaluateeUsername", review.getEvaluateeUsername() != null ? review.getEvaluateeUsername() : "")
                     .add("evaluatorUsername", review.getEvaluatorUsername() != null ? review.getEvaluatorUsername() : "")
                     .add("serviceType", review.getServiceType() != null ? review.getServiceType() : "")
-                    .add("rating", ratingVal) // <-- echte Zahl, kein Objekt
+                    .add("rating", ratingVal)
                     .add("comment", review.getComment() != null ? review.getComment() : "")
                     .add("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
             arr.add(obj);
@@ -79,10 +78,13 @@ public class ReviewResource {
         return Response.ok(arr.build()).build();
     }
 
+    /**
+     * Neuer Endpunkt: Liefert alle Reviews zu einem bestimmten Service-Typ.
+     */
     @GET
-    @Path("/user/{username}")
-    public Response getReviewsByUser(@PathParam("username") String username) {
-        List<Review> reviews = reviewRepository.getReviewsByUsername(username);
+    @Path("/service/{serviceType}")
+    public Response getReviewsByServiceType(@PathParam("serviceType") String serviceType) {
+        List<Review> reviews = reviewRepository.getReviewsByServiceType(serviceType);
         JsonArrayBuilder arr = Json.createArrayBuilder();
 
         for (Review review : reviews) {
@@ -101,13 +103,13 @@ public class ReviewResource {
         return Response.ok(arr.build()).build();
     }
 
+    /**
+     * Neuer Endpunkt: Liefert die Durchschnittsbewertung eines bestimmten Service-Typs.
+     */
     @GET
-    @Path("/rating/{username}")
-    public Response getUserRating(@PathParam("username") String username) {
-        Double averageRating = reviewRepository.getAverageRating(username);
-        if (averageRating == null) {
-            averageRating = 0.0;
-        }
+    @Path("/rating/service/{serviceType}")
+    public Response getServiceRating(@PathParam("serviceType") String serviceType) {
+        Double averageRating = reviewRepository.getAverageRatingForServiceType(serviceType);
         return Response.ok(
                 Json.createObjectBuilder()
                         .add("rating", averageRating)

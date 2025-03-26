@@ -40,7 +40,7 @@ public class ReviewTestData {
         List<ServiceType> allServiceTypes = serviceTypesRepository.getAllServiceTypes();
         System.out.println("[DEBUG] Found " + allServiceTypes.size() + " service types in DB.");
 
-        // Falls nur 1 User existiert oder keine ServiceTypes, kann man keine sinnvollen Reviews anlegen
+        // Falls weniger als 2 User oder keine ServiceTypes existieren, können keine sinnvollen Reviews erstellt werden
         if (allUsers.size() < 2 || allServiceTypes.isEmpty()) {
             System.out.println("[WARN] Not enough Users or ServiceTypes to generate reviews!");
             return;
@@ -49,51 +49,40 @@ public class ReviewTestData {
         Random random = new Random();
         int totalReviewsCreated = 0;
 
-        // 3) Für jeden User generieren wir ein paar Reviews (1 bis 5),
-        //    bis wir die MAX_REVIEW_ENTRIES erreicht haben.
-        for (User evaluatee : allUsers) {
-            // Wie viele Reviews legen wir für diesen evaluatee an? (1..5)
-            int reviewCount = 1 + random.nextInt(5);
+        // 3) Generiere Reviews, bis MAX_REVIEW_ENTRIES erreicht ist
+        while (totalReviewsCreated < MAX_REVIEW_ENTRIES) {
+            // Wähle einen zufälligen Service-Provider (derjenige, dessen Service bewertet wird)
+            User serviceProvider = allUsers.get(random.nextInt(allUsers.size()));
 
-            for (int i = 0; i < reviewCount; i++) {
-                if (totalReviewsCreated >= MAX_REVIEW_ENTRIES) {
-                    break;
-                }
+            // Wähle einen Evaluator, der ungleich dem Service-Provider ist
+            User evaluator;
+            do {
+                evaluator = allUsers.get(random.nextInt(allUsers.size()));
+            } while (evaluator.id.equals(serviceProvider.id));
 
-                // Finde einen anderen User als Evaluator
-                User evaluator;
-                do {
-                    evaluator = allUsers.get(random.nextInt(allUsers.size()));
-                } while (evaluator.id.equals(evaluatee.id));
+            // Wähle zufälligen ServiceType und erhalte den Typnamen
+            ServiceType randomServiceType = allServiceTypes.get(random.nextInt(allServiceTypes.size()));
+            String serviceName = randomServiceType.getTypeOfService();
 
-                // Wähle zufälliges ServiceType
-                ServiceType randomServiceType = allServiceTypes.get(random.nextInt(allServiceTypes.size()));
-                // Passe das an deine ServiceType-Entität an (hier: getTypeOfService())
-                String serviceName = randomServiceType.getTypeOfService();
+            // Rating zwischen 1.0 und 5.0 (in 0.5er-Schritten)
+            double rating = 1.0 + (random.nextInt(9) * 0.5);
 
-                // Rating zwischen 1.0 und 5.0 (in 0.5er-Schritten)
-                double rating = 1.0 + (random.nextInt(9) * 0.5);
+            // Zufälliger Kommentar
+            String comment = randomComment();
 
-                // Kommentar
-                String comment = randomComment();
+            // Neues Review-Objekt: Hier wird als evaluateeUsername der Service-Provider gesetzt,
+            // evaluatorUsername ist der bewertende Nutzer und serviceType der bewertete Service-Typ.
+            Review review = new Review(
+                    serviceProvider.name,   // Service-Provider, dessen Service bewertet wird
+                    evaluator.name,         // Bewertender Nutzer
+                    serviceName,            // Der Service-Typ, der bewertet wird
+                    rating,
+                    comment
+            );
 
-                // Neues Review-Objekt anlegen
-                Review review = new Review(
-                        evaluatee.name,      // evaluateeUsername
-                        evaluator.name,      // evaluatorUsername
-                        serviceName,         // serviceType
-                        rating,
-                        comment
-                );
-
-                // Persistieren
-                reviewRepository.persist(review);
-                totalReviewsCreated++;
-            }
-
-            if (totalReviewsCreated >= MAX_REVIEW_ENTRIES) {
-                break;
-            }
+            // Persistiere das Review
+            reviewRepository.persist(review);
+            totalReviewsCreated++;
         }
 
         System.out.println("[INFO] Finished generating reviews. Total created: " + totalReviewsCreated);
