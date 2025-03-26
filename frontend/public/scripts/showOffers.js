@@ -71,8 +71,8 @@ function applyFilters() {
         })
         .then(users => {
             const filteredUsers = users.filter(user => {
-                // CHANGED: Exclude users matching the name search instead of including them
-                const matchesName = nameSearch === '' || !user.userName.toLowerCase().includes(nameSearch);
+                // Changed: Show users matching the name search instead of excluding them
+                const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
                 const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
                 
                 // Adjusted logic to filter closed markets                
@@ -99,9 +99,23 @@ function applyFilters() {
                     user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
                 );
                 
-                // Fix the undefined matchesActive variable by setting it to true by default
-                // or checking if the market is active based on showClosedMarkets value
-                const matchesActive = showClosedMarkets || (user.endDate === null || new Date(user.endDate) > new Date());
+                // Fixed matchesActive logic for markets with end dates before 31.12.2100
+                let matchesActive = true;
+                
+                if (showClosedMarkets) {
+                    // When checkbox is checked, ONLY show markets with end dates before 31.12.2100
+                    if (user.endDate) {
+                        const endDate = new Date(user.endDate);
+                        const endLimit = new Date('2100-12-31');
+                        matchesActive = endDate < endLimit;
+                    } else {
+                        // If there's no end date, don't include this market when showing closed markets
+                        matchesActive = false;
+                    }
+                } else {
+                    // When checkbox is not checked, only show active markets (no end date or future end date)
+                    matchesActive = user.endDate === null || new Date(user.endDate) > new Date();
+                }
                 
                 return matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
             });

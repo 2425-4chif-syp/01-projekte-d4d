@@ -142,27 +142,32 @@ input:focus, select:focus, textarea:focus {
 }
 
 .search-container {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .search-row {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 15px;  /* Mehr Abstand zwischen den Suchzeilen */
+    gap: 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .search-box {
     flex: 1;
     position: relative;
-    background-color: var(--card-background);
     border-radius: var(--border-radius);
-    padding: 0.75rem;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    border: 1px solid var(--border-color);
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+    overflow: hidden;
 }
 
-.search-box:hover {
-    box-shadow: var(--shadow-md);
+.search-box:hover, .search-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .search-icon, .filter-icon {
@@ -173,14 +178,18 @@ input:focus, select:focus, textarea:focus {
     color: var(--secondary-color);
 }
 
-.search-box input {
+.search-box input, .search-box select {
     width: 100%;
-    padding: 0.5rem 0.5rem 0.5rem 2.5rem;
+    padding: 0.6rem 0.75rem 0.6rem 2.5rem;
     border: none;
     border-radius: var(--border-radius);
-    font-size: 1rem;
+    font-size: 0.95rem;
     background: transparent;
     margin-bottom: 0;
+}
+
+.search-box input:focus, .search-box select:focus {
+    outline: none;
 }
 
 /* Filter Section */
@@ -492,8 +501,13 @@ input:focus, select:focus, textarea:focus {
         padding: 0.5rem 1rem;
     }
 
-    .search-row {
+    .search-row, .date-search-row {
         flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .search-container {
+        padding: 1rem;
     }
 
     .container {
@@ -942,26 +956,26 @@ input:focus, select:focus, textarea:focus {
 
 /* Search Tags */
 .search-tags {
-    margin-top: 8px;
+    margin-top: 0.5rem;
 }
 
 .selected-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    min-height: 32px;
-    padding: 4px 0;
+    gap: 0.5rem;
+    min-height: 2rem;
+    padding: 0.25rem 0;
 }
 
 .tag {
     background-color: var(--primary-color);
     color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
     font-size: 0.875rem;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     animation: fadeIn 0.3s ease-in-out;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -977,7 +991,7 @@ input:focus, select:focus, textarea:focus {
     border: none;
     color: white;
     padding: 0;
-    font-size: 14px;
+    font-size: 0.875rem;
     display: flex;
     align-items: center;
     opacity: 0.7;
@@ -1371,20 +1385,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 .service-type-section {
-    margin-bottom: 2rem;
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.service-type-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #eee;
 }
 
 .service-type-header h3 {
@@ -1865,21 +1865,37 @@ input:focus, select:focus, textarea:focus {
     align-items: center; /* Align label and input vertically */
     gap: 10px; /* Add spacing between label and input */
     flex-direction: row; /* Ensure label and input are in a row */
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.date-box:hover, .date-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .date-box label {
     position: static; /* Ensure label is inline */
     margin-bottom: 0; /* Remove bottom margin */
-    font-size: 1rem; /* Keep font size consistent */
-    color: #333; /* Standard text color */
-    font-weight: bold; /* Make the label text bold */
+    font-size: 0.95rem; /* Consistent with other inputs */
+    color: var(--secondary-color); /* Match other labels */
+    font-weight: normal; /* Use normal font weight to match other elements */
 }
 
 .date-box input[type="date"] {
-    padding: 10px; /* Maintain padding for input fields */
-    font-size: 1rem; /* Keep font size consistent */
-    border: 2px solid #00796b; /* Retain the border styling */
-    border-radius: 8px; /* Keep rounded corners */
+    padding: 8px 10px; /* Maintain padding for input fields */
+    font-size: 0.95rem; /* Keep font size consistent with other inputs */
+    border: none; /* Remove border to match other search inputs */
+    border-radius: var(--border-radius);
+    background: transparent;
+    flex: 1;
+    margin: 0;
+}
+
+.date-box input[type="date"]:focus {
+    outline: none;
 }
 
 /* Restliches CSS bleibt unverändert */
