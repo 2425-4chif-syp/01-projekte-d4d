@@ -10,21 +10,19 @@
 <body>
     <nav class="navbar">
         <div class="logo">
-            <i class="fas fa-handshake"></i>
-            <span>D4D</span>
+            <button onclick="window.location.href='index.html'" class="logo-button">
+                <i class="fas fa-handshake"></i>
+                <span>D4D</span>
+            </button>
         </div>
         <div class="nav-buttons">
             <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
                 <i class="fas fa-plus"></i>
                 Dienstleistung anbieten
             </button>
-            <button id="reviewButton" onclick="window.location.href='reviews.html'">
-                <i class="fas fa-star"></i>
-                Bewertungen
-            </button>
-            <button id="chatButton" onclick="window.location.href='chats_page.html'">
-                <i class="fas fa-comments"></i>
-                Chat
+            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
             </button>
             <button id="adminButton" onclick="window.location.href='adminLogin.html'">
                 <i class="fas fa-cog"></i>
@@ -44,7 +42,7 @@
                         <i class="fas fa-plus"></i>
                         Jetzt Nachhilfe anbieten
                     </button>
-                    <button class="secondary-button" onclick="window.location.href='showOffers.html'">
+                    <button class="secondary-button" onclick="window.location.href='showUserServices.html'">
                         <i class="fas fa-search"></i>
                         Nachhilfe finden
                     </button>
@@ -82,7 +80,5 @@
             </div>
         </div>
     </main>
-
-    <script src="scripts/index.js"></script>
 </body>
 </html>
