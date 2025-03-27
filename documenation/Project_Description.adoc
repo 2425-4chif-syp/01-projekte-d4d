@@ -28,8 +28,10 @@ title D4D
     (request payment)
     (accept / decline request)
     (give ratings)
+    (manage service types)
 
 :User:
+:Admin:
 
 User -- (edit user profile)
 (edit user profile) .> (services needed) : include
@@ -41,6 +43,7 @@ User -- (request payment)
 User -- (Request service)
 User -- (accept / decline request)
 User -- (give ratings)
+Admin - (manage service types)
 
 @enduml
 ----
