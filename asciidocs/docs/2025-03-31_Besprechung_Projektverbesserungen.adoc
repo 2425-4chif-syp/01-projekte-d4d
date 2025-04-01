@@ -1,0 +1,24 @@
+= 2025-03-31 - SYP Mitschrift
+ifndef::imagesdir[:imagesdir: images]
+:icons: font
+:experimental:
+:sectnums:
+:toc:
+ifdef::backend-html5[]
+endif::backend-html5[]
+
+== SYP_2025-03-31
+
+=== Projekt Verbesserungen
+
+* Camel case verwenden
+* username: app, password: app bei der Datenbankverbindung
+* kein PanacheEntity verwenden, eigene id hinzufügen mit PanacheEntityBase
+* private Felder mit Getter und Setter
+* Repository Pattern verwenden -> kein extends PanacheEntity bei den Entities
+* Tabellen mit Prefix d4d benennen, z.B. d4d_chatentry
+* Base-Klassen verwenden, eigene id definieren
+* bessere Beschriftung der Attribute, jedes Projektmitglied gleich
+* Deployments, Releases und Packages fehlen
+* frontend und backend dockern
+* objektorientiert programmieren!
