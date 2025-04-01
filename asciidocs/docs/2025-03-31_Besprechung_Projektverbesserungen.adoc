@@ -1,4 +1,4 @@
-= 2025-03-31 - SYP Mitschrift
+= 2025-03-31 - Besprechungsprotokoll
 ifndef::imagesdir[:imagesdir: images]
 :icons: font
 :experimental:
@@ -7,9 +7,20 @@ ifndef::imagesdir[:imagesdir: images]
 ifdef::backend-html5[]
 endif::backend-html5[]
 
-== SYP_2025-03-31
+== Teilnehmer
 
-=== Projekt Verbesserungen
+* Professor Stütz
+* Professor Palitsch-Infanger
+* Projektmitglieder D4D
+* 4CHIF als Zuhörer
+
+== Ort und Zeit
+
+* Ort: Klasse 4CHIF
+* Zeit: Montag 31.03.2025 9:30 bis 10:50
+* Dauer: ca. 1h (mit Abzug der Pause)
+
+== Projekt Verbesserungen
 
 * Camel case verwenden
 * username: app, password: app bei der Datenbankverbindung
@@ -22,3 +33,7 @@ endif::backend-html5[]
 * Deployments, Releases und Packages fehlen
 * frontend und backend dockern
 * objektorientiert programmieren!
+
+== Vereinbarung
+
+* Klassen objektorientiert programmieren, über Referenzen verknüpfen
