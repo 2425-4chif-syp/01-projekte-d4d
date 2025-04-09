@@ -31,7 +31,42 @@ endif::[]
 :title-slide-transition: zoom
 :title-slide-transition-speed: fast
 
-Dienstleistung für Dienstleistung
+== D4D - Dienstleistung für Dienstleistung
+
+== Was ist D4D?
+* *D4D* ermöglicht Nachhilfe in der Schule
+* Besonders: Kostenlose Nachhilfe
+** Nachhilfe wird ausgetauscht, dadurch entstehen keine Kosten
+* Vorteile: Neuen Schulstoff verstehen, alten Schulstoff vertiefen,
+** das alles kostenlos
+
+=== Live Demo
+
+=== Systemarchitektur
+
+[.stretch]
+image::system-architecture.png[]
+
+=== CLD
+
+[.stretch]
+image::CLD.png[]
+
+
+=== ERD
+
+[.stretch]
+image::er-diagram.png[]
+
+=== Terminologie
+
+* TauschApp: Website auf der Nachhilfe angeboten wird
+** Warum TauschApp?
+*** Schüler:innen bieten Nachhilfe in Fächern an, in denen sie stark sind
+*** Im Gegenzug erhalten sie Hilfe in anderen Fächern – kostenlos und fair
+* Quarkus-Backend zur Verwaltung von Nutzerdaten, Nachhilfeanfragen, Sessions und Bewertungen
+* Frontend: Html, Css und Js Frontend zur Anzeige von Profilen, Terminvereinbarungen, Bewertungen und Fachübersicht
+
 
 == Projektteam
 
@@ -40,18 +75,3 @@ Dienstleistung für Dienstleistung
 * *Michael Birklbauer* - Servicetypen verwalten
 * *Stefan Jelic* - Serviceangebote
 * *Semih Yüzüak* - Bewertungen
-
-== Ziele
-
-* *Bessere schulische Leistungen*: Durch regelmäßige Hilfe sollen die Noten der teilnehmenden Schüler langfristig verbessert werden.
-* *Gemeinschaft stärken*: Die Plattform soll auch die Zusammenarbeit und den Austausch unter Schülern fördern.
-
-== Systemarchitektur
-
-[.stretch]
-image::system-architecture.png[]
-
-== ERD
-
-[.stretch]
-image::er-diagram.png[]
