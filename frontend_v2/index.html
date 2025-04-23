@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D4D - Dienstleistung 4 Dienstleistung</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <button onclick="window.location.href='index.html'" class="logo-button">
+                <i class="fas fa-handshake"></i>
+                <span>D4D</span>
+            </button>
+        </div>
+        <div class="nav-buttons">
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
+            </button>
+            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+                <i class="fas fa-cog"></i>
+                Verwaltung
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="landing-hero">
+            <div class="landing-hero-content">
+                <h1>Nachhilfe leicht gemacht</h1>
+                <p>Tausche Wissen, verbessere deine Noten</p>
+                <div class="landing-buttons">
+                    <button onclick="window.location.href='makeOffer.html'">
+                        <i class="fas fa-plus"></i>
+                        Jetzt Nachhilfe anbieten
+                    </button>
+                    <button class="secondary-button" onclick="window.location.href='showUserServices.html'">
+                        <i class="fas fa-search"></i>
+                        Nachhilfe finden
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <div class="landing-section-title">
+            <h2><i class="fas fa-star"></i> Unsere Vorteile</h2>
+            <p>Entdecke, was D4D besonders macht</p>
+        </div>
+
+        <div class="landing-features">
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h3>Wissen tauschen</h3>
+                <p>Hilf anderen in deinen Stärken und erhalte Unterstützung in deinen Schwächen - ein faires System für alle.</p>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Gemeinschaft</h3>
+                <p>Werde Teil einer hilfsbereiten Community von Schülern, die sich gegenseitig beim Lernen unterstützen.</p>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>Qualität sichern</h3>
+                <p>Bewerte die erhaltene Hilfe und finde durch unser Bewertungssystem die besten Lernpartner für dich.</p>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
