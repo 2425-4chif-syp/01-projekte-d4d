@@ -235,3 +235,179 @@ async function loadAllOffers() {
             </li>`;
     }
 }
+
+// 1) Review-Testdaten generieren
+async function generateReviewTestData() {
+  try {
+    // Falls der neue Endpunkt anders ist, müssten Sie ihn entsprechend anpassen
+    const response = await fetch("http://localhost:8080/review/generate-testdata", {
+      method: "POST"
+    });
+    if (response.ok) {
+      alert("Review-Testdaten erfolgreich generiert!");
+    } else {
+      console.error("Fehler beim Generieren der Review-Testdaten:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Netzwerkfehler beim Generieren der Review-Testdaten:", error);
+  }
+}
+
+// 2) Alle Reviews vom Server abrufen
+async function fetchAllReviews() {
+  try {
+    // Neuer Endpunkt für alle Reviews
+    const response = await fetch("http://localhost:8080/review");
+    if (response.ok) {
+      const reviews = await response.json();
+      console.log("Empfangene Reviews:", reviews);
+      displayReviews(reviews);
+    } else {
+      console.error("Fehler beim Abrufen der Reviews:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Netzwerkfehler beim Abrufen der Reviews:", error);
+  }
+}
+
+// 3) Reviews im Frontend darstellen
+function displayReviews(reviews) {
+  const reviewList = document.getElementById("reviewList");
+  reviewList.innerHTML = ""; // Alten Inhalt löschen
+
+  reviews.forEach((rev) => {
+    // Angepasst an das neue Format der Review-Objekte
+    const evaluatee = rev.evaluatee ? rev.evaluatee.name : "";
+    const evaluator = rev.evaluator ? rev.evaluator.name : "";
+    const comment = rev.comment || "";
+    const ratingVal = parseFloat(rev.rating) || 0.0;
+    const serviceType = rev.serviceType && rev.serviceType.name ? rev.serviceType.name : "";
+
+    const reviewCard = document.createElement("div");
+    reviewCard.classList.add("review-card");
+
+    reviewCard.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          Bewertung für: ${evaluatee}<br>
+          <small>Service: ${serviceType}</small><br>
+          <small>Erstellt von: ${evaluator}</small>
+        </div>
+        <div class="card-body">
+          <div class="review-rating">
+            ${generateStarHTML(ratingVal)}
+          </div>
+          <div class="review-comment">
+            ${comment}
+          </div>
+          <div class="text-muted">
+            Erstellt am: ${rev.createdAt || ""}
+          </div>
+        </div>
+      </div>
+    `;
+    reviewList.appendChild(reviewCard);
+  });
+}
+
+// 4) Reviews nach Service-Typ abrufen
+async function fetchReviewsByServiceType() {
+  const serviceType = document.getElementById("serviceTypeInput").value;
+  if (!serviceType) {
+    alert("Bitte geben Sie einen Service-Typ ein");
+    return;
+  }
+  try {
+    // Neuer Endpunkt für Reviews nach Service-Typ
+    const response = await fetch("http://localhost:8080/review/" + encodeURIComponent(serviceType));
+    if (response.ok) {
+      const reviews = await response.json();
+      console.log("Empfangene Service-Reviews:", reviews);
+      displayServiceReviews(reviews);
+    } else {
+      console.error("Fehler beim Abrufen der Reviews für Service-Typ:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Netzwerkfehler beim Abrufen der Reviews für Service-Typ:", error);
+  }
+}
+
+// Darstellung der Reviews nach Service-Typ
+function displayServiceReviews(reviews) {
+  const reviewList = document.getElementById("serviceReviewList");
+  reviewList.innerHTML = ""; // Alten Inhalt löschen
+
+  reviews.forEach((rev) => {
+    // Angepasst an das neue Format der Review-Objekte
+    const evaluator = rev.evaluator ? rev.evaluator.name : "";
+    const comment = rev.comment || "";
+    const ratingVal = parseFloat(rev.rating) || 0.0;
+    const serviceType = rev.serviceType && rev.serviceType.name ? rev.serviceType.name : "";
+
+    const reviewCard = document.createElement("div");
+    reviewCard.classList.add("review-card");
+
+    reviewCard.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          Bewertung für Service-Typ: ${serviceType}<br>
+          <small>Erstellt von: ${evaluator}</small>
+        </div>
+        <div class="card-body">
+          <div class="review-rating">
+            ${generateStarHTML(ratingVal)}
+          </div>
+          <div class="review-comment">
+            ${comment}
+          </div>
+          <div class="text-muted">
+            Erstellt am: ${rev.createdAt || ""}
+          </div>
+        </div>
+      </div>
+    `;
+    reviewList.appendChild(reviewCard);
+  });
+}
+
+// 5) Durchschnittsbewertung für einen Service-Typ abrufen
+async function fetchServiceRating() {
+  const serviceType = document.getElementById("serviceTypeInput").value;
+  if (!serviceType) {
+    alert("Bitte geben Sie einen Service-Typ ein");
+    return;
+  }
+  try {
+    // Neuer Endpunkt für die Durchschnittsbewertung eines Service-Typs
+    const response = await fetch("http://localhost:8080/review/average-rating/" + encodeURIComponent(serviceType));
+    if (response.ok) {
+      const averageRating = await response.json();
+      displayServiceRating(averageRating);
+    } else {
+      console.error("Fehler beim Abrufen der Durchschnittsbewertung:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Netzwerkfehler beim Abrufen der Durchschnittsbewertung:", error);
+  }
+}
+
+function displayServiceRating(averageRating) {
+  const display = document.getElementById("serviceRatingDisplay");
+  // Das Durchschnittsrating wird jetzt direkt als Gleitkommazahl zurückgegeben
+  const rating = typeof averageRating === 'number' ? averageRating : 0.0;
+  display.innerHTML = `<h3>Durchschnittsbewertung: ${rating.toFixed(1)}</h3>`;
+}
+
+// 6) Star-Rating-HTML generieren (für FontAwesome 6)
+function generateStarHTML(rating) {
+  const roundedRating = Math.round(rating);
+  let starsHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    if (i <= roundedRating) {
+      starsHTML += `<i class="fa-solid fa-star selected"></i>`;
+    } else {
+      starsHTML += `<i class="fa-solid fa-star"></i>`;
+    }
+  }
+  return `${starsHTML} (${rating.toFixed(1)})`;
+}
