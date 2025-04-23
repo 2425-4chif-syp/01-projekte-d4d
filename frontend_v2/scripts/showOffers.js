@@ -62,7 +62,7 @@ function applyFilters() {
     const showClosedMarkets = document.getElementById('showClosedMarkets').checked;
     showLoading();
 
-    fetch(`http://localhost:8080/d4d/allmarkets`)
+    fetch(`http://localhost:8080/market`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -71,21 +71,26 @@ function applyFilters() {
         })
         .then(users => {
             const filteredUsers = users.filter(user => {
-                // Changed: Show users matching the name search instead of excluding them
-                const matchesName = nameSearch === '' || user.userName.toLowerCase().includes(nameSearch);
-                const matchesServiceType = selectedServiceType === 'all' || user.serviceTypeName === selectedServiceType;
-                
-                // Adjusted logic to filter closed markets                
+                // Name-Filter
+                const matchesName = nameSearch === '' || (user.user && user.user.name && user.user.name.toLowerCase().includes(nameSearch));
+                // ServiceType-Filter
+                const matchesServiceType = selectedServiceType === 'all' || (user.serviceType && user.serviceType.name === selectedServiceType);
+                // Tag-Filter (Beschreibung und ServiceType)
+                const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => {
+                    const tagLower = tag.toLowerCase();
+                    const inServiceType = user.serviceType && user.serviceType.name && user.serviceType.name.toLowerCase().includes(tagLower);
+                    const inDescription = user.description && user.description.toLowerCase().includes(tagLower);
+                    return inServiceType || inDescription;
+                });
+                // Datumsfilter (startDate)
                 let matchesDateRange = true;
                 if (fromDate || toDate) {
                     if (user.startDate) {
                         const userStartDate = new Date(user.startDate);
-                        
                         if (fromDate) {
                             const filterFromDate = new Date(fromDate);
                             matchesDateRange = matchesDateRange && userStartDate >= filterFromDate;
                         }
-                        
                         if (toDate) {
                             const filterToDate = new Date(toDate);
                             matchesDateRange = matchesDateRange && userStartDate <= filterToDate;
@@ -94,29 +99,20 @@ function applyFilters() {
                         matchesDateRange = false;
                     }
                 }
-                
-                const matchesTags = selectedTags.size === 0 || Array.from(selectedTags).some(tag => 
-                    user.serviceTypeName.toLowerCase().includes(tag.toLowerCase())
-                );
-                
-                // Fixed matchesActive logic for markets with end dates before 31.12.2100
+                // Geschlossene Märkte (endDate)
                 let matchesActive = true;
-                
                 if (showClosedMarkets) {
-                    // When checkbox is checked, ONLY show markets with end dates before 31.12.2100
+                    // Zeige nur Märkte mit vergangenem Enddatum
                     if (user.endDate) {
                         const endDate = new Date(user.endDate);
-                        const endLimit = new Date('2100-12-31');
-                        matchesActive = endDate < endLimit;
+                        matchesActive = endDate < new Date();
                     } else {
-                        // If there's no end date, don't include this market when showing closed markets
                         matchesActive = false;
                     }
                 } else {
-                    // When checkbox is not checked, only show active markets (no end date or future end date)
-                    matchesActive = user.endDate === null || new Date(user.endDate) > new Date();
+                    // Zeige nur offene Märkte (kein Enddatum oder Enddatum in der Zukunft)
+                    matchesActive = !user.endDate || new Date(user.endDate) >= new Date();
                 }
-                
                 return matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
             });
 
@@ -136,14 +132,14 @@ function applyFilters() {
             offersContainer.className = "services-container";
             offersContainer.style.display = "flex";
             offersContainer.style.gap = "20px";
-            offersContainer.style.width = "100%"; // Volle Breite nutzen
-            offersContainer.style.margin = "0 auto"; // Zentriert den Container
+            offersContainer.style.width = "100%";
+            offersContainer.style.margin = "0 auto";
             
             // Container für isOffer = false (Gesuche - links)
             const falseContainer = document.createElement("div");
             falseContainer.className = "services-column false-offers";
             falseContainer.style.flex = "1";
-            falseContainer.style.minWidth = "45%"; // Mindestbreite für Gesuche-Container
+            falseContainer.style.minWidth = "45%";
             
             // Überschrift für isOffer = false
             const falseHeader = document.createElement("h3");
@@ -157,14 +153,14 @@ function applyFilters() {
             falseList.style.padding = "0";
             falseList.style.margin = "0";
             falseList.style.listStyle = "none";
-            falseList.style.width = "100%"; // Volle Breite der Spalte
+            falseList.style.width = "100%";
             falseContainer.appendChild(falseList);
             
             // Container für isOffer = true (Angebote - rechts)
             const trueContainer = document.createElement("div");
             trueContainer.className = "services-column true-offers";
             trueContainer.style.flex = "1";
-            trueContainer.style.minWidth = "45%"; // Mindestbreite für Angebote-Container
+            trueContainer.style.minWidth = "45%";
             
             // Überschrift für isOffer = true
             const trueHeader = document.createElement("h3");
@@ -178,24 +174,21 @@ function applyFilters() {
             trueList.style.padding = "0";
             trueList.style.margin = "0";
             trueList.style.listStyle = "none";
-            trueList.style.width = "100%"; // Volle Breite der Spalte
+            trueList.style.width = "100%";
             trueContainer.appendChild(trueList);
             
             // Sortieren und Hinzufügen der gefilterten Dienste
             filteredUsers.forEach(m => {
-                // Element erstellen
                 const listItem = createServiceCard(
-                    m.serviceTypeName, 
-                    "", 
-                    m.userName, 
+                    m.serviceType && m.serviceType.name ? m.serviceType.name : '',
+                    "",
+                    m.user && m.user.name ? m.user.name : '',
                     m.description || "",
                     m.startDate,
                     m.endDate,
-                    m.isOffer
+                    m.offer === 1 // Angebot: offer==1, Gesuch: offer==0
                 );
-                
-                // Zum richtigen Container hinzufügen
-                if (m.isOffer) {
+                if (m.offer === 1) {
                     trueList.appendChild(listItem);
                 } else {
                     falseList.appendChild(listItem);
@@ -289,22 +282,21 @@ function loadServiceTypesAndOffers() {
 
 function loadServiceTypes() {
     const filterService = document.getElementById("filterService");
-    const url = "http://localhost:8080/d4d/allServiceTypes";
+    const url = "http://localhost:8080/servicetype";
 
     fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Kategorien");
             }
-            return response.text();
+            return response.json();
         })
-        .then(data => {
-            const serviceTypes = data.split('|'); // Daten aufteilen
-            filterService.innerHTML = '<option value="all">Alle Fächer</option>'; // Standardoption
+        .then(serviceTypes => {
+            filterService.innerHTML = '<option value="all">Alle Fächer</option>';
             serviceTypes.forEach(type => {
                 const option = document.createElement("option");
-                option.value = type;
-                option.textContent = type;
+                option.value = type.name;
+                option.textContent = type.name;
                 filterService.appendChild(option);
             });
         })
@@ -314,10 +306,8 @@ function loadServiceTypes() {
 }
 
 function loadAllOffers() {
-    const url = `http://localhost:8080/d4d/allmarkets`;
-
+    const url = `http://localhost:8080/market`;
     showLoading();
-
     fetch(url)
         .then(response => {
             if (!response.ok) {
@@ -336,27 +326,25 @@ function loadAllOffers() {
                 document.getElementById("serviceList").appendChild(messageContainer);
                 return;
             }
-            
-            // Aufteilung in zwei Listen basierend auf isOffer mit festgelegter Breite
+            // Aufteilung in zwei Listen basierend auf offer
             const offersContainer = document.createElement("div");
             offersContainer.className = "services-container";
             offersContainer.style.display = "flex";
             offersContainer.style.gap = "20px";
-            offersContainer.style.maxWidth = "100%"; // Gleiche Breite wie die Suchfelder
-            offersContainer.style.margin = "0 auto"; // Zentriert den Container
-            
-            // Container für isOffer = false (links)
+            offersContainer.style.maxWidth = "100%";
+            offersContainer.style.margin = "0 auto";
+            // Container für offer = 0 (links)
             const falseContainer = document.createElement("div");
             falseContainer.className = "services-column false-offers";
             falseContainer.style.flex = "1";
             
-            // Überschrift für isOffer = false
+            // Überschrift für offer = 0
             const falseHeader = document.createElement("h3");
             falseHeader.innerHTML = '<i class="fas fa-hand-holding"></i> Gesuchte Dienste';
             falseHeader.style.marginBottom = "15px";
             falseContainer.appendChild(falseHeader);
             
-            // Liste für isOffer = false
+            // Liste für offer = 0
             const falseList = document.createElement("ul");
             falseList.className = "service-list";
             falseList.style.padding = "0";
@@ -364,18 +352,18 @@ function loadAllOffers() {
             falseList.style.listStyle = "none";
             falseContainer.appendChild(falseList);
             
-            // Container für isOffer = true (rechts)
+            // Container für offer = 1 (rechts)
             const trueContainer = document.createElement("div");
             trueContainer.className = "services-column true-offers";
             trueContainer.style.flex = "1";
             
-            // Überschrift für isOffer = true
+            // Überschrift für offer = 1
             const trueHeader = document.createElement("h3");
             trueHeader.innerHTML = '<i class="fas fa-hands-helping"></i> Angebotene Dienste';
             trueHeader.style.marginBottom = "15px";
             trueContainer.appendChild(trueHeader);
             
-            // Liste für isOffer = true
+            // Liste für offer = 1
             const trueList = document.createElement("ul");
             trueList.className = "service-list";
             trueList.style.padding = "0";
@@ -385,30 +373,23 @@ function loadAllOffers() {
             
             // Sortieren und Hinzufügen der Dienste
             marketDtos.forEach(m => {
-                // Element erstellen
                 const listItem = createServiceCard(
-                    m.serviceTypeName, 
-                    "", 
-                    m.userName, 
+                    m.serviceType && m.serviceType.name ? m.serviceType.name : '',
+                    "",
+                    m.user && m.user.name ? m.user.name : '',
                     m.description || "",
                     m.startDate,
                     m.endDate,
-                    m.isOffer
+                    m.offer === 1
                 );
-                
-                // Zum richtigen Container hinzufügen
-                if (m.isOffer) {
+                if (m.offer === 1) {
                     trueList.appendChild(listItem);
                 } else {
                     falseList.appendChild(listItem);
                 }
             });
-            
-            // Container zum Layout hinzufügen
             offersContainer.appendChild(falseContainer);
             offersContainer.appendChild(trueContainer);
-            
-            // Zum Hauptcontainer hinzufügen
             const serviceList = document.getElementById("serviceList");
             serviceList.appendChild(offersContainer);
         })
@@ -495,3 +476,4 @@ document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
 
 // Event Listener für die Filterauswahl
 document.getElementById("filterService").addEventListener('change', applyFilters);
+
