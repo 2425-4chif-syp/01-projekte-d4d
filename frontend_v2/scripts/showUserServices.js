@@ -280,14 +280,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Funktion zum Abrufen aller Service-Typen
     function fetchServiceTypes() {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/d4d/serviceTypes`)
+        return fetch(`${backendUrl}/servicetype`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Fehler beim Abrufen der Service-Typen");
                 }
-                return response.text();
+                return response.json();
             })
-            .then(text => text.split('|').filter(type => type.trim()));
+            .then(serviceTypes => serviceTypes.map(type => type.name));
     }
 
     function createServiceTypeSection(serviceType) {
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get user services by username
     function getUserServices(username) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/d4d/${encodeURIComponent(username)}/services`)
+        return fetch(`${backendUrl}/service/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -397,16 +397,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get service type name by ID
     function getServiceTypeName(serviceTypeId) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/d4d/${serviceTypeId}/type/services`)
+        return fetch(`${backendUrl}/servicetype/${serviceTypeId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Service type fetch failed: ${response.status}`);
                 }
-                return response.text();
+                return response.json();
             })
-            .then(data => {
-                console.log('Service Type Response:', {serviceTypeId, data});
-                return data;
+            .then(serviceType => {
+                console.log('Service Type Response:', {serviceTypeId, serviceType});
+                return serviceType.name;
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen des Dienstleistungstyps:', error);
@@ -417,16 +417,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get username by ID
     function getUserName(userId) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/d4d/${userId}/username/services`)
+        return fetch(`${backendUrl}/user/${userId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Username fetch failed: ${response.status}`);
                 }
-                return response.text();
+                return response.json();
             })
-            .then(data => {
-                console.log('Username Response:', {userId, data});
-                return data;
+            .then(user => {
+                console.log('Username Response:', {userId, user});
+                return user.name;
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen des Benutzernamens:', error);
@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get perfect matches
     function getPerfectMatches(username) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/d4d/${encodeURIComponent(username)}/services/perfect-match`)
+        return fetch(`${backendUrl}/service/perfect-matches/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Perfect matches fetch failed: ${response.status}`);
@@ -448,13 +448,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Wandle die rohen Perfect Matches in ein erweitertes Format um
                 return Promise.all(matches.map(match =>
                     Promise.all([
-                        getServiceTypeName(match.serviceType_ID),
-                        getUserName(match.user_ID)
+                        getServiceTypeName(match.serviceType.id),
+                        getUserName(match.user.id)
                     ]).then(([serviceTypeName, username]) => ({
                         ...match,
                         serviceTypeName,
                         username,
-                        offer: match.offer
+                        offer: match.offer,
+                        serviceType_ID: match.serviceType.id,
+                        user_ID: match.user.id
                     }))
                 ));
             })
