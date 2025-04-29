@@ -16,9 +16,17 @@
             </button>
         </div>
         <div class="nav-buttons">
-            <button id="createOfferButton">
+            <button id="marketButton" onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
                 <i class="fas fa-plus"></i>
                 Dienstleistung anbieten
+            </button>
+            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
             </button>
             <button id="reviewButton" onclick="window.location.href='reviews.html'">
                 <i class="fas fa-star"></i>
@@ -101,6 +109,7 @@
     </main>
 
     <script src="scripts/showOffers.js"></script>
+    <script src="scripts/navbar-compat.js"></script>
 </body>
 </html>
 

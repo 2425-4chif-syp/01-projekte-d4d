@@ -16,104 +16,7 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
   />
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #e9eff5, #ffffff);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    nav.navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background: linear-gradient(90deg, #007bff, #0056b3);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-    nav.navbar .logo {
-      display: flex;
-      align-items: center;
-      font-size: 1.6em;
-      font-weight: 700;
-    }
-    nav.navbar .logo i {
-      margin-right: 10px;
-    }
-    nav.navbar .nav-buttons button {
-      background: #fff;
-      color: #007bff;
-      border: none;
-      border-radius: 5px;
-      padding: 8px 12px;
-      margin-left: 10px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background-color 0.3s, transform 0.2s;
-    }
-    nav.navbar .nav-buttons button:hover {
-      background-color: #e0e0e0;
-      transform: translateY(-2px);
-    }
-    .container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      margin: 15px;
-      border-radius: 10px;
-      background-color: #fff;
-      overflow: hidden;
-    }
-    .content-section {
-      margin: 15px;
-    }
-    .review-card {
-      margin-bottom: 20px;
-    }
-    .review-card .card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    .review-card .card-header {
-      background-color: #f8f9fa;
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      font-weight: bold;
-    }
-    .review-card .card-body {
-      padding: 15px;
-    }
-    .review-rating i {
-      font-size: 1.2em;
-      color: #ddd;
-    }
-    .review-rating i.selected {
-      color: #ffd700 !important; /* Zwingt die gelbe Farbe */
-    }
-    .review-author {
-      margin-bottom: 10px;
-      color: #666;
-    }
-    .review-comment {
-      margin-bottom: 10px;
-    }
-    .text-muted {
-      color: #888;
-      font-size: 0.9em;
-    }
-    /* Neuer Abschnitt für Service-Typ-Reviews */
-    .service-section {
-      margin: 15px;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background-color: #fefefe;
-    }
-  </style>
+    <link rel="stylesheet" href="styles/showOffers.css" />
 </head>
 <body>
   <nav class="navbar">
@@ -122,6 +25,10 @@
       <span>D4D</span>
     </div>
     <div class="nav-buttons">
+      <button onclick="window.location.href='index.html'">
+        <i class="fa-solid fa-home"></i>
+        Startseite
+      </button>
       <button onclick="window.location.href='showOffers.html'">
         <i class="fa-solid fa-store"></i>
         Zum Markt
@@ -130,9 +37,17 @@
         <i class="fa-solid fa-plus"></i>
         Dienstleistung anbieten
       </button>
+      <button onclick="window.location.href='showUserServices.html'">
+        <i class="fa-solid fa-search"></i>
+        Services
+      </button>
       <button onclick="window.location.href='chats_page.html'">
         <i class="fa-solid fa-comments"></i>
         Chat
+      </button>
+      <button onclick="window.location.href='adminLogin.html'">
+        <i class="fa-solid fa-cog"></i>
+        Verwaltung
       </button>
       <!-- Neuer Button, um Review-Testdaten zu generieren -->
       <button onclick="generateReviewTestData()">

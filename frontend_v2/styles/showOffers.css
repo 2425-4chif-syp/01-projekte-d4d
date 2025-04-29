@@ -37,11 +37,12 @@ body {
 /* Navigation */
 .navbar {
     background-color: var(--card-background);
-    padding: 1rem 2rem;
+    padding: 0rem;
+    height: 60px;
     box-shadow: var(--shadow-sm);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -50,10 +51,23 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     font-size: 1.5rem;
     font-weight: bold;
     color: var(--primary-color);
+    height: 100%;
+}
+
+.logo-button {
+    height: 100%;
+    background: transparent;
+    color: var(--primary-color);
+    padding: 0 2rem;
+    border-radius: 0;
+}
+
+.logo-button:hover {
+    background-color: var(--primary-dark);
+    transform: none;
 }
 
 .logo i {
@@ -62,13 +76,23 @@ body {
 
 .nav-buttons {
     display: flex;
-    gap: 1rem;
-    align-items: center;
+    align-items: stretch;
+    height: 100%;
 }
 
 .nav-buttons button {
     white-space: nowrap;
     min-width: fit-content;
+    height: 100%;
+    padding: 0 1.5rem;
+    border-radius: 0;
+    border-left: 1px solid var(--border-color);
+    margin: 0;
+}
+
+.nav-buttons button:hover {
+    background-color: var(--primary-dark);
+    transform: none;
 }
 
 /* Buttons */

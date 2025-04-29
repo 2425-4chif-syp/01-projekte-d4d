@@ -710,11 +710,23 @@
         <option value="3">Max Mustermann</option>
       </select>
 
+      <button id="homeButton" onclick="window.location.href='index.html'">
+        <i class="fas fa-home"></i> Startseite
+      </button>
       <button id="marketButton" onclick="window.location.href='showOffers.html'">
         <i class="fas fa-store"></i> Zum Markt
       </button>
       <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
         <i class="fas fa-plus"></i> Dienstleistung anbieten
+      </button>
+      <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+        <i class="fas fa-search"></i> Services
+      </button>
+      <button id="reviewButton" onclick="window.location.href='reviews.html'">
+        <i class="fas fa-star"></i> Bewertungen
+      </button>
+      <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+        <i class="fas fa-cog"></i> Verwaltung
       </button>
       <!-- Button zum Generieren der Chat-Testdaten -->
       <button id="generateChatDataButton">
@@ -784,5 +796,6 @@
 
   <!-- Chat-Script einbinden -->
   <script src="scripts/chat-script.js"></script>
+  <script src="scripts/navbar-compat.js"></script>
 </body>
 </html>
