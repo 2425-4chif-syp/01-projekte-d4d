@@ -236,23 +236,6 @@ async function loadAllOffers() {
     }
 }
 
-// 1) Review-Testdaten generieren
-async function generateReviewTestData() {
-  try {
-    // Falls der neue Endpunkt anders ist, müssten Sie ihn entsprechend anpassen
-    const response = await fetch("http://localhost:8080/review/generate-testdata", {
-      method: "POST"
-    });
-    if (response.ok) {
-      alert("Review-Testdaten erfolgreich generiert!");
-    } else {
-      console.error("Fehler beim Generieren der Review-Testdaten:", response.statusText);
-    }
-  } catch (error) {
-    console.error("Netzwerkfehler beim Generieren der Review-Testdaten:", error);
-  }
-}
-
 // 2) Alle Reviews vom Server abrufen
 async function fetchAllReviews() {
   try {

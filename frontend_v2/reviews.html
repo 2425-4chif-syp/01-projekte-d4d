@@ -25,34 +25,29 @@
       <span>D4D</span>
     </div>
     <div class="nav-buttons">
-      <button onclick="window.location.href='index.html'">
+      <button id="homeButton" onclick="window.location.href='index.html'">
         <i class="fa-solid fa-home"></i>
         Startseite
       </button>
-      <button onclick="window.location.href='showOffers.html'">
+      <button id="marketButton" onclick="window.location.href='showOffers.html'">
         <i class="fa-solid fa-store"></i>
         Zum Markt
       </button>
-      <button onclick="window.location.href='makeOffer.html'">
+      <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
         <i class="fa-solid fa-plus"></i>
         Dienstleistung anbieten
       </button>
-      <button onclick="window.location.href='showUserServices.html'">
+      <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
         <i class="fa-solid fa-search"></i>
         Services
       </button>
-      <button onclick="window.location.href='chats_page.html'">
+      <button id="chatButton" onclick="window.location.href='chats_page.html'">
         <i class="fa-solid fa-comments"></i>
         Chat
       </button>
-      <button onclick="window.location.href='adminLogin.html'">
+      <button id="adminButton" onclick="window.location.href='adminLogin.html'">
         <i class="fa-solid fa-cog"></i>
         Verwaltung
-      </button>
-      <!-- Neuer Button, um Review-Testdaten zu generieren -->
-      <button onclick="generateReviewTestData()">
-        <i class="fa-solid fa-database"></i>
-        Review-Daten generieren
       </button>
     </div>
   </nav>
@@ -78,5 +73,6 @@
   
   <!-- Einbinden der externen JavaScript-Datei -->
   <script src="scripts/reviews.js"></script>
+  <script src="scripts/navbar-compat.js"></script>
 </body>
 </html>
