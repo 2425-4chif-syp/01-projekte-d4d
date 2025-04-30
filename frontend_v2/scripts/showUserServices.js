@@ -169,11 +169,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Map services to a format with all required fields
                         allServices = filteredServices.map(service => {
-                            // Extract username from marketClient or marketProvider user objects
-                            const username = service.marketClient && service.marketClient.user && service.marketClient.user.name ? 
-                                service.marketClient.user.name : 
-                                (service.marketProvider && service.marketProvider.user && service.marketProvider.user.name ? 
-                                    service.marketProvider.user.name : 'Unbekannter Benutzer');
+                            const currentUsername = username; // The username we searched for
+                            
+                            // Get the other user's name (not the current user)
+                            let otherUsername = 'Unbekannter Benutzer';
+                            
+                            if (service.marketClient && service.marketClient.user && service.marketClient.user.name) {
+                                if (service.marketClient.user.name !== currentUsername) {
+                                    otherUsername = service.marketClient.user.name;
+                                }
+                            }
+                            
+                            if (service.marketProvider && service.marketProvider.user && service.marketProvider.user.name) {
+                                if (service.marketProvider.user.name !== currentUsername) {
+                                    otherUsername = service.marketProvider.user.name;
+                                }
+                            }
                             
                             // Extract service type name from marketProvider
                             const serviceTypeName = service.marketProvider && service.marketProvider.serviceType && 
@@ -182,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             return {
                                 ...service,
-                                username,
+                                username: otherUsername,
                                 serviceTypeName,
                                 isOffer: service.marketProvider && service.marketProvider.offer === 1
                             };
