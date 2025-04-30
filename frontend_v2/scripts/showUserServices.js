@@ -54,8 +54,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterPerfectMatches(matches) {
         const filterText = perfectMatchFilter.value.toLowerCase();
         const filteredMatches = matches.filter(match => {
-            return match.username.toLowerCase().includes(filterText) ||
-                   match.serviceTypeName.toLowerCase().includes(filterText);
+            // Get username directly from the user object
+            const username = match.username || (match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer');
+            // Get service type name directly from the serviceType object
+            const serviceTypeName = match.serviceTypeName || (match.serviceType && match.serviceType.name ? match.serviceType.name : 'Unbekannter Dienstleistungstyp');
+            
+            return username.toLowerCase().includes(filterText) ||
+                   serviceTypeName.toLowerCase().includes(filterText);
         });
         
         displayFilteredPerfectMatches(filteredMatches);
@@ -66,8 +71,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const filterType = serviceTypeFilter.value;
         
         const filteredServices = services.filter(service => {
-            const textMatch = service.username.toLowerCase().includes(filterText) ||
-                            service.serviceTypeName.toLowerCase().includes(filterText);
+            // Ensure we have proper username and serviceTypeName values
+            const username = service.username || 
+                (service.marketClient && service.marketClient.user && service.marketClient.user.name ? 
+                service.marketClient.user.name : 'Unbekannter Benutzer');
+            
+            const serviceTypeName = service.serviceTypeName || 
+                (service.marketProvider && service.marketProvider.serviceType && service.marketProvider.serviceType.name ? 
+                service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
+            
+            const textMatch = username.toLowerCase().includes(filterText) ||
+                            serviceTypeName.toLowerCase().includes(filterText);
             
             if (filterType === 'all') return textMatch;
             if (filterType === 'offer') return textMatch && service.isOffer;
@@ -136,21 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(pm => {
                 if (pm && pm.length > 0) {
-                    return Promise.all(pm.map(market => 
-                        Promise.all([
-                            getServiceTypeName(market.serviceType_ID),
-                            getUserName(market.user_ID)
-                        ]).then(([serviceTypeName, username]) => ({
-                            ...market,
-                            serviceTypeName,
-                            username
-                        }))
-                    )).then(enrichedMatches => {
-                        allPerfectMatches = enrichedMatches;
-                        createPerfectMatchesSection(enrichedMatches);
-                        showMessage(`Perfekte Übereinstimmungen für ${username}`, 'success');
-                        return [enrichedMatches, username];
-                    });
+                    allPerfectMatches = pm;
+                    createPerfectMatchesSection(pm);
+                    showMessage(`Perfekte Übereinstimmungen für ${username}`, 'success');
+                    return [pm, username];
                 }
                 return [[], username];
             })
@@ -162,22 +165,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     const filteredServices = removePerfectMatches(services, perfectMatches);
                     
                     if (filteredServices.length > 0) {
-                        return Promise.all(filteredServices.map(market => 
-                            Promise.all([
-                                getServiceTypeName(market.serviceType_ID),
-                                getUserName(market.user_ID)
-                            ]).then(([serviceTypeName, username]) => ({
-                                ...market,
-                                serviceTypeName,
+                        console.log('Services from backend:', filteredServices);
+                        
+                        // Map services to a format with all required fields
+                        allServices = filteredServices.map(service => {
+                            // Extract username from marketClient or marketProvider user objects
+                            const username = service.marketClient && service.marketClient.user && service.marketClient.user.name ? 
+                                service.marketClient.user.name : 
+                                (service.marketProvider && service.marketProvider.user && service.marketProvider.user.name ? 
+                                    service.marketProvider.user.name : 'Unbekannter Benutzer');
+                            
+                            // Extract service type name from marketProvider
+                            const serviceTypeName = service.marketProvider && service.marketProvider.serviceType && 
+                                service.marketProvider.serviceType.name ? 
+                                service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
+                            
+                            return {
+                                ...service,
                                 username,
-                                isOffer: market.offer === 1
-                            }))
-                        )).then(enrichedServices => {
-                            allServices = enrichedServices;
-                            createServicesSection();
-                            setTimeout(() => filterAndDisplayServices(), 0);
-                            showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
+                                serviceTypeName,
+                                isOffer: service.marketProvider && service.marketProvider.offer === 1
+                            };
                         });
+                        
+                        createServicesSection();
+                        setTimeout(() => filterAndDisplayServices(), 0);
+                        showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
                     }
                 }
                 
@@ -200,7 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
         perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfekte Übereinstimmungen</h3>';
 
         // Get unique usernames from perfect matches
-        const uniqueUsers = [...new Set(perfectMatches.map(match => match.username))];
+        const uniqueUsers = [...new Set(perfectMatches.map(match => {
+            return match.username || (match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer');
+        }))];
         
         // Create navigation for perfect match users
         const usersNav = document.createElement('nav');
@@ -253,7 +268,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filterAndDisplayPerfectMatches() {
         const filteredMatches = allPerfectMatches.filter(match => {
-            return currentPerfectMatchUser === 'all' || match.username === currentPerfectMatchUser;
+            // Access user.name directly from the match object
+            const username = match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer';
+            return currentPerfectMatchUser === 'all' || username === currentPerfectMatchUser;
         });
 
         const perfectMatchContainer = document.getElementById('perfectMatchContainer');
@@ -397,16 +414,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get service type name by ID
     function getServiceTypeName(serviceTypeId) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/servicetype/${serviceTypeId}`)
+        return fetch(`${backendUrl}/servicetype`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Service type fetch failed: ${response.status}`);
                 }
                 return response.json();
             })
-            .then(serviceType => {
-                console.log('Service Type Response:', {serviceTypeId, serviceType});
-                return serviceType.name;
+            .then(serviceTypes => {
+                const serviceType = serviceTypes.find(type => type.id === serviceTypeId);
+                return serviceType ? serviceType.name : 'Unbekannter Dienstleistungstyp';
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen des Dienstleistungstyps:', error);
@@ -417,16 +434,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get username by ID
     function getUserName(userId) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/user/${userId}`)
+        return fetch(`${backendUrl}/market/${userId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Username fetch failed: ${response.status}`);
                 }
                 return response.json();
             })
-            .then(user => {
-                console.log('Username Response:', {userId, user});
-                return user.name;
+            .then(markets => {
+                if (markets && markets.length > 0 && markets[0].user) {
+                    return markets[0].user.name;
+                }
+                return 'Unbekannter Benutzer';
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen des Benutzernamens:', error);
@@ -440,29 +459,25 @@ document.addEventListener('DOMContentLoaded', function() {
         return fetch(`${backendUrl}/service/perfect-matches/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
+                    if (response.status === 404) {
+                        return [];
+                    }
                     throw new Error(`Perfect matches fetch failed: ${response.status}`);
                 }
                 return response.json();
             })
             .then(matches => {
-                // Wandle die rohen Perfect Matches in ein erweitertes Format um
-                return Promise.all(matches.map(match =>
-                    Promise.all([
-                        getServiceTypeName(match.serviceType.id),
-                        getUserName(match.user.id)
-                    ]).then(([serviceTypeName, username]) => ({
-                        ...match,
-                        serviceTypeName,
-                        username,
-                        offer: match.offer,
-                        serviceType_ID: match.serviceType.id,
-                        user_ID: match.user.id
-                    }))
-                ));
+                console.log('Raw perfect matches:', matches);
+                // Process matches to ensure they have the expected format
+                return matches.map(match => ({
+                    ...match,
+                    serviceTypeName: match.serviceType ? match.serviceType.name : 'Unbekannter Dienstleistungstyp',
+                    username: match.user ? match.user.name : 'Unbekannter Benutzer'
+                }));
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen der perfekten Übereinstimmungen:', error);
-                throw error;
+                return [];
             });
     }
 
@@ -481,20 +496,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         pm.forEach(market => {
-            Promise.all([
-                getServiceTypeName(market.serviceType_ID),
-                getUserName(market.user_ID)
-            ])
-            .then(([serviceTypeName, username]) => {
-                const card = createPerfectMatchCard({
-                    username: username,
-                    serviceTypeName: serviceTypeName
-                });
-                perfectMatchContainer.appendChild(card);
-            })
-            .catch(error => {
-                console.error('Fehler beim Anzeigen des Perfect Matches:', error);
+            // Get username directly from the user object
+            const username = market.username || (market.user && market.user.name ? market.user.name : 'Unbekannter Benutzer');
+            // Get service type name directly from the serviceType object
+            const serviceTypeName = market.serviceTypeName || (market.serviceType && market.serviceType.name ? market.serviceType.name : 'Unbekannter Dienstleistungstyp');
+            
+            const card = createPerfectMatchCard({
+                username: username,
+                serviceTypeName: serviceTypeName,
+                offer: market.offer
             });
+            perfectMatchContainer.appendChild(card);
         });
     }
 
@@ -503,16 +515,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
         
+        // Ensure we have proper values for display, even if data is missing
+        const username = service.username || (service.user && service.user.name ? service.user.name : 'Unbekannter Benutzer');
+        const serviceTypeName = service.serviceTypeName || (service.serviceType && service.serviceType.name ? service.serviceType.name : 'Unbekannter Dienstleistungstyp');
+        const offer = service.offer !== undefined ? service.offer : (service.offer === 1);
+        
         cardDiv.innerHTML = `
             <div class="card perfect-match-card">
                 <div class="card-header">
                     <span class="badge perfect-match">Perfect-Match</span>
-                                        <span class="badge ${service.offer === 1 ? 'provider' : 'client'}">${service.offer === 1 ? 'Angebot' : 'Nachfrage'}</span>
+                    <span class="badge ${offer === 1 ? 'provider' : 'client'}">${offer === 1 ? 'Angebot' : 'Nachfrage'}</span>
                 </div>
                 <div class="card-body">
                     <div class="service-info">
-                        <p><strong>${service.username}</strong></p>
-                        <p>${service.serviceTypeName}</p>
+                        <p><strong>${username}</strong></p>
+                        <p>${serviceTypeName}</p>
                     </div>
                 </div>
             </div>
@@ -567,9 +584,19 @@ document.addEventListener('DOMContentLoaded', function() {
         servicesContainer.appendChild(gridDiv);
     }
 
-    function createServiceCard({ username, serviceTypeName, isOffer }) {
+    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider }) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
+        
+        // Try to get the username from multiple possible sources
+        const displayUsername = username || 
+            (marketClient && marketClient.user && marketClient.user.name ? marketClient.user.name : 
+                (marketProvider && marketProvider.user && marketProvider.user.name ? marketProvider.user.name : 'Unbekannter Benutzer'));
+        
+        // Try to get the service type from multiple possible sources
+        const displayServiceType = serviceTypeName || 
+            (marketProvider && marketProvider.serviceType && marketProvider.serviceType.name ? 
+                marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
         
         cardDiv.innerHTML = `
             <div class="card ${isOffer ? 'offer-card' : 'demand-card'}">
@@ -578,8 +605,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="card-body">
                     <div class="service-info">
-                        <p><strong>${username}</strong></p>
-                        <p>${serviceTypeName}</p>
+                        <p><strong>${displayUsername}</strong></p>
+                        <p>${displayServiceType}</p>
                     </div>
                 </div>
             </div>
