@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const serviceTypeName = service.serviceTypeName || (service.serviceType && service.serviceType.name ? service.serviceType.name : 'Unbekannter Dienstleistungstyp');
         const offer = service.offer !== undefined ? service.offer : (service.offer === 1);
         
-        cardDiv.innerHTML = `
+        const cardHTML = `
             <div class="card perfect-match-card">
                 <div class="card-header">
                     <span class="badge perfect-match">Perfect-Match</span>
@@ -530,10 +530,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="service-info">
                         <p><strong>${username}</strong></p>
                         <p>${serviceTypeName}</p>
+                        ${offer === 1 ? '<div class="rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>' : ''}
                     </div>
                 </div>
             </div>
         `;
+        
+        cardDiv.innerHTML = cardHTML;
+        
+        // If it's an offer, fetch and display the average rating
+        if (offer === 1 && serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            
+            getAverageRating(serviceTypeName)
+                .then(rating => {
+                    if (ratingContainer) {
+                        ratingContainer.innerHTML = generateStarHTML(rating);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Anzeigen der Bewertung:', error);
+                    if (ratingContainer) {
+                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
+                    }
+                });
+        }
         
         return cardDiv;
     }
@@ -545,6 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Function to display filtered perfect matches
     function displayFilteredPerfectMatches(matches) {
         const perfectMatchContainer = document.getElementById('perfectMatchContainer');
         if (!perfectMatchContainer) return;
@@ -584,6 +606,47 @@ document.addEventListener('DOMContentLoaded', function() {
         servicesContainer.appendChild(gridDiv);
     }
 
+    // Fetch the average rating for a service type
+    async function getAverageRating(serviceTypeName) {
+        try {
+            const response = await fetch(`http://localhost:8080/review/average-rating/${encodeURIComponent(serviceTypeName)}`);
+            if (response.ok) {
+                return await response.json();
+            }
+            return 0;
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Durchschnittsbewertung:', error);
+            return 0;
+        }
+    }
+
+    // Generate HTML for star rating display
+    function generateStarHTML(rating) {
+        let starsHTML = "";
+        
+        for (let i = 1; i <= 5; i++) {
+            const decimal = rating - Math.floor(rating);
+            
+            if (i <= Math.floor(rating)) {
+                // Full star
+                starsHTML += `<i class="fas fa-star selected"></i>`;
+            } else if (i === Math.ceil(rating) && decimal !== 0) {
+                // Half or full star based on decimal value
+                if (decimal >= 0.8) {
+                    starsHTML += `<i class="fas fa-star selected"></i>`;
+                } else if (decimal >= 0.4) {
+                    starsHTML += `<i class="fas fa-star-half-alt selected"></i>`;
+                } else {
+                    starsHTML += `<i class="fas fa-star"></i>`;
+                }
+            } else {
+                // Empty star
+                starsHTML += `<i class="fas fa-star"></i>`;
+            }
+        }
+        return `<div class="service-rating">${starsHTML} (${rating.toFixed(1)})</div>`;
+    }
+
     function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider }) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
@@ -598,7 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
             (marketProvider && marketProvider.serviceType && marketProvider.serviceType.name ? 
                 marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
         
-        cardDiv.innerHTML = `
+        // Create the card without the rating first
+        const cardHTML = `
             <div class="card ${isOffer ? 'offer-card' : 'demand-card'}">
                 <div class="card-header">
                     <span class="badge ${isOffer ? 'provider' : 'client'}">${isOffer ? 'Angebot' : 'Nachfrage'}</span>
@@ -607,10 +671,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="service-info">
                         <p><strong>${displayUsername}</strong></p>
                         <p>${displayServiceType}</p>
+                        ${isOffer ? '<div class="rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>' : ''}
                     </div>
                 </div>
             </div>
         `;
+        
+        cardDiv.innerHTML = cardHTML;
+        
+        // If it's an offer, fetch and display the average rating
+        if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp') {
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            
+            getAverageRating(displayServiceType)
+                .then(rating => {
+                    if (ratingContainer) {
+                        ratingContainer.innerHTML = generateStarHTML(rating);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Anzeigen der Bewertung:', error);
+                    if (ratingContainer) {
+                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
+                    }
+                });
+        }
         
         return cardDiv;
     }

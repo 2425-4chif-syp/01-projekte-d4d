@@ -24,6 +24,53 @@
     --scrollbar-thumb-hover: #666;
 }
 
+/* Star Rating Styles */
+.service-rating {
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.service-rating .fa-star {
+    color: #ddd;
+}
+
+.service-rating .fa-star.selected,
+.service-rating .fa-star-half-alt.selected,
+.service-rating .percent-star.selected {
+    color: #ffd700;
+}
+
+.rating-container {
+    margin-top: 8px;
+    font-size: 0.9em;
+}
+
+.percent-star {
+    position: relative;
+    display: inline-block;
+    color: #ddd;
+}
+
+.percent-star:before {
+    content: "\f005"; /* fa-star unicode */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+.percent-star .fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    color: #ffd700;
+}
+
+.percent-star .fill:before {
+    content: "\f005"; /* fa-star unicode */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
 /* Base Styles */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
