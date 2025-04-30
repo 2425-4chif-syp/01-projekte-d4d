@@ -405,7 +405,7 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
     listItem.className = "service-item";
 
     // Format dates for display
-    let dateRange = 'Zeitraum nicht angegeben';
+    let dateRange = '';
     
     // Format startdate and enddate if they exist
     if (startdate || enddate) {
