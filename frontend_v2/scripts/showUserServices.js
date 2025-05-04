@@ -12,6 +12,102 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFilterType = 'all';
     let currentPerfectMatchUser = 'all';
 
+    // Lade den aktuellen aktiven Benutzer beim Laden der Seite
+    getActiveUser();
+
+    // Event-Listener für das Benutzernamen-Eingabefeld in der Navigationsleiste
+    const navUsernameInput = document.getElementById("navUsername");
+    if (navUsernameInput) {
+        navUsernameInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                const username = this.value.trim();
+                if (username) {
+                    // Sende POST-Request an den Endpunkt für aktiven Benutzer
+                    setActiveUser(username);
+                } else {
+                    showMessage("Bitte gib einen Benutzernamen ein.", "error");
+                }
+            }
+        });
+    }
+
+    // Funktion zum Abrufen des aktuell aktiven Benutzers
+    function getActiveUser() {
+        fetch("http://localhost:8080/user")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Fehler beim Abrufen des aktiven Benutzers");
+                }
+                return response.text();
+            })
+            .then(username => {
+                if (username && username.trim() !== "") {
+                    // Setze den aktiven Benutzer in die Anzeige
+                    const activeUserDisplay = document.getElementById("activeUserDisplay");
+                    if (activeUserDisplay) {
+                        activeUserDisplay.textContent = username;
+                        activeUserDisplay.classList.add("user-active");
+                    }
+                    
+                    // Setze auch den Wert ins Haupteingabefeld, falls vorhanden
+                    if (usernameInput) {
+                        usernameInput.value = username;
+                        // Suche direkt nach den Services des aktiven Benutzers
+                        searchUserServices(username);
+                    }
+                } else {
+                    const activeUserDisplay = document.getElementById("activeUserDisplay");
+                    if (activeUserDisplay) {
+                        activeUserDisplay.textContent = "Nicht angemeldet";
+                        activeUserDisplay.classList.remove("user-active");
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
+            });
+    }
+
+    // Funktion, um einen Benutzer als aktiv zu markieren
+    function setActiveUser(username) {
+        fetch("http://localhost:8080/user", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text().then(msg => {
+                    showMessage(`Benutzer ${username} wurde als aktiv gesetzt!`, "success");
+                    
+                    // Aktualisiere die Anzeige des aktiven Benutzers
+                    const activeUserDisplay = document.getElementById("activeUserDisplay");
+                    if (activeUserDisplay) {
+                        activeUserDisplay.textContent = username;
+                        activeUserDisplay.classList.add("user-active");
+                    }
+                    
+                    // Setze den Wert auch im Haupteingabefeld und suche nach den Services
+                    if (usernameInput) {
+                        usernameInput.value = username;
+                        searchUserServices(username);
+                    }
+                    
+                    return msg;
+                });
+            } else {
+                return response.text().then(errorMsg => {
+                    throw new Error(errorMsg || `Fehler beim Setzen von ${username} als aktiven Benutzer`);
+                });
+            }
+        })
+        .catch(error => {
+            showMessage(error.message, "error");
+        });
+    }
+
     // Add event listeners for navigation buttons
     marketButton.addEventListener('click', function() {
         window.location.href = 'showOffers.html';
@@ -39,17 +135,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const serviceFilter = document.getElementById('serviceFilter');
     const serviceTypeFilter = document.getElementById('serviceTypeFilter');
 
-    perfectMatchFilter.addEventListener('input', () => {
-        filterPerfectMatches(allPerfectMatches);
-    });
+    if (perfectMatchFilter) {
+        perfectMatchFilter.addEventListener('input', () => {
+            filterPerfectMatches(allPerfectMatches);
+        });
+    }
 
-    serviceFilter.addEventListener('input', () => {
-        filterServices(allServices);
-    });
+    if (serviceFilter) {
+        serviceFilter.addEventListener('input', () => {
+            filterServices(allServices);
+        });
+    }
 
-    serviceTypeFilter.addEventListener('change', () => {
-        filterServices(allServices);
-    });
+    if (serviceTypeFilter) {
+        serviceTypeFilter.addEventListener('change', () => {
+            filterServices(allServices);
+        });
+    }
 
     function filterPerfectMatches(matches) {
         const filterText = perfectMatchFilter.value.toLowerCase();

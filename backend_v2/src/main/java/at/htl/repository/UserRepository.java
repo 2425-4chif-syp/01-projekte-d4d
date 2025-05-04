@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class UserRepository implements PanacheRepository<User> {
-    User activeUser;
+    User activeUser = new User();
 
     public void setActiveUser(User activeUser) {
         this.activeUser = activeUser;

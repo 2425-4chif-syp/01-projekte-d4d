@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.Map;
 
 @Path("user")
 @Produces(MediaType.APPLICATION_JSON)
@@ -17,20 +18,34 @@ public class UserResource {
     UserRepository userRepository;
 
     @GET
-    @Path("/active")
+    @Produces(MediaType.TEXT_PLAIN)
     public Response getActiveUser() {
         User user = userRepository.getActiveUser();
-        if (user == null) {
-            return Response.status(Response.Status.NO_CONTENT).build();
+        if (user == null || user.getName() == null) {
+            return Response.status(Response.Status.NO_CONTENT).entity("").build();
         }
-        return Response.ok(user).build();
+        return Response.ok(user.getName()).build();
     }
 
     @POST
-    @Path("/active")
     @Transactional
-    public Response setActiveUser(User user) {
+    public Response setActiveUser(Map<String, String> payload) {
+        String username = payload.get("username");
+        if (username == null || username.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Benutzername darf nicht leer sein")
+                    .build();
+        }
+
+        User user = userRepository.find("name", username).firstResult();
+
+        if (user == null) {
+            user = new User();
+            user.setName(username);
+            userRepository.persist(user);
+        }
+        
         userRepository.setActiveUser(user);
-        return Response.ok().build();
+        return Response.ok("Benutzer " + username + " ist jetzt aktiv").build();
     }
 }
