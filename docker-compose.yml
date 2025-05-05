@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: postgres
+    image: postgres:17.0-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: d4d-admin
+      POSTGRES_PASSWORD: d4d1234
+      POSTGRES_DB: db
+    ports:
+      - 5432:5432
+    volumes:
+      - ./Backend/db/db-postgres/db:/var/lib/postgresql/data
+      - ./Backend/db/db-postgres/import:/import
+    networks:
+      - d4d-v2-net
+
+  backend:
+    build:
+      context: ./backend_v2
+      dockerfile: Dockerfile
+    image: d4d-backend-v2:latest
+    container_name: d4d-backend-v2
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/db
+      SPRING_DATASOURCE_USERNAME: d4d-admin
+      SPRING_DATASOURCE_PASSWORD: d4d1234
+    ports:
+      - 8080:8080
+    networks:
+      - d4d-v2-net
+
+  frontend:
+    build:
+      context: ./frontend_v2
+      dockerfile: Dockerfile
+    image: d4d-frontend-v2:latest
+    container_name: d4d-frontend-v2
+    ports:
+      - 80:80
+    networks:
+      - d4d-v2-net
+
+networks:
+  d4d-v2-net:
+    driver: bridge
