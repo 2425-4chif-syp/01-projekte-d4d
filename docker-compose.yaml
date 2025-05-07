@@ -41,9 +41,11 @@ services:
     image: d4d-frontend-v2:latest
     container_name: d4d-frontend-v2
     ports:
-      - 80:80
+      - 3000:80
     networks:
       - d4d-v2-net
+    depends_on:
+      - backend
 
 networks:
   d4d-v2-net:
