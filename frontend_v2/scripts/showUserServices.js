@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const usernameInput = document.getElementById('username');
-    const userServiceResults = document.getElementById('userServiceResults');
     const responseMessage = document.querySelector('.response-message');
     const marketButton = document.getElementById('marketButton');
     const offerButton = document.getElementById('offerButton');
@@ -12,17 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFilterType = 'all';
     let currentPerfectMatchUser = 'all';
 
-    // Lade den aktuellen aktiven Benutzer beim Laden der Seite
     getActiveUser();
 
-    // Event-Listener für das Benutzernamen-Eingabefeld in der Navigationsleiste
     const navUsernameInput = document.getElementById("navUsername");
     if (navUsernameInput) {
         navUsernameInput.addEventListener("keyup", function(event) {
             if (event.key === "Enter") {
                 const username = this.value.trim();
                 if (username) {
-                    // Sende POST-Request an den Endpunkt für aktiven Benutzer
                     setActiveUser(username);
                 } else {
                     showMessage("Bitte gib einen Benutzernamen ein.", "error");
@@ -31,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Funktion zum Abrufen des aktuell aktiven Benutzers
     function getActiveUser() {
         fetch("http://localhost:8080/user")
             .then(response => {
@@ -40,31 +34,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return response.text();
             })
-            .then(username => {
-                if (username && username.trim() !== "") {
-                    // Setze den aktiven Benutzer in die Anzeige
+            .then(responseText => {
+                try {
+                    const responseJson = JSON.parse(responseText);
+                    const username = responseJson.username || "Nicht angemeldet";
+                    
                     const activeUserDisplay = document.getElementById("activeUserDisplay");
                     if (activeUserDisplay) {
                         activeUserDisplay.textContent = username;
                         activeUserDisplay.classList.add("user-active");
                     }
                     
-                    // Setze auch den Wert ins Haupteingabefeld, falls vorhanden
-                    if (usernameInput) {
-                        usernameInput.value = username;
-                        // Suche direkt nach den Services des aktiven Benutzers
+                    // Lade direkt die Services des aktiven Benutzers, wenn einer angemeldet ist
+                    if (username && username !== "Nicht angemeldet") {
                         searchUserServices(username);
+                    } else {
+                        showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
                     }
-                } else {
+                } catch (e) {
+                    // Falls die Antwort kein gültiges JSON ist, verwende den Text direkt
+                    const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
+                    
                     const activeUserDisplay = document.getElementById("activeUserDisplay");
                     if (activeUserDisplay) {
-                        activeUserDisplay.textContent = "Nicht angemeldet";
-                        activeUserDisplay.classList.remove("user-active");
+                        activeUserDisplay.textContent = username !== "" ? username : "Nicht angemeldet";
+                        if (username !== "") {
+                            activeUserDisplay.classList.add("user-active");
+                            searchUserServices(username);
+                        } else {
+                            activeUserDisplay.classList.remove("user-active");
+                            showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
+                        }
                     }
                 }
             })
             .catch(error => {
                 console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
+                const activeUserDisplay = document.getElementById("activeUserDisplay");
+                if (activeUserDisplay) {
+                    activeUserDisplay.textContent = "Nicht angemeldet";
+                    activeUserDisplay.classList.remove("user-active");
+                }
+                showMessage("Fehler beim Laden des aktiven Benutzers. Bitte versuche es später erneut.", "error");
             });
     }
 
@@ -80,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => {
             if (response.ok) {
                 return response.text().then(msg => {
-                    showMessage(`Benutzer ${username} wurde als aktiv gesetzt!`, "success");
                     
                     // Aktualisiere die Anzeige des aktiven Benutzers
                     const activeUserDisplay = document.getElementById("activeUserDisplay");
@@ -89,11 +99,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         activeUserDisplay.classList.add("user-active");
                     }
                     
-                    // Setze den Wert auch im Haupteingabefeld und suche nach den Services
-                    if (usernameInput) {
-                        usernameInput.value = username;
-                        searchUserServices(username);
-                    }
+                    // Suche nach den Services des aktiven Benutzers
+                    searchUserServices(username);
                     
                     return msg;
                 });
@@ -115,19 +122,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     offerButton.addEventListener('click', function() {
         window.location.href = 'makeOffer.html';
-    });
-
-    // Listen for Enter key in the username input
-    usernameInput.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            const username = usernameInput.value.trim();
-            if (username) {
-                searchUserServices(username);
-            } else {
-                showMessage('Bitte gib einen Benutzernamen ein.', 'error');
-            }
-        }
     });
 
     // Add filter functionality
@@ -243,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function searchUserServices(username) {
         const matchesContainer = document.getElementById('matchesContainer');
         matchesContainer.innerHTML = '';
-        showMessage('Suche nach Dienstleistungen...', 'info');
         
         fetchServiceTypes()
             .then(types => {
@@ -254,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pm && pm.length > 0) {
                     allPerfectMatches = pm;
                     createPerfectMatchesSection(pm);
-                    showMessage(`Perfekte Übereinstimmungen für ${username}`, 'success');
                     return [pm, username];
                 }
                 return [[], username];
@@ -916,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initial load
-    if (usernameInput.value.trim()) {
-        searchUserServices(usernameInput.value.trim());
+    if (navUsernameInput && navUsernameInput.value.trim()) {
+        searchUserServices(navUsernameInput.value.trim());
     }
 });

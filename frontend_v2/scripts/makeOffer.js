@@ -8,9 +8,7 @@ let serviceTypeMap = {};
 let serviceIdToNameMap = {}; 
 let servicesEnabled = false;
 
-// Funktion für das Benutzername-Eingabefeld in der Navigationsleiste
 document.addEventListener("DOMContentLoaded", function() {
-    // Lade den aktuellen aktiven Benutzer beim Laden der Seite
     getActiveUser();
 
     const navUsernameInput = document.getElementById("navUsername");
@@ -19,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if (event.key === "Enter") {
                 const username = this.value.trim();
                 if (username) {
-                    // Sende POST-Request an den Endpunkt für aktiven Benutzer
                     setActiveUser(username);
                 } else {
                     showMessage("Bitte gib einen Benutzernamen ein.");
@@ -29,7 +26,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// Funktion zum Abrufen des aktuell aktiven Benutzers
 function getActiveUser() {
     fetch("http://localhost:8080/user")
         .then(response => {
@@ -38,38 +34,56 @@ function getActiveUser() {
             }
             return response.text();
         })
-        .then(username => {
-            if (username && username.trim() !== "") {
-                // Setze den aktiven Benutzer in die Anzeige
+        .then(responseText => {
+            try {
+                const responseJson = JSON.parse(responseText);
+                const username = responseJson.username || "Nicht angemeldet";
+                
                 const activeUserDisplay = document.getElementById("activeUserDisplay");
                 if (activeUserDisplay) {
                     activeUserDisplay.textContent = username;
                     activeUserDisplay.classList.add("user-active");
                 }
                 
-                // Setze auch den Wert ins Haupteingabefeld, falls vorhanden
-                const nameInput = document.getElementById("name");
-                if (nameInput) {
-                    nameInput.value = username;
-                    // Lade die Benutzermärkte, falls die Funktion existiert
-                    if (typeof loadUserMarkets === "function") {
-                        loadUserMarkets(username);
-                    }
+                if (username && username !== "Nicht angemeldet") {
+                    loadUserMarkets(username);
+                } else {
+                    servicesEnabled = false;
+                    disableServiceItems();
+                    showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
                 }
-            } else {
+            } catch (e) {
+                const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
+                
                 const activeUserDisplay = document.getElementById("activeUserDisplay");
                 if (activeUserDisplay) {
-                    activeUserDisplay.textContent = "Nicht angemeldet";
-                    activeUserDisplay.classList.remove("user-active");
+                    activeUserDisplay.textContent = username !== "" ? username : "Nicht angemeldet";
+                    if (username !== "") {
+                        activeUserDisplay.classList.add("user-active");
+                        loadUserMarkets(username);
+                    } else {
+                        activeUserDisplay.classList.remove("user-active");
+                        servicesEnabled = false;
+                        disableServiceItems();
+                        showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
+                    }
                 }
             }
         })
         .catch(error => {
             console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
+            const activeUserDisplay = document.getElementById("activeUserDisplay");
+            if (activeUserDisplay) {
+                activeUserDisplay.textContent = "Nicht angemeldet";
+                activeUserDisplay.classList.remove("user-active");
+            }
+            
+            servicesEnabled = false;
+            disableServiceItems();
+            showMessage("Fehler beim Laden des aktiven Benutzers. Bitte versuche es später erneut.");
         });
 }
 
-// Funktion, um einen Benutzer als aktiv zu markieren
 function setActiveUser(username) {
     fetch("http://localhost:8080/user", {
         method: "POST",
@@ -81,24 +95,14 @@ function setActiveUser(username) {
     .then(response => {
         if (response.ok) {
             return response.text().then(msg => {
-                showMessage(`Benutzer ${username} wurde als aktiv gesetzt!`);
                 
-                // Aktualisiere die Anzeige des aktiven Benutzers
                 const activeUserDisplay = document.getElementById("activeUserDisplay");
                 if (activeUserDisplay) {
                     activeUserDisplay.textContent = username;
                     activeUserDisplay.classList.add("user-active");
                 }
                 
-                // Setze den Wert auch im Haupteingabefeld, falls es existiert
-                const nameInput = document.getElementById("name");
-                if (nameInput) {
-                    nameInput.value = username;
-                    // Lade die Benutzermärkte, falls die Funktion existiert
-                    if (typeof loadUserMarkets === "function") {
-                        loadUserMarkets(username);
-                    }
-                }
+                loadUserMarkets(username);
                 
                 return msg;
             });
@@ -159,7 +163,6 @@ function loadServiceTypes() {
                 serviceIdToNameMap[typeId] = typeName;
             });
             
-            // Initial alle Service-Items deaktivieren
             disableServiceItems();
         })
         .catch(error => {
@@ -167,24 +170,20 @@ function loadServiceTypes() {
         });
 }
 
-// Funktion zum Deaktivieren aller Service-Items
 function disableServiceItems() {
     document.querySelectorAll('.service-item').forEach(item => {
         item.classList.add('disabled');
     });
     
-    // Deaktiviere auch den Submit-Button
     document.getElementById("submitButton").disabled = true;
     document.getElementById("submitButton").classList.add('button-disabled');
 }
 
-// Funktion zum Aktivieren aller Service-Items, mit Option für den Button
 function enableServiceItems(enableButton = true) {
     document.querySelectorAll('.service-item').forEach(item => {
         item.classList.remove('disabled');
     });
     
-    // Aktiviere den Submit-Button nur, wenn gewünscht
     if (enableButton) {
         document.getElementById("submitButton").disabled = false;
         document.getElementById("submitButton").classList.remove('button-disabled');
@@ -198,7 +197,6 @@ function loadUserMarkets(username) {
         return;
     }
     
-    // Setze den Status auf nicht aktiviert, bis wir wissen, ob es Märkte gibt
     servicesEnabled = false;
     disableServiceItems();
     resetServiceSelection();
@@ -211,9 +209,7 @@ function loadUserMarkets(username) {
             return response.json();
         })
         .then(markets => {
-            // Prüfe, ob Märkte für den Benutzer vorhanden sind
             if (markets && markets.length > 0) {
-                // Aktiviere die Service-Items und den Submit-Button
                 servicesEnabled = true;
                 enableServiceItems(true);
                 
@@ -221,7 +217,6 @@ function loadUserMarkets(username) {
                     const serviceTypeId = market.serviceType.id;
                     const typeName = market.serviceType.name;
                     
-                    // Speichere die ID->Name Zuordnung für spätere Verwendung
                     serviceIdToNameMap[serviceTypeId] = typeName;
                     
                     if (market.offer === 1) {
@@ -231,16 +226,14 @@ function loadUserMarkets(username) {
                     }
                 });
             } else {
-                // Keine Märkte gefunden, alles bleibt deaktiviert
-                servicesEnabled = false;
-                disableServiceItems();
-                showMessage("Keine Märkte für diesen Benutzer gefunden.");
+                servicesEnabled = true;
+                enableServiceItems(true);
+                showMessage("Noch keine Dienstleistungen vorhanden. Wähle die gewünschten Dienstleistungen aus.");
             }
         })
         .catch(error => {
             console.error("Fehler beim Laden der Märkte:", error);
-            showMessage(`Benutzer ${username} existiert nicht.`);
-            // Im Fehlerfall bleibt alles deaktiviert
+            showMessage(`Benutzer ${username} existiert nicht oder es gab einen Fehler beim Laden der Märkte.`);
             servicesEnabled = false;
             disableServiceItems();
         });
@@ -294,7 +287,7 @@ function selectItemByServiceId(serviceTypeId, type) {
 
 function createServiceItem(serviceName, serviceId) {
     const item = document.createElement("div");
-    item.className = "service-item disabled"; // Initial deaktiviert
+    item.className = "service-item disabled";
     item.textContent = serviceName;
     item.dataset.id = serviceId;
     item.dataset.name = serviceName; 
@@ -331,21 +324,21 @@ function showMessage(message) {
     
     setTimeout(() => {
         responseMessage.style.display = 'none';
-    }, 1000);
+    }, 3000);
 }
 
 document.getElementById("submitButton").onclick = function () {
-    const username = document.getElementById("name").value;
-    if (username.trim() === "") {
-        showMessage("Bitte gib deinen Namen ein.");
+    const username = document.getElementById("activeUserDisplay").textContent;
+    if (username === "Nicht angemeldet") {
+        showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
         return;
     }
+    
     if (selectedOffers.length === 0 && selectedDemands.length === 0) {
         showMessage("Bitte wähle mindestens eine Dienstleistung aus.");
         return;
     }
     
-    // Konvertiere die ausgewählten IDs zu Namen
     const offerNames = selectedOffers.map(id => serviceTypeMap[id]);
     const demandNames = selectedDemands.map(id => serviceTypeMap[id]);
     
@@ -390,29 +383,8 @@ function resetServiceSelection() {
     selectedDemands = [];
 }
 
-document.getElementById("name").addEventListener("keyup", function(event) {
-    const username = this.value.trim();
-    
-    if (event.key === "Enter") {
-        if (username) {
-            loadUserMarkets(username);
-        } else {
-            showMessage("Bitte gib einen Namen ein.");
-            servicesEnabled = false;
-            disableServiceItems();
-        }
-    }
-});
-
 document.addEventListener("DOMContentLoaded", function() {
     loadServiceTypes();
-    
-    const usernameInput = document.getElementById("name");
-    if (!usernameInput.value.trim()) {
-        servicesEnabled = false;
-        document.getElementById("submitButton").disabled = true;
-        document.getElementById("submitButton").classList.add('button-disabled');
-    }
 });
 
 document.addEventListener("DOMContentLoaded", function() {

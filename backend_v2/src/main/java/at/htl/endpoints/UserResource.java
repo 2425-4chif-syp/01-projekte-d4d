@@ -18,7 +18,7 @@ public class UserResource {
     UserRepository userRepository;
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
     public Response getActiveUser() {
         User user = userRepository.getActiveUser();
         if (user == null || user.getName() == null) {
@@ -29,8 +29,7 @@ public class UserResource {
 
     @POST
     @Transactional
-    public Response setActiveUser(Map<String, String> payload) {
-        String username = payload.get("username");
+    public Response setActiveUser(String username) {
         if (username == null || username.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Benutzername darf nicht leer sein")
@@ -46,6 +45,6 @@ public class UserResource {
         }
         
         userRepository.setActiveUser(user);
-        return Response.ok("Benutzer " + username + " ist jetzt aktiv").build();
+        return Response.ok("").build();
     }
 }
