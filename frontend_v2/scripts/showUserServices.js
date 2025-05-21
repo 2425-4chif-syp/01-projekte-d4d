@@ -256,13 +256,19 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(([services, perfectMatches]) => {
                 if (services && services.length > 0) {
+                    // Keep all services - we want to display both perfect matches and regular services
+                    const allAvailableServices = [...services];
+                    
+                    // No need to filter out perfect matches - we want to show them in both sections
+                    // This keeps backward compatibility with the existing code
                     const filteredServices = removePerfectMatches(services, perfectMatches);
                     
-                    if (filteredServices.length > 0) {
-                        console.log('Services from backend:', filteredServices);
+                    // Process all services
+                    if (allAvailableServices.length > 0) {
+                        console.log('Services from backend:', allAvailableServices);
                         
                         // Map services to a format with all required fields
-                        allServices = filteredServices.map(service => {
+                        allServices = allAvailableServices.map(service => {
                             const currentUsername = username; // The username we searched for
                             
                             // Get the other user's name (not the current user)
@@ -666,9 +672,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to remove perfect matches from normal services
     function removePerfectMatches(services, perfectMatches) {
-        return services.filter(service => {
-            return !perfectMatches.some(pm => pm.serviceType_ID === service.serviceType_ID && pm.user_ID === service.user_ID);
-        });
+        // We actually want to show all services, not filter out the perfect matches from regular view
+        // This function is now a pass-through to maintain compatibility
+        return services;
     }
 
     // Function to display filtered perfect matches
