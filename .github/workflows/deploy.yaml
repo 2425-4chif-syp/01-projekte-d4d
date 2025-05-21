@@ -19,6 +19,9 @@ jobs:
           echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      - name: Add VM host to known_hosts
+        run: |
+          ssh-keyscan vm10.htl-leonding.ac.at >> ~/.ssh/known_hosts
 
       - name: Java installieren
         uses: actions/setup-java@v4
@@ -31,6 +34,6 @@ jobs:
           cd backend_v2
           ./mvnw package -DskipTests
 
-      - name: JAR auf VM
+      - name: JAR auf VM kopieren
         run: |
-          scp backend_v2/target/*.jar veladm@vm10.htl-leonding.ac.at:/home/veladm/d4d/app.jar
+          scp -o StrictHostKeyChecking=no backend_v2/target/*.jar veladm@vm10.htl-leonding.ac.at:/home/veladm/d4d/app.jar
