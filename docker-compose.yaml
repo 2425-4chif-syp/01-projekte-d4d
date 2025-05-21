@@ -6,8 +6,8 @@ services:
     image: postgres:17.0-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: d4d-admin
-      POSTGRES_PASSWORD: d4d1234
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
       POSTGRES_DB: db
     ports:
       - 5432:5432
@@ -26,9 +26,9 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/db
-      SPRING_DATASOURCE_USERNAME: d4d-admin
-      SPRING_DATASOURCE_PASSWORD: d4d1234
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/db
+      QUARKUS_DATASOURCE_USERNAME: app
+      QUARKUS_DATASOURCE_PASSWORD: app
     ports:
       - 8080:8080
     networks:
