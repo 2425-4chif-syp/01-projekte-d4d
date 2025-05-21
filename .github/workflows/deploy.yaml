@@ -1,0 +1,29 @@
+name: Deploy to VM10
+
+on:
+  push:
+    branches:
+      - Dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository klonen
+        uses: actions/checkout@v3
+
+      - name: Java installieren
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Projekt bauen
+        run: |
+          cd backend_v2
+          ./mvnw package -DskipTests
+
+      - name: JAR auf VM
+        run: |
+          scp backend_v2/target/*.jar veladm@vm10.htl-leonding.ac.at:/home/veladm/d4d/app.jar
