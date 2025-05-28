@@ -5,10 +5,10 @@ COPY .mvn/ .mvn/
 COPY pom.xml .
 COPY src/ src/
 RUN chmod +x mvnw
-RUN ./mvnw package
+RUN ./mvnw package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/backend-1.0.0-SNAPSHOT.jar /app/app.jar
+COPY --from=build /app/target/*-runner.jar /app/app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

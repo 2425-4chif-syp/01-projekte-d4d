@@ -54,8 +54,9 @@ services:
       - backend
     entrypoint: >
       sh -c "
-      echo ' Warte auf Backend...' &&
-      sleep 5 &&
+      echo 'Warte auf Backend...' &&
+      until curl -s http://backend:8080/q/health; do sleep 1; done &&
+      echo 'Backend erreichbar' &&
       curl -X POST http://backend:8080/d4d/testdata/generate-service-types &&
       curl -X POST http://backend:8080/d4d/testdata/generate-users &&
       curl -X POST http://backend:8080/d4d/testdata/generate-markets &&
