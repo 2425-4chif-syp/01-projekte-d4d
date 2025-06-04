@@ -30,6 +30,35 @@ public class ServiceRepository implements PanacheRepository<Service> {
         return servicesByUser;
     }
 
+    public List<Service> getRelevantServicesForUser(User user) {
+        List<Service> allServices = listAll();
+        List<Service> relevantServices = new ArrayList<>();
+        List<Market> userMarkets = marketRepository.list("user", user);
+
+        for (Service service : allServices) {
+            // Add services where the user is involved (existing functionality)
+            if (service.getMarketClient().getUser().equals(user) ||
+                service.getMarketProvider().getUser().equals(user)) {
+                relevantServices.add(service);
+                continue;
+            }
+
+            // Add services where others are looking for what the user offers
+            for (Market userMarket : userMarkets) {
+                if (userMarket.getOffer() == 1) { // User offers this service
+                    // Check if someone else is demanding this service type
+                    if (service.getMarketClient().getServiceType().getId().equals(userMarket.getServiceType().getId()) &&
+                        service.getMarketClient().getOffer() == 0 && // It's a demand
+                        !service.getMarketClient().getUser().equals(user)) { // Not the user themselves
+                        relevantServices.add(service);
+                        break;
+                    }
+                }
+            }
+        }
+        return relevantServices;
+    }
+
     public List<Market> getPerfectMatchesByUser(User user) {
         List<Market> perfectMatches = new ArrayList<>();
         List<Market> allMarkets = marketRepository.listAll();

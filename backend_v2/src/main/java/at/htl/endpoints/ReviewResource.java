@@ -57,6 +57,17 @@ public class ReviewResource {
         return Response.ok(averageRating).build();
     }
 
+    @GET
+    @Path("/average-rating/{username}/{serviceType}")
+    @Transactional
+    public Response getUserServiceRating(
+            @PathParam("username") String username,
+            @PathParam("serviceType") String serviceType
+    ) {
+        Double averageRating = reviewRepository.getAverageRatingForUserAndServiceType(username, serviceType);
+        return Response.ok(averageRating).build();
+    }
+
     @POST
     @Transactional
     public Response createReview(Review review) {

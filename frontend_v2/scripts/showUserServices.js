@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentServiceType = 'all';
     let currentFilterType = 'all';
     let currentPerfectMatchUser = 'all';
+    let currentRatingFilter = 'all';
+    let currentSortOption = 'none';
 
     getActiveUser();
 
@@ -271,33 +273,50 @@ document.addEventListener('DOMContentLoaded', function() {
                         allServices = allAvailableServices.map(service => {
                             const currentUsername = username; // The username we searched for
                             
-                            // Get the other user's name (not the current user)
+                            // Determine which user is the "other" user and what type of service this is
                             let otherUsername = 'Unbekannter Benutzer';
+                            let serviceTypeName = 'Unbekannter Dienstleistungstyp';
+                            let isOffer = false;
                             
-                            if (service.marketClient && service.marketClient.user && service.marketClient.user.name) {
-                                if (service.marketClient.user.name !== currentUsername) {
-                                    otherUsername = service.marketClient.user.name;
-                                }
+                            // If current user is the provider, show the client's demand
+                            if (service.marketProvider && service.marketProvider.user && 
+                                service.marketProvider.user.name === currentUsername) {
+                                otherUsername = service.marketClient && service.marketClient.user ? 
+                                    service.marketClient.user.name : 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
+                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketClient && service.marketClient.offer === 1;
                             }
-                            
-                            if (service.marketProvider && service.marketProvider.user && service.marketProvider.user.name) {
-                                if (service.marketProvider.user.name !== currentUsername) {
-                                    otherUsername = service.marketProvider.user.name;
-                                }
+                            // If current user is the client, show the provider's offer
+                            else if (service.marketClient && service.marketClient.user && 
+                                     service.marketClient.user.name === currentUsername) {
+                                otherUsername = service.marketProvider && service.marketProvider.user ? 
+                                    service.marketProvider.user.name : 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketProvider && service.marketProvider.serviceType ? 
+                                    service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketProvider && service.marketProvider.offer === 1;
                             }
-                            
-                            // Extract service type name from marketProvider
-                            const serviceTypeName = service.marketProvider && service.marketProvider.serviceType && 
-                                service.marketProvider.serviceType.name ? 
-                                service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
+                            // For services where the current user is not directly involved
+                            // (these are demands from others that match what the user offers)
+                            else {
+                                otherUsername = service.marketClient && service.marketClient.user ? 
+                                    service.marketClient.user.name : 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
+                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketClient && service.marketClient.offer === 1;
+                            }
                             
                             return {
                                 ...service,
                                 username: otherUsername,
                                 serviceTypeName,
-                                isOffer: service.marketProvider && service.marketProvider.offer === 1
+                                isOffer,
+                                rating: null // Will be loaded asynchronously
                             };
                         });
+
+                        // Load ratings for all offer services
+                        loadRatingsForServices(allServices);
                         
                         createServicesSection();
                         setTimeout(() => filterAndDisplayServices(), 0);
@@ -506,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get user services by username
     function getUserServices(username) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/service/${encodeURIComponent(username)}`)
+        return fetch(`${backendUrl}/service/relevant/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -650,10 +669,10 @@ document.addEventListener('DOMContentLoaded', function() {
         cardDiv.innerHTML = cardHTML;
         
         // If it's an offer, fetch and display the average rating
-        if (offer === 1 && serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
+        if (offer === 1 && serviceTypeName !== 'Unbekannter Dienstleistungstyp' && username !== 'Unbekannter Benutzer') {
             const ratingContainer = cardDiv.querySelector('.rating-container');
             
-            getAverageRating(serviceTypeName)
+            getUserServiceRating(username, serviceTypeName)
                 .then(rating => {
                     if (ratingContainer) {
                         ratingContainer.innerHTML = generateStarHTML(rating);
@@ -717,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
         servicesContainer.appendChild(gridDiv);
     }
 
-    // Fetch the average rating for a service type
+    // Fetch the average rating for a service type (general)
     async function getAverageRating(serviceTypeName) {
         try {
             const response = await fetch(`http://localhost:8080/review/average-rating/${encodeURIComponent(serviceTypeName)}`);
@@ -731,8 +750,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Fetch the average rating for a specific user and service type
+    async function getUserServiceRating(username, serviceTypeName) {
+        try {
+            const response = await fetch(`http://localhost:8080/review/average-rating/${encodeURIComponent(username)}/${encodeURIComponent(serviceTypeName)}`);
+            if (response.ok) {
+                return await response.json();
+            }
+            return 0;
+        } catch (error) {
+            console.error('Fehler beim Abrufen der benutzerspezifischen Bewertung:', error);
+            return 0;
+        }
+    }
+
     // Generate HTML for star rating display
     function generateStarHTML(rating) {
+        // Check if rating is null, undefined, or 0 (no rating)
+        if (rating === null || rating === undefined || rating === 0) {
+            return `<div class="service-rating"><i class="fas fa-question-circle" style="color: #dc3545; margin-right: 5px;"></i>Noch nicht bewertet</div>`;
+        }
+        
         let starsHTML = "";
         
         for (let i = 1; i <= 5; i++) {
@@ -791,10 +829,10 @@ document.addEventListener('DOMContentLoaded', function() {
         cardDiv.innerHTML = cardHTML;
         
         // If it's an offer, fetch and display the average rating
-        if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp') {
+        if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp' && displayUsername !== 'Unbekannter Benutzer') {
             const ratingContainer = cardDiv.querySelector('.rating-container');
             
-            getAverageRating(displayServiceType)
+            getUserServiceRating(displayUsername, displayServiceType)
                 .then(rating => {
                     if (ratingContainer) {
                         ratingContainer.innerHTML = generateStarHTML(rating);
@@ -863,13 +901,32 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter for Angebot/Nachfrage
         const filterContainer = document.createElement('div');
         filterContainer.className = 'filter-container';
-        filterContainer.innerHTML = `
+        
+        // Base filter HTML
+        let filterHTML = `
             <select class="offer-filter">
                 <option value="all">Alle anzeigen</option>
                 <option value="offer">Nur Angebote</option>
                 <option value="demand">Nur Nachfragen</option>
             </select>
+            <select class="rating-filter" style="display: none;">
+                <option value="all">Alle Bewertungen</option>
+                <option value="4+">4+ Sterne</option>
+                <option value="3+">3+ Sterne</option>
+                <option value="2+">2+ Sterne</option>
+                <option value="1+">1+ Sterne</option>
+                <option value="unrated">Ohne Bewertung</option>
+            </select>
+            <select class="sort-filter">
+                <option value="none">Standard Sortierung</option>
+                <option value="rating-desc">Bewertung (hoch → niedrig)</option>
+                <option value="rating-asc">Bewertung (niedrig → hoch)</option>
+                <option value="name-asc">Name (A → Z)</option>
+                <option value="name-desc">Name (Z → A)</option>
+            </select>
         `;
+        
+        filterContainer.innerHTML = filterHTML;
         mainServicesSection.appendChild(filterContainer);
 
         // Services display container
@@ -892,23 +949,101 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const offerFilter = filterContainer.querySelector('.offer-filter');
+        const ratingFilter = filterContainer.querySelector('.rating-filter');
+        
         offerFilter.addEventListener('change', (e) => {
             currentFilterType = e.target.value;
+            
+            // Show/hide rating filter based on selection
+            if (e.target.value === 'offer' || e.target.value === 'all') {
+                ratingFilter.style.display = 'inline-block';
+            } else {
+                ratingFilter.style.display = 'none';
+                currentRatingFilter = 'all'; // Reset rating filter when hidden
+            }
+            
+            filterAndDisplayServices();
+        });
+
+        ratingFilter.addEventListener('change', (e) => {
+            currentRatingFilter = e.target.value;
+            filterAndDisplayServices();
+        });
+
+        const sortFilter = filterContainer.querySelector('.sort-filter');
+        sortFilter.addEventListener('change', (e) => {
+            currentSortOption = e.target.value;
             filterAndDisplayServices();
         });
     }
 
+    // Load ratings for all services
+    async function loadRatingsForServices(services) {
+        for (let service of services) {
+            if (service.isOffer && service.username !== 'Unbekannter Benutzer' && service.serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
+                try {
+                    const rating = await getUserServiceRating(service.username, service.serviceTypeName);
+                    service.rating = rating;
+                } catch (error) {
+                    console.error('Fehler beim Laden der Bewertung für', service.username, service.serviceTypeName, error);
+                    service.rating = 0;
+                }
+            } else {
+                service.rating = null; // Not an offer, so no rating
+            }
+        }
+        // After all ratings are loaded, update the display
+        filterAndDisplayServices();
+    }
+
     function filterAndDisplayServices() {
-        const filteredServices = allServices.filter(service => {
+        let filteredServices = allServices.filter(service => {
             const typeMatch = currentServiceType === 'all' || service.serviceTypeName === currentServiceType;
             
             if (!typeMatch) return false;
-            if (currentFilterType === 'all') return true;
-            if (currentFilterType === 'offer') return service.isOffer;
-            if (currentFilterType === 'demand') return !service.isOffer;
             
-            return true;
+            // Filter by offer/demand type
+            let offerMatch = true;
+            if (currentFilterType === 'offer') offerMatch = service.isOffer;
+            else if (currentFilterType === 'demand') offerMatch = !service.isOffer;
+            
+            if (!offerMatch) return false;
+            
+            // Filter by rating (only applies to offers)
+            let ratingMatch = true;
+            if (currentRatingFilter !== 'all' && service.isOffer) {
+                if (currentRatingFilter === 'unrated') {
+                    ratingMatch = service.rating === null || service.rating === 0;
+                } else {
+                    const minRating = parseFloat(currentRatingFilter.replace('+', ''));
+                    ratingMatch = service.rating !== null && service.rating >= minRating;
+                }
+            }
+            
+            return ratingMatch;
         });
+
+        // Sort services
+        if (currentSortOption !== 'none') {
+            filteredServices.sort((a, b) => {
+                switch (currentSortOption) {
+                    case 'rating-desc':
+                        const ratingA = a.rating || 0;
+                        const ratingB = b.rating || 0;
+                        return ratingB - ratingA;
+                    case 'rating-asc':
+                        const ratingA2 = a.rating || 0;
+                        const ratingB2 = b.rating || 0;
+                        return ratingA2 - ratingB2;
+                    case 'name-asc':
+                        return (a.username || '').localeCompare(b.username || '');
+                    case 'name-desc':
+                        return (b.username || '').localeCompare(a.username || '');
+                    default:
+                        return 0;
+                }
+            });
+        }
 
         displayFilteredServices(filteredServices);
     }
