@@ -1,3 +1,5 @@
+import { API_URL } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // DOM-Elemente referenzieren
     const chatMessages = document.getElementById('chatMessages');
@@ -9,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentUserDisplay = document.getElementById('currentUserDisplay');
     
     // Backend-Konfiguration - Angepasst an den neuen API-Endpunkt
-    const BACKEND_BASE_URL = 'http://localhost:8080';
     const CHAT_API_PATH = '/chatentry'; // Neuer Endpunkt laut Backend-Code
     
     // Globale Variablen
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Alle verfügbaren Nutzer laden
     async function loadAllUsers() {
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}${CHAT_API_PATH}/users`);
+            const response = await fetch(`${API_URL}${CHAT_API_PATH}/users`);
             
             if (!response.ok) {
                 console.error('Fehler beim Laden aller Benutzer:', response.statusText);
@@ -125,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Zeige Ladeanzeige an
             chatItems.innerHTML = '<div class="loading-message">Kontakte werden geladen...</div>';
             
-            const response = await fetch(`${BACKEND_BASE_URL}${CHAT_API_PATH}/users`);
+            const response = await fetch(`${API_URL}${CHAT_API_PATH}/users`);
             
             if (!response.ok) {
                 if (response.status === 404) {
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const contact of filteredContacts) {
             try {
                 // Prüfe, ob es Nachrichten zwischen den Benutzern gibt
-                const response = await fetch(`${BACKEND_BASE_URL}${CHAT_API_PATH}/${currentUserId}/${contact.id}`);
+                const response = await fetch(`${API_URL}${CHAT_API_PATH}/${currentUserId}/${contact.id}`);
                 
                 if (response.ok) {
                     const messages = await response.json();
@@ -352,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chatMessages.innerHTML = '<div class="message system loading">Nachrichten werden geladen...</div>';
             
             // Nutze den neuen Endpunkt mit den IDs beider Benutzer
-            const response = await fetch(`${BACKEND_BASE_URL}${CHAT_API_PATH}/${currentUserId}/${partnerId}`);
+            const response = await fetch(`${API_URL}${CHAT_API_PATH}/${currentUserId}/${partnerId}`);
             
             if (!response.ok) {
                 if (response.status === 404) {
@@ -482,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Senden...';
             sendButton.disabled = true;
             
-            const response = await fetch(`${BACKEND_BASE_URL}${CHAT_API_PATH}`, {
+            const response = await fetch(`${API_URL}${CHAT_API_PATH}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -612,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.disabled = true;
                 
                 // Versuche verschiedene mögliche Testdaten-Endpunkte
-                const response = await fetch(`${BACKEND_BASE_URL}/api/testdata/generate`, {
+                const response = await fetch(`${API_URL}/api/testdata/generate`, {
                     method: 'POST'
                 });
                 

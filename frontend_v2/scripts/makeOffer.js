@@ -1,3 +1,5 @@
+import { API_URL } from './config.js';
+
 document.getElementById('marketButton').addEventListener('click', function() {
     window.location.href = 'showOffers.html';
 });
@@ -27,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function getActiveUser() {
-    fetch("http://localhost:8080/user")
+    fetch(`${API_URL}/user`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen des aktiven Benutzers");
@@ -85,7 +87,7 @@ function getActiveUser() {
 }
 
 function setActiveUser(username) {
-    fetch("http://localhost:8080/user", {
+    fetch(`${API_URL}/user`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -120,7 +122,7 @@ function setActiveUser(username) {
 function loadServiceTypes() {
     const offeredServicesList = document.getElementById("offeredServicesList");
     const demandedServicesList = document.getElementById("demandedServicesList");
-    const url = "http://localhost:8080/servicetype";
+    const url = `${API_URL}/servicetype`;
     
     offeredServicesList.innerHTML = '';
     demandedServicesList.innerHTML = '';
@@ -201,7 +203,7 @@ function loadUserMarkets(username) {
     disableServiceItems();
     resetServiceSelection();
     
-    fetch(`http://localhost:8080/market/${encodeURIComponent(username)}`)
+    fetch(`${API_URL}/market/${encodeURIComponent(username)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Märkte");
@@ -350,7 +352,7 @@ document.getElementById("submitButton").onclick = function () {
     
     console.log("Sending data:", requestData);
     
-    fetch("http://localhost:8080/market", {
+    fetch(`${API_URL}/market`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

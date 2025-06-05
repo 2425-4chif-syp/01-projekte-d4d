@@ -1,5 +1,7 @@
+import { API_URL } from './config.js';
+
 function fetchServiceTypes() {
-    fetch("http://localhost:8080/d4d/serviceTypes")
+    fetch(`${API_URL}/d4d/serviceTypes`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -35,7 +37,7 @@ function fetchServiceTypes() {
 
 function deleteServiceType(serviceType) {
     if (confirm(`Möchten Sie wirklich die Dienstleistungsart "${serviceType}" löschen?`)) {
-        fetch(`http://localhost:8080/d4d/serviceType/${encodeURIComponent(serviceType)}`, {
+        fetch(`${API_URL}/d4d/serviceType/${encodeURIComponent(serviceType)}`, {
             method: "PUT"
         })
         .then(response => {
@@ -72,7 +74,7 @@ document.getElementById("addServiceTypeButton").addEventListener("click", functi
         return;
     }
 
-    fetch("http://localhost:8080/d4d/serviceType", {
+    fetch(`${API_URL}/d4d/serviceType`, {
         method: "POST",
         headers: {
             "Content-Type": "text/plain",

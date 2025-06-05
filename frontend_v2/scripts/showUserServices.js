@@ -1,3 +1,5 @@
+import { API_URL } from './config.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     const responseMessage = document.querySelector('.response-message');
     const marketButton = document.getElementById('marketButton');
@@ -9,8 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentServiceType = 'all';
     let currentFilterType = 'all';
     let currentPerfectMatchUser = 'all';
-    let currentRatingFilter = 'all';
-    let currentSortOption = 'none';
 
     getActiveUser();
 
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getActiveUser() {
-        fetch("http://localhost:8080/user")
+        fetch(`${API_URL}/user`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Fehler beim Abrufen des aktiven Benutzers");
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funktion, um einen Benutzer als aktiv zu markieren
     function setActiveUser(username) {
-        fetch("http://localhost:8080/user", {
+        fetch(`${API_URL}/user`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -273,50 +273,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         allServices = allAvailableServices.map(service => {
                             const currentUsername = username; // The username we searched for
                             
-                            // Determine which user is the "other" user and what type of service this is
+                            // Get the other user's name (not the current user)
                             let otherUsername = 'Unbekannter Benutzer';
-                            let serviceTypeName = 'Unbekannter Dienstleistungstyp';
-                            let isOffer = false;
                             
-                            // If current user is the provider, show the client's demand
-                            if (service.marketProvider && service.marketProvider.user && 
-                                service.marketProvider.user.name === currentUsername) {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
+                            if (service.marketClient && service.marketClient.user && service.marketClient.user.name) {
+                                if (service.marketClient.user.name !== currentUsername) {
+                                    otherUsername = service.marketClient.user.name;
+                                }
                             }
-                            // If current user is the client, show the provider's offer
-                            else if (service.marketClient && service.marketClient.user && 
-                                     service.marketClient.user.name === currentUsername) {
-                                otherUsername = service.marketProvider && service.marketProvider.user ? 
-                                    service.marketProvider.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketProvider && service.marketProvider.serviceType ? 
-                                    service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketProvider && service.marketProvider.offer === 1;
+                            
+                            if (service.marketProvider && service.marketProvider.user && service.marketProvider.user.name) {
+                                if (service.marketProvider.user.name !== currentUsername) {
+                                    otherUsername = service.marketProvider.user.name;
+                                }
                             }
-                            // For services where the current user is not directly involved
-                            // (these are demands from others that match what the user offers)
-                            else {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
-                            }
+                            
+                            // Extract service type name from marketProvider
+                            const serviceTypeName = service.marketProvider && service.marketProvider.serviceType && 
+                                service.marketProvider.serviceType.name ? 
+                                service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
                             
                             return {
                                 ...service,
                                 username: otherUsername,
                                 serviceTypeName,
-                                isOffer,
-                                rating: null // Will be loaded asynchronously
+                                isOffer: service.marketProvider && service.marketProvider.offer === 1
                             };
                         });
-
-                        // Load ratings for all offer services
-                        loadRatingsForServices(allServices);
                         
                         createServicesSection();
                         setTimeout(() => filterAndDisplayServices(), 0);
@@ -426,8 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funktion zum Abrufen aller Service-Typen
     function fetchServiceTypes() {
-        const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/servicetype`)
+        return fetch(`${API_URL}/servicetype`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Fehler beim Abrufen der Service-Typen");
@@ -525,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to get user services by username
     function getUserServices(username) {
         const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/service/relevant/${encodeURIComponent(username)}`)
+        return fetch(`${backendUrl}/service/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -543,8 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to get service type name by ID
     function getServiceTypeName(serviceTypeId) {
-        const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/servicetype`)
+        return fetch(`${API_URL}/servicetype`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Service type fetch failed: ${response.status}`);
@@ -563,8 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to get username by ID
     function getUserName(userId) {
-        const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/market/${userId}`)
+        return fetch(`${API_URL}/market/${userId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Username fetch failed: ${response.status}`);
@@ -585,8 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to get perfect matches
     function getPerfectMatches(username) {
-        const backendUrl = 'http://localhost:8080';
-        return fetch(`${backendUrl}/service/perfect-matches/${encodeURIComponent(username)}`)
+        return fetch(`${API_URL}/service/perfect-matches/${encodeURIComponent(username)}`)
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -736,10 +715,10 @@ document.addEventListener('DOMContentLoaded', function() {
         servicesContainer.appendChild(gridDiv);
     }
 
-    // Fetch the average rating for a service type (general)
+    // Fetch the average rating for a service type
     async function getAverageRating(serviceTypeName) {
         try {
-            const response = await fetch(`http://localhost:8080/review/average-rating/${encodeURIComponent(serviceTypeName)}`);
+            const response = await fetch(`${API_URL}/review/average-rating/${encodeURIComponent(serviceTypeName)}`);
             if (response.ok) {
                 return await response.json();
             }
@@ -750,27 +729,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Fetch the average rating for a specific user and service type
-    async function getUserServiceRating(username, serviceTypeName) {
-        try {
-            const response = await fetch(`http://localhost:8080/review/average-rating/${encodeURIComponent(username)}/${encodeURIComponent(serviceTypeName)}`);
-            if (response.ok) {
-                return await response.json();
-            }
-            return 0;
-        } catch (error) {
-            console.error('Fehler beim Abrufen der benutzerspezifischen Bewertung:', error);
-            return 0;
-        }
-    }
-
     // Generate HTML for star rating display
     function generateStarHTML(rating) {
         // Check if rating is null, undefined, or 0 (no rating)
         if (rating === null || rating === undefined || rating === 0) {
             return `<div class="service-rating"><i class="fas fa-question-circle" style="color: #dc3545; margin-right: 5px;"></i>Noch nicht bewertet</div>`;
         }
-        
+
         let starsHTML = "";
         
         for (let i = 1; i <= 5; i++) {
@@ -832,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp' && displayUsername !== 'Unbekannter Benutzer') {
             const ratingContainer = cardDiv.querySelector('.rating-container');
             
-            getUserServiceRating(displayUsername, displayServiceType)
+            getAverageRating(displayServiceType)
                 .then(rating => {
                     if (ratingContainer) {
                         ratingContainer.innerHTML = generateStarHTML(rating);
@@ -901,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter for Angebot/Nachfrage
         const filterContainer = document.createElement('div');
         filterContainer.className = 'filter-container';
-        
+
         // Base filter HTML
         let filterHTML = `
             <select class="offer-filter">
@@ -925,7 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <option value="name-desc">Name (Z → A)</option>
             </select>
         `;
-        
+
         filterContainer.innerHTML = filterHTML;
         mainServicesSection.appendChild(filterContainer);
 
@@ -950,10 +915,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const offerFilter = filterContainer.querySelector('.offer-filter');
         const ratingFilter = filterContainer.querySelector('.rating-filter');
-        
+
         offerFilter.addEventListener('change', (e) => {
             currentFilterType = e.target.value;
-            
+
             // Show/hide rating filter based on selection
             if (e.target.value === 'offer' || e.target.value === 'all') {
                 ratingFilter.style.display = 'inline-block';
@@ -961,7 +926,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ratingFilter.style.display = 'none';
                 currentRatingFilter = 'all'; // Reset rating filter when hidden
             }
-            
+
             filterAndDisplayServices();
         });
 
@@ -1001,14 +966,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const typeMatch = currentServiceType === 'all' || service.serviceTypeName === currentServiceType;
             
             if (!typeMatch) return false;
-            
+
             // Filter by offer/demand type
             let offerMatch = true;
             if (currentFilterType === 'offer') offerMatch = service.isOffer;
             else if (currentFilterType === 'demand') offerMatch = !service.isOffer;
             
             if (!offerMatch) return false;
-            
+
             // Filter by rating (only applies to offers)
             let ratingMatch = true;
             if (currentRatingFilter !== 'all' && service.isOffer) {
@@ -1019,7 +984,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ratingMatch = service.rating !== null && service.rating >= minRating;
                 }
             }
-            
+
             return ratingMatch;
         });
 

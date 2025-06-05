@@ -1,3 +1,5 @@
+import { API_URL } from './config.js';
+
 document.getElementById('createOfferButton').addEventListener('click', function () {
     window.location.href = 'makeOffer.html';
 });
@@ -62,7 +64,7 @@ function applyFilters() {
     const showClosedMarkets = document.getElementById('showClosedMarkets').checked;
     showLoading();
 
-    fetch(`http://localhost:8080/market`)
+    fetch(`${API_URL}/market`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
@@ -282,7 +284,7 @@ function loadServiceTypesAndOffers() {
 
 function loadServiceTypes() {
     const filterService = document.getElementById("filterService");
-    const url = "http://localhost:8080/servicetype";
+    const url = `${API_URL}/servicetype`;
 
     fetch(url)
         .then(response => {
@@ -306,7 +308,7 @@ function loadServiceTypes() {
 }
 
 function loadAllOffers() {
-    const url = `http://localhost:8080/market`;
+    const url = `${API_URL}/market`;
     showLoading();
     fetch(url)
         .then(response => {
@@ -476,4 +478,3 @@ document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
 
 // Event Listener für die Filterauswahl
 document.getElementById("filterService").addEventListener('change', applyFilters);
-

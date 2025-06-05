@@ -1,5 +1,4 @@
-// API Basis-URL
-const API_BASE_URL = 'http://localhost:8080/d4d';
+import { API_URL } from './config.js';
 
 // Warte, bis das DOM geladen ist
 document.addEventListener('DOMContentLoaded', () => {
@@ -115,7 +114,7 @@ async function submitReview(e) {
 
     try {
         // Sende die Bewertung zum korrekten Endpunkt
-        const response = await fetch(`${API_BASE_URL}/reviews`, {
+        const response = await fetch(`${API_URL}/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -186,7 +185,7 @@ async function loadAllOffers() {
     serviceList.innerHTML = '<li class="loading">Laden...</li>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/all`);
+        const response = await fetch(`${API_URL}/all`);
         if (!response.ok) throw new Error('Fehler beim Abrufen der Daten');
         
         const users = await response.json();
@@ -240,7 +239,7 @@ async function loadAllOffers() {
 async function fetchAllReviews() {
   try {
     // Neuer Endpunkt für alle Reviews
-    const response = await fetch("http://localhost:8080/review");
+    const response = await fetch(`${API_URL}/review`);
     if (response.ok) {
       const reviews = await response.json();
       console.log("Empfangene Reviews:", reviews);
@@ -302,7 +301,7 @@ async function fetchReviewsByServiceType() {
   }
   try {
     // Neuer Endpunkt für Reviews nach Service-Typ
-    const response = await fetch("http://localhost:8080/review/" + encodeURIComponent(serviceType));
+    const response = await fetch(`${API_URL}/review/` + encodeURIComponent(serviceType));
     if (response.ok) {
       const reviews = await response.json();
       console.log("Empfangene Service-Reviews:", reviews);
@@ -362,7 +361,7 @@ async function fetchServiceRating() {
   }
   try {
     // Neuer Endpunkt für die Durchschnittsbewertung eines Service-Typs
-    const response = await fetch("http://localhost:8080/review/average-rating/" + encodeURIComponent(serviceType));
+    const response = await fetch(`${API_URL}/review/average-rating/` + encodeURIComponent(serviceType));
     if (response.ok) {
       const averageRating = await response.json();
       displayServiceRating(averageRating);
