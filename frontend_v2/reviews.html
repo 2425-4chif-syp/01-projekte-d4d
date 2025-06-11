@@ -69,10 +69,61 @@
       <div id="serviceReviewList"></div>
       <div id="serviceRatingDisplay"></div>
     </div>
+    <div id="starRating"></div>
+    <!-- Ersetze das alte Service-Type-Select mit einer Liste der aktiven Services -->
+    <div class="services-section">
+        <h2><i class="fa-solid fa-list"></i> Verfügbare Services</h2>
+        <div id="activeServices" class="service-grid">
+            <!-- Wird per JavaScript mit aktiven Services gefüllt -->
+        </div>
+    </div>
+
+    <div class="review-form-section">
+        <h2><i class="fa-solid fa-star"></i> Bewertung abgeben</h2>
+        <form id="reviewForm">
+            <label for="serviceTypeSelect">Service auswählen:</label>
+            <select id="serviceTypeSelect" required>
+                <option value="">Bitte wählen...</option>
+            </select>
+
+            <label for="ratingSelect">Bewertung:</label>
+            <select id="ratingSelect" required>
+                <option value="">Bitte wählen...</option>
+                <option value="1">1 Stern</option>
+                <option value="2">2 Sterne</option>
+                <option value="3">3 Sterne</option>
+                <option value="4">4 Sterne</option>
+                <option value="5">5 Sterne</option>
+            </select>
+
+            <label for="commentInput">Kommentar:</label>
+            <textarea id="commentInput" required></textarea>
+
+            <button type="submit">Bewertung absenden</button>
+        </form>
+        <div id="reviewFormMessage"></div>
+    </div>
+    <!-- Abschnitt: Vorhandene Bewertungen anzeigen -->
+    <div class="content-section">
+      <h2><i class="fa-solid fa-star"></i> Vorhandene Bewertungen</h2>
+      <button onclick="fetchAllReviews()">
+        <i class="fa-solid fa-sync"></i> Alle Reviews anzeigen
+      </button>
+      <div id="reviewList"></div>
+    </div>
+    <!-- Neuer Abschnitt: Bewertungen nach Service-Typ abrufen -->
+    <div class="service-section">
+      <h2><i class="fa-solid fa-tools"></i> Bewertungen nach Service-Typ</h2>
+      <input type="text" id="serviceTypeInput" placeholder="Geben Sie den Service-Typ ein" />
+      <button onclick="fetchReviewsByServiceType()">Reviews abrufen</button>
+      <button onclick="fetchServiceRating()">Durchschnittsbewertung abrufen</button>
+      <div id="serviceReviewList"></div>
+      <div id="serviceRatingDisplay"></div>
+    </div>
+    <div id="starRating"></div>
   </main>
   
   <!-- Einbinden der externen JavaScript-Datei -->
-  <script type="module" src="scripts/reviews.js"></script>
-  <script src="scripts/navbar-compat.js"></script>
+  <script src="scripts/reviews.js"></script>
 </body>
 </html>
