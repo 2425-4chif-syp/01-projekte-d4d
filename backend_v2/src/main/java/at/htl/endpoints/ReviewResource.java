@@ -22,6 +22,9 @@ public class ReviewResource {
     @Inject
     ReviewRepository reviewRepository;
 
+    @Inject
+    ServiceTypeRepository serviceTypeRepository;
+
     @GET
     @Transactional
     public Response getReviews() {
@@ -70,8 +73,71 @@ public class ReviewResource {
 
     @POST
     @Transactional
-    public Response createReview(Review review) {
-        reviewRepository.persist(review);
-        return Response.status(Response.Status.CREATED).entity(review).build();
+    @Operation(summary = "Erstellt eine neue Bewertung",
+            description = "Speichert eine neue Bewertung in der Datenbank")
+    @APIResponse(responseCode = "200",
+            description = "Bewertung erfolgreich erstellt",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = Review.class)))
+    @APIResponse(responseCode = "400",
+            description = "Ungültige Bewertungsdaten")
+    public Response createReview(
+            @   RequestBody(description = "Die zu erstellende Bewertung",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = Review.class)))
+            Review review) {
+        try {
+            // Debug-Logging
+            System.out.println("=== START Review Creation ===");
+            System.out.println("Received review object: " + review);
+
+            // Validierung
+            if (review == null) {
+                System.out.println("Error: Review object is null");
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("{\"error\": \"Review cannot be null\"}")
+                        .build();
+            }
+
+            // Prüfe, ob der ServiceType existiert
+            ServiceType serviceType = serviceTypeRepository.findById(review.getServiceType().getId());
+            if (serviceType == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Json.createObjectBuilder()
+                        .add("error", "Service Type nicht gefunden!")
+                        .build())
+                    .build();
+            }
+
+            // Setze den gefundenen ServiceType
+            review.setServiceType(serviceType);
+
+            // Speichern
+            reviewRepository.persist(review);
+            reviewRepository.flush();  // Force DB sync
+
+            // Explizit JSON zurückgeben
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("id", review.getId());
+            builder.add("rating", review.getRating());
+            builder.add("comment", review.getComment());
+            builder.add("status", "success");
+
+            System.out.println("Success - Returning response: " + builder.build());
+            System.out.println("=== END Review Creation ===");
+
+            return Response.ok(builder.build())
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+
+        } catch (Exception e) {
+            System.out.println("Error creating review: " + e.getMessage());
+            e.printStackTrace();
+
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
     }
 }
