@@ -1,184 +1,161 @@
+// API Basis-URL
 import { API_URL } from './config.js';
+
 
 // Warte, bis das DOM geladen ist
 document.addEventListener('DOMContentLoaded', () => {
-    loadAllOffers();
-    setupStarRating();
+  loadActiveServices();
+  const form = document.getElementById('reviewForm');
+  if (form) {
+    form.addEventListener('submit', submitReview);
+  }
 });
 
-// Sternebewertung einrichten
 function setupStarRating() {
-    const stars = document.querySelectorAll('.rating-input i');
-    const ratingInput = document.getElementById('rating');
-    const form = document.getElementById('reviewSubmitForm');
-    const comment = document.getElementById('comment');
-    const charCount = document.getElementById('charCount');
+  const starRating = document.getElementById('starRating');
+  if (!starRating) {
+    console.warn('Erforderliche Elemente für Sternebewertung nicht gefunden');
+    return;
+  }
 
-    if (!stars.length || !ratingInput || !form || !comment || !charCount) {
-        console.error('Erforderliche Elemente für Sternebewertung nicht gefunden');
-        return;
-    }
+  const stars = document.querySelectorAll('.rating-input i');
+  const ratingInput = document.getElementById('rating');
+  const form = document.getElementById('reviewSubmitForm');
+  const comment = document.getElementById('comment');
+  const charCount = document.getElementById('charCount');
 
-    // Stern-Bewertung
-    stars.forEach(star => {
-        star.addEventListener('click', function() {
-            const rating = this.getAttribute('data-rating');
-            ratingInput.value = rating;
-            updateStars(rating);
-        });
-    });
+  if (!stars.length || !ratingInput || !form || !comment || !charCount) {
+      console.error('Erforderliche Elemente für Sternebewertung nicht gefunden');
+      return;
+  }
 
-    // Zeichenzähler
-    comment.addEventListener('input', function() {
-        const remaining = 250 - this.value.length;
-        charCount.textContent = `${this.value.length}/250 Zeichen`;
-        charCount.classList.toggle('error', remaining < 0);
-    });
+  // Stern-Bewertung
+  stars.forEach(star => {
+      star.addEventListener('click', function() {
+          const rating = this.getAttribute('data-rating');
+          ratingInput.value = rating;
+          updateStars(rating);
+      });
+  });
 
-    // Formular absenden
-    form.addEventListener('submit', submitReview);
+  // Zeichenzähler
+  comment.addEventListener('input', function() {
+      const remaining = 250 - this.value.length;
+      charCount.textContent = `${this.value.length}/250 Zeichen`;
+      charCount.classList.toggle('error', remaining < 0);
+  });
+
+  // Formular absenden
+  form.addEventListener('submit', submitReview);
 }
 
 // Sterne aktualisieren
 function updateStars(rating) {
-    const stars = document.querySelectorAll('.rating-input i');
-    if (!stars.length) return;
+  const stars = document.querySelectorAll('.rating-input i');
+  if (!stars.length) return;
 
-    stars.forEach(star => {
-        star.classList.toggle('selected', star.getAttribute('data-rating') <= rating);
-    });
+  stars.forEach(star => {
+      star.classList.toggle('selected', star.getAttribute('data-rating') <= rating);
+  });
 }
 
 // Bewertung abbrechen
 function cancelReview() {
-    const reviewForm = document.getElementById('reviewForm');
-    const ratingInput = document.getElementById('rating');
-    const comment = document.getElementById('comment');
-    const charCount = document.getElementById('charCount');
-    
-    if (!reviewForm || !ratingInput || !comment || !charCount) {
-        console.error('Erforderliche Elemente zum Abbrechen nicht gefunden');
-        return;
-    }
+  const reviewForm = document.getElementById('reviewForm');
+  const ratingInput = document.getElementById('rating');
+  const comment = document.getElementById('comment');
+  const charCount = document.getElementById('charCount');
+  
+  if (!reviewForm || !ratingInput || !comment || !charCount) {
+      console.error('Erforderliche Elemente zum Abbrechen nicht gefunden');
+      return;
+  }
 
-    reviewForm.style.display = 'none';
-    ratingInput.value = '';
-    comment.value = '';
-    charCount.textContent = '0/250 Zeichen';
-    updateStars(0);
+  reviewForm.style.display = 'none';
+  ratingInput.value = '';
+  comment.value = '';
+  charCount.textContent = '0/250 Zeichen';
+  updateStars(0);
+}
+
+// Nutzer holen oder erstellen
+async function getOrCreateUser(name) {
+  // Versuche, User mit diesem Namen zu finden
+  let user = await fetch(`http://localhost:8080/user?name=${encodeURIComponent(name)}`)
+    .then(res => res.ok ? res.json() : null);
+
+  if (user) return user;
+
+  // Wenn nicht gefunden, neuen User anlegen
+  user = await fetch('http://localhost:8080/user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  }).then(res => res.ok ? res.json() : null);
+
+  return user;
 }
 
 // Bewertung einreichen
-async function submitReview(e) {
-    e.preventDefault();
-    
-    const ratingInput = document.getElementById('rating');
-    const comment = document.getElementById('comment');
-    const form = document.getElementById('reviewSubmitForm');
-    
-    if (!ratingInput || !comment || !form) {
-        console.error('Erforderliche Formularelemente nicht gefunden');
-        return;
-    }
-
-    const rating = ratingInput.value;
-    if (!rating) {
-        alert('Bitte wählen Sie eine Bewertung aus');
-        return;
-    }
-
-    // Hole die benötigten Daten
-    const username = form.getAttribute('data-username');
-    const serviceType = form.getAttribute('data-service-type');
-    
-    console.log('Sende Bewertung für:', username);
-    console.log('Service Typ:', serviceType);
-    console.log('Rating:', rating);
-    console.log('Kommentar:', comment.value.trim());
-
-    if (!username || !serviceType) {
-        alert('Fehlende Benutzer- oder Service-Informationen');
-        return;
-    }
-
-    // Erstelle das Review-Objekt im exakt gleichen Format wie im Backend erwartet
-    const reviewData = {
-        evaluateeUsername: username,          // Der Benutzer, der bewertet wird
-        evaluatorUsername: "currentUser",     // Der Benutzer, der die Bewertung abgibt
-        serviceType: serviceType,             // Der Typ der Dienstleistung
-        rating: parseFloat(rating),           // Die Bewertung als Double
-        comment: comment.value.trim()         // Der Kommentar
-    };
-
-    console.log('Sende Daten an Backend:', JSON.stringify(reviewData, null, 2));
-
+async function submitReview(event) {
+    event.preventDefault();
     try {
-        // Sende die Bewertung zum korrekten Endpunkt
-        const response = await fetch(`${API_URL}/reviews`, {
+        const [evaluateeId, serviceTypeId] = document.getElementById('serviceTypeSelect').value.split('|');
+        const rating = document.getElementById('ratingSelect').value;
+        const comment = document.getElementById('commentInput').value;
+
+        const response = await fetch('http://localhost:8080/review', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify(reviewData)
+            body: JSON.stringify({
+                evaluatee: { id: parseInt(evaluateeId) },
+                serviceType: { id: parseInt(serviceTypeId) },
+                rating: parseInt(rating),
+                comment
+            })
         });
 
-        console.log('Response Status:', response.status);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Server Antwort:', errorText);
-            
-            let errorMessage;
-            try {
-                const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorJson.error || errorJson.details || 'Unbekannter Fehler';
-            } catch (e) {
-                errorMessage = errorText || response.statusText || 'Unbekannter Fehler';
-            }
-            
-            throw new Error(errorMessage);
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server did not return JSON');
         }
 
-        // Erfolgreiche Speicherung
-        alert('Bewertung wurde erfolgreich gespeichert');
-        cancelReview();
-        loadAllOffers();
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to submit review');
+        }
+
+        document.getElementById('reviewFormMessage').textContent = 'Review submitted successfully!';
+        document.getElementById('reviewForm').reset();
+
     } catch (error) {
-        console.error('Fehler beim Speichern der Bewertung:', error);
-        alert('Bewertung konnte nicht gespeichert werden: ' + error.message);
+        console.error('Error:', error);
+        document.getElementById('reviewFormMessage').textContent = `Error: ${error.message}`;
     }
 }
 
 // Bewertungsprozess starten
-function startReview(serviceId, username, serviceType) {
-    const reviewForm = document.getElementById('reviewForm');
-    const form = document.getElementById('reviewSubmitForm');
-    const reviewUserName = document.getElementById('reviewUserName');
-    const reviewSubject = document.getElementById('reviewSubject');
-    
-    if (!reviewForm || !form || !reviewUserName || !reviewSubject) {
-        console.error('Erforderliche Elemente für das Bewertungsformular nicht gefunden');
-        return;
+function startReview(userId, userName, serviceType) {
+    document.getElementById('reviewedPersonInput').value = userName;
+    const serviceTypeSelect = document.getElementById('serviceTypeSelect');
+    const options = serviceTypeSelect.options;
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].textContent === serviceType) {
+            serviceTypeSelect.selectedIndex = i;
+            break;
+        }
     }
-
-    reviewUserName.textContent = username;
-    reviewSubject.textContent = serviceType;
-    
-    // Speichere die benötigten Informationen im Formular
-    form.setAttribute('data-username', username);
-    form.setAttribute('data-service-type', serviceType);
-    form.setAttribute('data-service-id', serviceId);  // Speichere auch die Service-ID
-    
-    cancelReview();
-    reviewForm.style.display = 'block';
-    reviewForm.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('reviewForm').scrollIntoView({ behavior: 'smooth' });
 }
 
 // Alle Angebote laden
 async function loadAllOffers() {
     const serviceList = document.getElementById('serviceList');
     if (!serviceList) {
-        console.error('Service-Liste nicht gefunden');
+        console.warn('Service-Liste nicht gefunden');
         return;
     }
 
@@ -239,7 +216,7 @@ async function loadAllOffers() {
 async function fetchAllReviews() {
   try {
     // Neuer Endpunkt für alle Reviews
-    const response = await fetch(`${API_URL}/review`);
+    const response = await fetch("http://localhost:8080/review");
     if (response.ok) {
       const reviews = await response.json();
       console.log("Empfangene Reviews:", reviews);
@@ -301,7 +278,7 @@ async function fetchReviewsByServiceType() {
   }
   try {
     // Neuer Endpunkt für Reviews nach Service-Typ
-    const response = await fetch(`${API_URL}/review/` + encodeURIComponent(serviceType));
+    const response = await fetch("http://localhost:8080/review/" + encodeURIComponent(serviceType));
     if (response.ok) {
       const reviews = await response.json();
       console.log("Empfangene Service-Reviews:", reviews);
@@ -361,7 +338,7 @@ async function fetchServiceRating() {
   }
   try {
     // Neuer Endpunkt für die Durchschnittsbewertung eines Service-Typs
-    const response = await fetch(`${API_URL}/review/average-rating/` + encodeURIComponent(serviceType));
+    const response = await fetch("http://localhost:8080/review/average-rating/" + encodeURIComponent(serviceType));
     if (response.ok) {
       const averageRating = await response.json();
       displayServiceRating(averageRating);
@@ -392,4 +369,40 @@ function generateStarHTML(rating) {
     }
   }
   return `${starsHTML} (${rating.toFixed(1)})`;
+}
+
+// Wenn auf "Bewerten" geklickt wird
+function startReviewFor(userId, userName, serviceType) {
+    // Formular mit den Daten vorausfüllen
+    document.getElementById('reviewedPersonInput').value = userName;
+    document.getElementById('serviceTypeSelect').value = serviceType;
+    
+    // Scrolle zum Bewertungsformular
+    document.getElementById('reviewForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Beim Laden der Seite aktive Services laden
+async function loadActiveServices() {
+    try {
+        const response = await fetch('http://localhost:8080/market');
+        if (!response.ok) throw new Error('Fehler beim Laden der Services');
+        
+        const users = await response.json();
+        const serviceTypeSelect = document.getElementById('serviceTypeSelect');
+        
+        if (users.length === 0) {
+            serviceTypeSelect.innerHTML = '<option value="">Keine aktiven Services verfügbar</option>';
+            return;
+        }
+
+        serviceTypeSelect.innerHTML = '<option value="">Bitte wählen...</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = `${user.user.id}|${user.serviceType.id}`;
+            option.textContent = `${user.serviceType.name} (Anbieter: ${user.user.name})`;
+            serviceTypeSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Fehler:', error);
+    }
 }
