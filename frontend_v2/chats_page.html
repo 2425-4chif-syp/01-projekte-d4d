@@ -224,6 +224,36 @@
       background-color: #ccc;
     }
 
+    /* Admin-spezifische Styles */
+    .admin-chat {
+      border-left: 3px solid #d4a574 !important;
+      background-color: #fefbf5;
+    }
+
+    .admin-chat:hover {
+      background-color: #fdf8ed !important;
+    }
+
+    .admin-avatar {
+      background: linear-gradient(135deg, #d4a574, #b8935e);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(212, 165, 116, 0.3);
+    }
+
+    .admin-name {
+      color: #b8935e;
+      font-weight: 600;
+    }
+
+    .chat-indicator.admin {
+      background-color: #d4a574;
+    }
+
+    .chat-category.admin-category {
+      color: #b8935e;
+      border-bottom-color: #d4a574;
+    }
+
     /* Chatbereich (rechts) */
     .chat-section {
       flex-grow: 1;
@@ -680,7 +710,7 @@
           placeholder="Kontakte durchsuchen..."
         />
       </div>
-      <button id="createChatButton">+ Neuen Chat erstellen</button>
+      
       <div id="chatItems"></div>
     </div>
 
@@ -846,7 +876,8 @@
                             user1Username: currentUser,
                             user2Username: contact.name,
                             lastMessage: lastMessage,
-                            lastUpdate: lastUpdate
+                            lastUpdate: lastUpdate,
+                            isAdmin: contact.name.toLowerCase() === 'admin'
                         };
                     } catch (error) {
                         console.error('Chat: Fehler beim Laden der letzten Nachricht für', contact.name, ':', error);
@@ -855,12 +886,16 @@
                             user1Username: currentUser,
                             user2Username: contact.name,
                             lastMessage: 'Starten Sie eine Unterhaltung',
-                            lastUpdate: new Date().toISOString()
+                            lastUpdate: new Date().toISOString(),
+                            isAdmin: contact.name.toLowerCase() === 'admin'
                         };
                     }
                 });
             
             chats = await Promise.all(chatPromises);
+            
+            // 3. Admin-Chat erstellen/sicherstellen
+            await ensureAdminChat();
             
             console.log('Chat: Verarbeitete Chats mit letzten Nachrichten:', chats);
             
@@ -878,37 +913,81 @@
         }
     }
     
+    // Stelle sicher, dass ein Admin-Chat existiert
+    async function ensureAdminChat() {
+        // Prüfe ob Admin bereits in den Chats ist
+        let adminChat = chats.find(chat => chat.isAdmin || chat.user2Username.toLowerCase() === 'admin');
+        
+        if (!adminChat) {
+            // Erstelle Admin-Chat wenn er nicht existiert
+            console.log('Chat: Erstelle Admin-Chat');
+            
+            adminChat = {
+                id: 'admin-chat',
+                user1Username: currentUser,
+                user2Username: 'Admin',
+                lastMessage: 'Hallo, schreibe mir wenn du Hilfe brauchst.',
+                lastUpdate: new Date().toISOString(),
+                isAdmin: true,
+                isPinned: true
+            };
+            
+            // Füge Admin-Chat an den Anfang hinzu
+            chats.unshift(adminChat);
+        } else {
+            // Markiere existierenden Admin-Chat als gepinnt
+            adminChat.isPinned = true;
+            adminChat.isAdmin = true;
+            
+            // Wenn Admin-Chat keine Nachricht hat, setze Willkommensnachricht
+            if (!adminChat.lastMessage || adminChat.lastMessage === 'Starten Sie eine Unterhaltung') {
+                adminChat.lastMessage = 'Hallo, schreibe mir wenn du Hilfe brauchst.';
+                adminChat.lastUpdate = new Date().toISOString();
+            }
+        }
+    }
+    
     // Fallback: Zeige Demo-Chats wenn Backend nicht verfügbar
     function showFallbackChats() {
         console.log('Chat: Zeige Fallback-Chats für:', currentUser);
         
         chats = [
+            // ADMIN-CHAT IMMER ZUERST
+            {
+                id: 'admin-chat',
+                user1Username: currentUser,
+                user2Username: 'Admin',
+                lastMessage: 'Hallo, schreibe mir wenn du Hilfe brauchst.',
+                lastUpdate: new Date().toISOString(),
+                isAdmin: true,
+                isPinned: true
+            },
             {
                 id: 'demo-1',
                 user1Username: currentUser,
                 user2Username: "Anna Berghuber",
-                lastMessage: "Hallo! Können wir heute lernen?",
+                lastMessage: "Starten Sie eine Unterhaltung",
                 lastUpdate: new Date().toISOString()
             },
             {
                 id: 'demo-2',
                 user1Username: "Tom Steinmann",
                 user2Username: currentUser,
-                lastMessage: "Danke für die Hilfe in Mathe!",
+                lastMessage: "Starten Sie eine Unterhaltung",
                 lastUpdate: new Date(Date.now() - 3600000).toISOString()
             },
             {
                 id: 'demo-3',
                 user1Username: currentUser,
                 user2Username: "Lena Waldschmidt",
-                lastMessage: "Wann hast du Zeit für Programmierung?",
+                lastMessage: "Starten Sie eine Unterhaltung",
                 lastUpdate: new Date(Date.now() - 7200000).toISOString()
             },
             {
                 id: 'demo-4',
                 user1Username: "Robert Steinhuber",
                 user2Username: currentUser,
-                lastMessage: "Super, dass du mir bei BWL hilfst!",
+                lastMessage: "Starten Sie eine Unterhaltung",
                 lastUpdate: new Date(Date.now() - 10800000).toISOString()
             }
         ];
@@ -957,45 +1036,13 @@
         return 'Unbekannt';
     }
     
-    // Demo-Nachrichten anzeigen - BEHALTE DIESE AUCH NACH ECHTEN NACHRICHTEN
+    // Demo-Nachrichten anzeigen - ENTFERNT - KEINE VORGEFERTIGTEN NACHRICHTEN MEHR
     function showDemoMessages(otherUser) {
         const chatMessages = document.getElementById('chatMessages');
         if (!chatMessages) return;
         
-        chatMessages.innerHTML = '';
-        
-        const demoMessages = [
-            {
-                sender: otherUser,
-                content: "Hallo! Wie geht es dir?",
-                time: "14:30"
-            },
-            {
-                sender: currentUser,
-                content: "Hi! Mir geht es gut, danke! Können wir heute lernen?",
-                time: "14:32"
-            },
-            {
-                sender: otherUser,
-                content: "Ja gerne! Um welche Zeit passt es dir?",
-                time: "14:35"
-            }
-        ];
-        
-        demoMessages.forEach(msg => {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msg.sender === currentUser ? 'user' : 'other'}`;
-            
-            messageDiv.innerHTML = `
-                <div class="message-sender">${escapeHtml(msg.sender)}</div>
-                <div>${escapeHtml(msg.content)}</div>
-                <div class="message-time">${msg.time}</div>
-            `;
-            
-            chatMessages.appendChild(messageDiv);
-        });
-        
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Zeige immer leeren Chat - KEINE vorgefertigten Nachrichten
+        showEmptyChat();
     }
     
     function showNoChatsMessage() {
@@ -1131,7 +1178,7 @@
         });
     }
     
-    // Rendere Chat-Liste mit Kategorien
+    // Rendere Chat-Liste mit Kategorien und Admin-Chat
     function renderChatList() {
         const chatList = document.getElementById('chatItems');
         if (!chatList) {
@@ -1147,13 +1194,16 @@
         }
         
         // Teile Chats in Kategorien auf
-        const activeChats = chats.filter(chat => 
+        const adminChats = chats.filter(chat => chat.isAdmin || chat.isPinned);
+        const regularChats = chats.filter(chat => !chat.isAdmin && !chat.isPinned);
+        
+        const activeChats = regularChats.filter(chat => 
             chat.lastMessage && 
             chat.lastMessage !== 'Starten Sie eine Unterhaltung' && 
             chat.lastMessage.trim() !== ''
         );
         
-        const newChats = chats.filter(chat => 
+        const newChats = regularChats.filter(chat => 
             !chat.lastMessage || 
             chat.lastMessage === 'Starten Sie eine Unterhaltung' || 
             chat.lastMessage.trim() === ''
@@ -1162,7 +1212,19 @@
         // Sortiere aktive Chats nach letzter Aktivität
         activeChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
         
-        // Zeige aktive Chats zuerst
+        // 1. ADMIN-CHAT GANZ OBEN (angepinnt)
+        if (adminChats.length > 0) {
+            const adminCategoryHeader = document.createElement('div');
+            adminCategoryHeader.className = 'chat-category admin-category';
+            adminCategoryHeader.innerHTML = '<i class="fas fa-crown"></i> Support';
+            chatList.appendChild(adminCategoryHeader);
+            
+            adminChats.forEach(chat => {
+                renderChatItem(chat, chatList, true);
+            });
+        }
+        
+        // 2. Aktive Chats
         if (activeChats.length > 0) {
             const activeCategoryHeader = document.createElement('div');
             activeCategoryHeader.className = 'chat-category';
@@ -1174,7 +1236,7 @@
             });
         }
         
-        // Zeige neue Chats
+        // 3. Neue Chats
         if (newChats.length > 0) {
             const newCategoryHeader = document.createElement('div');
             newCategoryHeader.className = 'chat-category';
@@ -1186,16 +1248,16 @@
             });
         }
         
-        console.log(`Chat: ${activeChats.length} aktive und ${newChats.length} neue Chats gerendert`);
+        console.log(`Chat: ${adminChats.length} Admin, ${activeChats.length} aktive und ${newChats.length} neue Chats gerendert`);
     }
     
     // Hilfsfunktion: Einzelnen Chat-Item rendern
-    function renderChatItem(chat, container) {
+    function renderChatItem(chat, container, isAdmin = false) {
         const otherUser = chat.user2Username;
         const firstLetter = otherUser.charAt(0).toUpperCase();
         
         const chatItem = document.createElement('div');
-        chatItem.className = 'chat-item';
+        chatItem.className = `chat-item ${isAdmin ? 'admin-chat' : ''}`;
         chatItem.setAttribute('data-chat-id', chat.id);
         
         // Bestimme ob Chat aktiv ist (hat Nachrichten)
@@ -1203,15 +1265,19 @@
                            chat.lastMessage !== 'Starten Sie eine Unterhaltung' && 
                            chat.lastMessage.trim() !== '';
         
+        // Admin bekommt spezielle Krone im Avatar
+        const avatarContent = isAdmin ? '<i class="fas fa-crown"></i>' : firstLetter;
+        const avatarClass = isAdmin ? 'chat-avatar admin-avatar' : 'chat-avatar';
+        
         chatItem.innerHTML = `
-            <div class="chat-avatar">${firstLetter}</div>
+            <div class="${avatarClass}">${avatarContent}</div>
             <div class="chat-details">
-                <div class="chat-name">${escapeHtml(otherUser)}</div>
+                <div class="chat-name ${isAdmin ? 'admin-name' : ''}">${escapeHtml(otherUser)}</div>
                 <div class="chat-last-message ${hasMessages ? 'has-messages' : 'no-messages'}">${escapeHtml(chat.lastMessage || 'Neue Unterhaltung starten')}</div>
             </div>
             <div class="chat-meta">
                 <div class="chat-time">${hasMessages ? formatTime(chat.lastUpdate) : ''}</div>
-                ${hasMessages ? '<div class="chat-indicator active"></div>' : '<div class="chat-indicator new"></div>'}
+                ${isAdmin ? '<div class="chat-indicator admin"></div>' : (hasMessages ? '<div class="chat-indicator active"></div>' : '<div class="chat-indicator new"></div>')}
             </div>
         `;
         
