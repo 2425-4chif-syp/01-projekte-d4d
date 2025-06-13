@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dienstleistungen anbieten</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <button onclick="window.location.href='index.html'" class="logo-button">
+                <i class="fas fa-handshake"></i>
+                <span>D4D</span>
+            </button>
+        </div>
+        <div class="nav-buttons">
+            <button id="marketButton" onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
+            </button>
+            <button id="reviewButton" onclick="window.location.href='reviews.html'">
+                <i class="fas fa-star"></i>
+                Bewertungen
+            </button>
+            <button onclick="window.location.href='chats_page.html'">
+                <i class="fas fa-comments"></i>
+                Chat
+            </button>
+            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+                <i class="fas fa-cog"></i>
+                Verwaltung
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="search-section">
+            <!-- Erweiterte Suchleiste -->
+            <div class="search-container">
+                <div class="search-row">
+                    <!-- Namenssuche -->
+                    <div class="search-box">
+                        <i class="fas fa-user search-icon"></i>
+                        <input type="text" id="nameSearchInput" placeholder="Nach Namen suchen...">
+                    </div>
+                    
+                    <!-- Fach/Kategorie Filter -->
+                    <div class="search-box">
+                        <select id="filterService" class="filter-select">
+                            <option value="all">Alle Fächer</option>
+                            <!-- Optionen werden per JavaScript geladen -->
+                        </select>
+                    </div>
+                </div>
+                <div class="search-row date-search-row">
+                    <!-- Zeitraum Suche - Von Datum -->
+                    <div class="search-box date-box">
+                        <label for="fromDateInput"></label>
+                        <input type="date" 
+                               id="fromDateInput" 
+                               placeholder="Von Datum...">
+                    </div>
+
+                    <!-- Zeitraum Suche - Bis Datum -->
+                    <div class="search-box date-box">
+                        <label for="toDateInput"></label>
+                        <input type="date" 
+                               id="toDateInput" 
+                               placeholder="Bis Datum...">
+                    </div>
+                </div>
+                <div class="search-row">
+                    <!-- Erweiterte Suche -->
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="detailSearchInput" placeholder="In Beschreibung suchen...">
+                    </div>
+                </div>
+                
+                <!-- Checkbox für geschlossene Märkte -->
+                <div class="search-row checkbox-row">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showClosedMarkets" name="showClosedMarkets">
+                        <label for="showClosedMarkets">Geschlossene Märkte anzeigen</label>
+                    </div>
+                </div>
+                
+                <!-- Such-Tags -->
+                <div class="search-tags">
+                    <div id="selectedTags" class="selected-tags"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h1><i class="fas fa-list-alt"></i> Marktplatz</h1>
+            <ul id="serviceList"></ul>
+        </div>
+    </main>
+
+    <script type="module" src="scripts/showOffers.js"></script>
+    <script type="module" src="scripts/navbar-compat.js"></script>
+</body>
+</html>
+

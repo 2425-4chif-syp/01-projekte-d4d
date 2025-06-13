@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dienstleistungen anbieten</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="styles/makeOffer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <button onclick="window.location.href='index.html'" class="logo-button">
+                <i class="fas fa-handshake"></i>
+                <span>D4D</span>
+            </button>
+        </div>
+        <div class="username-input-container">
+            <input type="text" id="navUsername" placeholder="Benutzername eingeben..." class="username-input">
+        </div>
+        <div class="active-user-container">
+            <span class="active-user-label">Aktiver Benutzer:</span>
+            <span id="activeUserDisplay" class="active-user-name">Nicht angemeldet</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="marketButton" onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
+            </button>
+            <button id="reviewButton" onclick="window.location.href='reviews.html'">
+                <i class="fas fa-star"></i>
+                Bewertungen
+            </button>
+            <button onclick="window.location.href='chats_page.html'">
+                <i class="fas fa-comments"></i>
+                Chat
+            </button>
+            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+                <i class="fas fa-cog"></i>
+                Verwaltung
+            </button>
+        </div>
+    </nav>
+    <main class="container">
+        <div class="content-section">
+            <h2><i class="fas fa-plus-circle"></i> Angebote und Nachfragen erstellen</h2>
+            
+            <div class="card">
+                <div class="card-body">
+                    <p class="instruction">Klicke auf die Dienstleistungen, die du anbieten oder in Anspruch nehmen möchtest.</p>
+                    
+                    <div class="service-categories">
+                        <div class="service-category">
+                            <h4>Angebote</h4>
+                            <div id="offeredServicesList" class="service-list">
+                            </div>
+                        </div>
+                        
+                        <div class="service-category">
+                            <h4>Nachfragen</h4>
+                            <div id="demandedServicesList" class="service-list">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="submitButton">
+                    <i class="fas fa-paper-plane"></i>
+                    Einreichen
+                </button>
+                <div class="response-message"></div>
+            </div>
+        </div>
+    </main>
+    <script type="module" src="scripts/makeOffer.js"></script>
+    <script type="module" src="scripts/navbar-compat.js"></script>
+</body>
+</html>
+

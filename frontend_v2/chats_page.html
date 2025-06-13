@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat - D4D</title>
+  <!-- Einbindung der CSS-Dateien -->
+  <link rel="stylesheet" href="styles/showOffers.css">
+  <link rel="stylesheet" href="styles/chats_page.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Navigation - exakt wie in showUserServices.html -->
+  <nav class="navbar">
+    <div class="logo">
+      <button onclick="window.location.href='index.html'" class="logo-button">
+        <i class="fas fa-handshake"></i>
+        <span>D4D</span>
+      </button>
+    </div>
+    <div class="username-input-container">
+      <input type="text" id="navUsername" placeholder="Benutzername eingeben..." class="username-input">
+    </div>
+    <div class="active-user-container">
+      <span class="active-user-label">Aktiver Benutzer:</span>
+      <span id="activeUserDisplay" class="active-user-name">Nicht angemeldet</span>
+    </div>
+    <div class="nav-buttons">
+      <button id="marketButton" onclick="window.location.href='showOffers.html'">
+        <i class="fas fa-store"></i>
+        Zum Markt
+      </button>
+      <button id="offerButton" onclick="window.location.href='makeOffer.html'">
+        <i class="fas fa-plus"></i>
+        Dienstleistung anbieten
+      </button>
+      <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
+        <i class="fas fa-search"></i>
+        Services
+      </button>
+      <button id="reviewButton" onclick="window.location.href='reviews.html'">
+        <i class="fas fa-star"></i>
+        Bewertungen
+      </button>
+      <button onclick="window.location.href='chats_page.html'" class="active-chat">
+        <i class="fas fa-comments"></i>
+        Chat
+      </button>
+      <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+        <i class="fas fa-cog"></i>
+        Verwaltung
+      </button>
+    </div>
+  </nav>
+
+  <!-- Chat Container -->
+  <main class="chat-page-container">
+    <div class="chat-list">
+      <h3>Chats</h3>
+      <!-- Suchanzeige für Kontakte -->
+      <div class="search-container">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Kontakte durchsuchen..."
+        />
+      </div>
+      
+      <div id="chatItems"></div>
+    </div>
+
+    <div class="chat-section">
+      <h2>
+        <i class="fas fa-comments"></i>
+        <span id="chatTitle">Bitte wähle einen Chat</span>
+      </h2>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-form-container">
+        <!-- Vorschau für Bild-Upload -->
+        <div id="imagePreview" style="display: none;"></div>
+        <form id="chatForm">
+          <div class="chat-input-group">
+            <label for="chatImage" class="image-upload">
+              <i class="fas fa-image"></i>
+            </label>
+            <input
+              type="file"
+              id="chatImage"
+              accept="image/*"
+              style="display: none;"
+            />
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="Nachricht schreiben..."
+            />
+            <button type="submit">
+              <i class="fas fa-paper-plane"></i> Senden
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Neuen Chat erstellen -->
+  <div class="modal" id="chatModal">
+    <h3>Neuer Chat</h3>
+    <input type="text" id="chatName" placeholder="Chat Name" />
+    <button onclick="createNewChat()">Erstellen</button>
+    <button onclick="closeChatCreation()">Abbrechen</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/chats_page.js"></script>
+  <script src="scripts/navbar-compat.js"></script>
+</body>
+</html>

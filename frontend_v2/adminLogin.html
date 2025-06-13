@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <button onclick="window.location.href='index.html'" class="logo-button">
+                <i class="fas fa-handshake"></i>
+                <span>D4D</span>
+            </button>
+        </div>
+        <div class="nav-buttons">
+            <button onclick="window.location.href='showOffers.html'">
+                <i class="fas fa-store"></i>
+                Zum Markt
+            </button>
+            <button onclick="window.location.href='makeOffer.html'">
+                <i class="fas fa-plus"></i>
+                Dienstleistung anbieten
+            </button>
+            <button onclick="window.location.href='showUserServices.html'">
+                <i class="fas fa-search"></i>
+                Services
+            </button>
+            <button onclick="window.location.href='reviews.html'">
+                <i class="fas fa-star"></i>
+                Bewertungen
+            </button>
+            <button onclick="window.location.href='chats_page.html'">
+                <i class="fas fa-comments"></i>
+                Chat
+            </button>
+            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
+                <i class="fas fa-cog"></i>
+                Verwaltung
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="content-section">
+            <h2><i class="fas fa-lock"></i> Admin Login</h2>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="username">Benutzername:</label>
+                        <input type="text" id="username" placeholder="Benutzername eingeben..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Passwort:</label>
+                        <input type="password" id="password" placeholder="Passwort eingeben..." required>
+                    </div>
+
+                    <button id="loginButton">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Einloggen
+                    </button>
+
+                    <div class="response-message"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="scripts/adminLogin.js"></script>
+    <script src="scripts/navbar-compat.js"></script>
+</body>
+</html>
