@@ -932,7 +932,7 @@
         return 'Unbekannt';
     }
     
-    // Demo-Nachrichten anzeigen
+    // Demo-Nachrichten anzeigen - BEHALTE DIESE AUCH NACH ECHTEN NACHRICHTEN
     function showDemoMessages(otherUser) {
         const chatMessages = document.getElementById('chatMessages');
         if (!chatMessages) return;
@@ -971,21 +971,6 @@
         });
         
         chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    
-    // Hilfsfunktion: Aktuelle Benutzer-ID ermitteln mit Fallback
-    async function getCurrentUserId() {
-        try {
-            const usersResponse = await fetch(`${API_URL}/chatentry/users`);
-            if (usersResponse.ok) {
-                const users = await usersResponse.json();
-                const user = users.find(u => u.name === currentUser);
-                return user ? user.id : 1;
-            }
-        } catch (error) {
-            console.error('Chat: Fehler beim Ermitteln der User-ID:', error);
-        }
-        return 1; // Fallback
     }
     
     function showNoChatsMessage() {
@@ -1330,8 +1315,13 @@
             
             if (response.ok) {
                 console.log('Chat: Nachricht erfolgreich gesendet');
-                // Nachrichten neu laden
+                
+                // 1. Sofort Chat-Liste aktualisieren
+                updateChatListAfterMessage(message);
+                
+                // 2. Nachrichten neu laden
                 await loadRealMessages(currentChatId);
+                
                 showMessage('Nachricht gesendet', 'success');
             } else {
                 throw new Error(`API Error: ${response.status}`);
@@ -1343,7 +1333,7 @@
         }
     }
     
-    // Demo-Nachricht senden (Fallback)
+    // Demo-Nachricht senden (Fallback) - MIT SOFORTIGER CHAT-LISTE AKTUALISIERUNG
     function sendDemoMessage(message) {
         const chatMessages = document.getElementById('chatMessages');
         if (!chatMessages || !currentChatId) return;
@@ -1363,12 +1353,8 @@
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
-        // Update last message in chat list
-        const chat = chats.find(c => c.id === currentChatId);
-        if (chat) {
-            chat.lastMessage = message;
-            renderChatList();
-        }
+        // Sofort Chat-Liste aktualisieren
+        updateChatListAfterMessage(message);
         
         // Automatische Demo-Antwort nach 2 Sekunden
         setTimeout(() => {
@@ -1397,12 +1383,41 @@
             chatMessages.appendChild(responseDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // Update chat list
-            if (chat) {
-                chat.lastMessage = randomResponse;
-                renderChatList();
-            }
+            // Auch nach der Antwort Chat-Liste aktualisieren
+            updateChatListAfterMessage(randomResponse);
         }, 2000);
+    }
+    
+    // Neue Hilfsfunktion: Chat-Liste nach Nachricht aktualisieren
+    function updateChatListAfterMessage(message) {
+        const chat = chats.find(c => c.id === currentChatId);
+        if (chat) {
+            chat.lastMessage = message;
+            chat.lastUpdate = new Date().toISOString();
+            
+            // Chat-Liste sofort neu rendern
+            renderChatList();
+            
+            // Aktiven Chat wieder markieren
+            setTimeout(() => {
+                document.querySelector(`[data-chat-id="${currentChatId}"]`)?.classList.add('active');
+            }, 100);
+        }
+    }
+    
+    // Hilfsfunktion: Aktuelle Benutzer-ID ermitteln mit Fallback
+    async function getCurrentUserId() {
+        try {
+            const usersResponse = await fetch(`${API_URL}/chatentry/users`);
+            if (usersResponse.ok) {
+                const users = await usersResponse.json();
+                const user = users.find(u => u.name === currentUser);
+                return user ? user.id : 1;
+            }
+        } catch (error) {
+            console.error('Chat: Fehler beim Ermitteln der User-ID:', error);
+        }
+        return 1; // Fallback
     }
     
     console.log('Chat: Initialisierung abgeschlossen');
