@@ -795,26 +795,55 @@
                 return;
             }
             
-            // 2. Für jeden Kontakt Chat-Daten aufbauen
-            const chatResults = contacts
+            // 2. Für jeden Kontakt Chat-Daten aufbauen und letzte Nachricht laden
+            const currentUserId = await getCurrentUserId();
+            const chatPromises = contacts
                 .filter(contact => contact.name !== currentUser) // Nicht mit sich selbst chatten
-                .map(contact => ({
-                    id: contact.id,
-                    user1Username: currentUser,
-                    user2Username: contact.name,
-                    lastMessage: 'Starten Sie eine Unterhaltung',
-                    lastUpdate: new Date().toISOString()
-                }));
+                .map(async (contact) => {
+                    try {
+                        // Lade letzte Nachrichten zwischen currentUser und diesem Kontakt
+                        const messagesResponse = await fetch(`${API_URL}/chatentry/${currentUserId}/${contact.id}`);
+                        
+                        let lastMessage = 'Starten Sie eine Unterhaltung';
+                        let lastUpdate = new Date().toISOString();
+                        
+                        if (messagesResponse.ok) {
+                            const messages = await messagesResponse.json();
+                            if (messages.length > 0) {
+                                const lastMsg = messages[messages.length - 1];
+                                lastMessage = lastMsg.message || 'Nachricht';
+                                lastUpdate = lastMsg.time || new Date().toISOString();
+                            }
+                        }
+                        
+                        return {
+                            id: contact.id,
+                            user1Username: currentUser,
+                            user2Username: contact.name,
+                            lastMessage: lastMessage,
+                            lastUpdate: lastUpdate
+                        };
+                    } catch (error) {
+                        console.error('Chat: Fehler beim Laden der letzten Nachricht für', contact.name, ':', error);
+                        return {
+                            id: contact.id,
+                            user1Username: currentUser,
+                            user2Username: contact.name,
+                            lastMessage: 'Starten Sie eine Unterhaltung',
+                            lastUpdate: new Date().toISOString()
+                        };
+                    }
+                });
             
-            chats = chatResults;
+            chats = await Promise.all(chatPromises);
             
-            console.log('Chat: Verarbeitete Chats:', chats);
+            console.log('Chat: Verarbeitete Chats mit letzten Nachrichten:', chats);
             
             if (chats.length === 0) {
                 showFallbackChats();
             } else {
                 renderChatList();
-                showMessage(`${chats.length} Kontakte für Chats gefunden`, 'success');
+                showMessage(`${chats.length} Chats mit letzten Nachrichten geladen`, 'success');
             }
             
         } catch (error) {
