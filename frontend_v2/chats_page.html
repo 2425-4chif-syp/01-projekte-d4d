@@ -915,6 +915,12 @@
     
     // Stelle sicher, dass ein Admin-Chat existiert
     async function ensureAdminChat() {
+        // Prüfe ob der aktuelle Benutzer der Admin ist
+        if (currentUser && currentUser.toLowerCase() === 'admin') {
+            console.log('Chat: Aktueller Benutzer ist Admin - kein Admin-Chat nötig');
+            return; // Admin chattet nicht mit sich selbst
+        }
+        
         // Prüfe ob Admin bereits in den Chats ist
         let adminChat = chats.find(chat => chat.isAdmin || chat.user2Username.toLowerCase() === 'admin');
         
@@ -951,9 +957,11 @@
     function showFallbackChats() {
         console.log('Chat: Zeige Fallback-Chats für:', currentUser);
         
-        chats = [
-            // ADMIN-CHAT IMMER ZUERST
-            {
+        chats = [];
+        
+        // ADMIN-CHAT NUR WENN AKTUELLER BENUTZER NICHT ADMIN IST
+        if (currentUser && currentUser.toLowerCase() !== 'admin') {
+            chats.push({
                 id: 'admin-chat',
                 user1Username: currentUser,
                 user2Username: 'Admin',
@@ -961,7 +969,11 @@
                 lastUpdate: new Date().toISOString(),
                 isAdmin: true,
                 isPinned: true
-            },
+            });
+        }
+        
+        // Reguläre Demo-Chats hinzufügen
+        chats.push(
             {
                 id: 'demo-1',
                 user1Username: currentUser,
@@ -990,7 +1002,7 @@
                 lastMessage: "Starten Sie eine Unterhaltung",
                 lastUpdate: new Date(Date.now() - 10800000).toISOString()
             }
-        ];
+        );
         
         renderChatList();
         showMessage('Demo-Chats geladen (Backend nicht verfügbar)', 'info');
