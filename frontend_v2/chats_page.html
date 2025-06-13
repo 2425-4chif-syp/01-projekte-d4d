@@ -312,15 +312,15 @@
     .message.user {
       background-color: var(--primary-color);
       color: #fff;
-      align-self: flex-start;
-      border-bottom-left-radius: 5px;
+      align-self: flex-end;
+      border-bottom-right-radius: 5px;
     }
 
     .message.other {
       background-color: #fff;
       color: var(--text-color);
-      align-self: flex-end;
-      border-bottom-right-radius: 5px;
+      align-self: flex-start;
+      border-bottom-left-radius: 5px;
     }
 
     .message.system {
@@ -653,10 +653,9 @@
           type="text"
           id="searchInput"
           placeholder="Kontakte durchsuchen..."
-          oninput="filterContacts()"
         />
       </div>
-      <button onclick="openChatCreation()">+ Neuen Chat erstellen</button>
+      <button id="createChatButton">+ Neuen Chat erstellen</button>
       <div id="chatItems"></div>
     </div>
 
@@ -703,7 +702,682 @@
   </div>
 
   <!-- Scripts - einschließlich navbar-compat.js für die Anmeldefunktionalität -->
-  <script src="scripts/chat-script.js"></script>
+  <script>
+    // Chat-Funktionalität - MIT BESSEREN FALLBACKS
+    console.log('Chat: Script startet');
+    
+    const API_URL = "http://localhost/api"; // Verwende das gleiche API wie andere Seiten
+    let currentChatId = null;
+    let currentUser = null;
+    let chats = [];
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Chat: DOM geladen');
+        
+        // Lade aktiven Benutzer aus der API
+        loadActiveUser();
+        setupEventListeners();
+    });
+    
+    // Lade aktiven Benutzer (wie in showUserServices)
+    function loadActiveUser() {
+        fetch(`${API_URL}/user`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Fehler beim Abrufen des aktiven Benutzers");
+                }
+                return response.text();
+            })
+            .then(responseText => {
+                try {
+                    const responseJson = JSON.parse(responseText);
+                    currentUser = responseJson.username || null;
+                } catch (e) {
+                    currentUser = responseText && responseText.trim() !== "" ? responseText : null;
+                }
+                
+                if (currentUser) {
+                    console.log('Chat: Aktiver Benutzer geladen:', currentUser);
+                    loadRealChats();
+                } else {
+                    console.log('Chat: Kein aktiver Benutzer, zeige Info');
+                    showNoUserMessage();
+                }
+            })
+            .catch(error => {
+                console.error('Chat: API nicht verfügbar, verwende localStorage:', error);
+                const savedUser = localStorage.getItem('activeUser');
+                if (savedUser) {
+                    currentUser = savedUser;
+                    console.log('Chat: Aktiver Benutzer aus localStorage:', currentUser);
+                    loadRealChats();
+                } else {
+                    showNoUserMessage();
+                }
+            });
+    }
+    
+    function showNoUserMessage() {
+        const chatList = document.getElementById('chatItems');
+        if (chatList) {
+            chatList.innerHTML = '<div class="no-contacts">Bitte melden Sie sich zuerst an.<br><small>Geben Sie einen Benutzernamen in die obere Suchleiste ein und drücken Enter.</small></div>';
+        }
+    }
+    
+    // Lade echte Chats aus dem Backend mit Fallback
+    async function loadRealChats() {
+        if (!currentUser) {
+            showNoUserMessage();
+            return;
+        }
+        
+        console.log('Chat: Lade echte Chats für Benutzer:', currentUser);
+        
+        try {
+            // 1. Versuche Chat-Endpunkte zu laden
+            let contactsResponse;
+            try {
+                contactsResponse = await fetch(`${API_URL}/chatentry/users`);
+            } catch (error) {
+                console.log('Chat: Chatentry API nicht verfügbar, versuche alternative Endpunkte');
+                throw error;
+            }
+            
+            if (!contactsResponse.ok) {
+                throw new Error(`API Error: ${contactsResponse.status}`);
+            }
+            
+            const contacts = await contactsResponse.json();
+            console.log('Chat: Benutzer von API erhalten:', contacts);
+            
+            if (contacts.length === 0) {
+                showFallbackChats();
+                return;
+            }
+            
+            // 2. Für jeden Kontakt Chat-Daten aufbauen
+            const chatResults = contacts
+                .filter(contact => contact.name !== currentUser) // Nicht mit sich selbst chatten
+                .map(contact => ({
+                    id: contact.id,
+                    user1Username: currentUser,
+                    user2Username: contact.name,
+                    lastMessage: 'Starten Sie eine Unterhaltung',
+                    lastUpdate: new Date().toISOString()
+                }));
+            
+            chats = chatResults;
+            
+            console.log('Chat: Verarbeitete Chats:', chats);
+            
+            if (chats.length === 0) {
+                showFallbackChats();
+            } else {
+                renderChatList();
+                showMessage(`${chats.length} Kontakte für Chats gefunden`, 'success');
+            }
+            
+        } catch (error) {
+            console.error('Chat: Fehler beim Laden der echten Chats:', error);
+            showMessage('Backend nicht verfügbar - zeige Demo-Chats', 'warning');
+            showFallbackChats();
+        }
+    }
+    
+    // Fallback: Zeige Demo-Chats wenn Backend nicht verfügbar
+    function showFallbackChats() {
+        console.log('Chat: Zeige Fallback-Chats für:', currentUser);
+        
+        chats = [
+            {
+                id: 'demo-1',
+                user1Username: currentUser,
+                user2Username: "Anna Berghuber",
+                lastMessage: "Hallo! Können wir heute lernen?",
+                lastUpdate: new Date().toISOString()
+            },
+            {
+                id: 'demo-2',
+                user1Username: "Tom Steinmann",
+                user2Username: currentUser,
+                lastMessage: "Danke für die Hilfe in Mathe!",
+                lastUpdate: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+                id: 'demo-3',
+                user1Username: currentUser,
+                user2Username: "Lena Waldschmidt",
+                lastMessage: "Wann hast du Zeit für Programmierung?",
+                lastUpdate: new Date(Date.now() - 7200000).toISOString()
+            },
+            {
+                id: 'demo-4',
+                user1Username: "Robert Steinhuber",
+                user2Username: currentUser,
+                lastMessage: "Super, dass du mir bei BWL hilfst!",
+                lastUpdate: new Date(Date.now() - 10800000).toISOString()
+            }
+        ];
+        
+        renderChatList();
+        showMessage('Demo-Chats geladen (Backend nicht verfügbar)', 'info');
+    }
+    
+    // Lade echte Nachrichten für einen Chat mit Fallback
+    async function loadRealMessages(chatId) {
+        if (!currentChatId || !currentUser) return;
+        
+        console.log('Chat: Lade Nachrichten für Chat ID:', chatId);
+        
+        // Prüfe ob es ein Demo-Chat ist
+        if (typeof chatId === 'string' && chatId.startsWith('demo-')) {
+            showDemoMessages(getOtherUserFromChat(chatId));
+            return;
+        }
+        
+        try {
+            // Versuche echte Nachrichten zu laden
+            const currentUserId = await getCurrentUserId();
+            const response = await fetch(`${API_URL}/chatentry/${currentUserId}/${chatId}`);
+            
+            if (response.ok) {
+                const messages = await response.json();
+                console.log('Chat: Echte Nachrichten von API erhalten:', messages);
+                renderRealMessages(messages);
+            } else {
+                console.log('Chat: Keine echten Nachrichten gefunden, zeige Demo');
+                showDemoMessages(getOtherUserFromChat(chatId));
+            }
+        } catch (error) {
+            console.error('Chat: Fehler beim Laden von Nachrichten:', error);
+            showDemoMessages(getOtherUserFromChat(chatId));
+        }
+    }
+    
+    // Hilfsfunktion: Anderen Benutzer aus Chat ermitteln
+    function getOtherUserFromChat(chatId) {
+        const chat = chats.find(c => c.id === chatId);
+        if (chat) {
+            return chat.user1Username === currentUser ? chat.user2Username : chat.user1Username;
+        }
+        return 'Unbekannt';
+    }
+    
+    // Demo-Nachrichten anzeigen
+    function showDemoMessages(otherUser) {
+        const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages) return;
+        
+        chatMessages.innerHTML = '';
+        
+        const demoMessages = [
+            {
+                sender: otherUser,
+                content: "Hallo! Wie geht es dir?",
+                time: "14:30"
+            },
+            {
+                sender: currentUser,
+                content: "Hi! Mir geht es gut, danke! Können wir heute lernen?",
+                time: "14:32"
+            },
+            {
+                sender: otherUser,
+                content: "Ja gerne! Um welche Zeit passt es dir?",
+                time: "14:35"
+            }
+        ];
+        
+        demoMessages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.sender === currentUser ? 'user' : 'other'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">${escapeHtml(msg.sender)}</div>
+                <div>${escapeHtml(msg.content)}</div>
+                <div class="message-time">${msg.time}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+        });
+        
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Hilfsfunktion: Aktuelle Benutzer-ID ermitteln mit Fallback
+    async function getCurrentUserId() {
+        try {
+            const usersResponse = await fetch(`${API_URL}/chatentry/users`);
+            if (usersResponse.ok) {
+                const users = await usersResponse.json();
+                const user = users.find(u => u.name === currentUser);
+                return user ? user.id : 1;
+            }
+        } catch (error) {
+            console.error('Chat: Fehler beim Ermitteln der User-ID:', error);
+        }
+        return 1; // Fallback
+    }
+    
+    function showNoChatsMessage() {
+        const chatList = document.getElementById('chatItems');
+        if (chatList) {
+            chatList.innerHTML = '<div class="no-contacts">Keine Chats vorhanden<br><small>Sie haben noch keine Chat-Nachrichten</small></div>';
+        }
+    }
+    
+    function showEmptyChat() {
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.innerHTML = '<div class="empty-chat-info"><i class="fas fa-comments"></i><p>Noch keine Nachrichten in diesem Chat<br><small>Schreiben Sie die erste Nachricht!</small></p></div>';
+        }
+    }
+    
+    // Event Listeners
+    function setupEventListeners() {
+        // Navbar-Suchfeld (für Anmeldung)
+        const navUsernameInput = document.getElementById('navUsername');
+        if (navUsernameInput) {
+            navUsernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const username = this.value.trim();
+                    if (username) {
+                        setActiveUser(username);
+                    }
+                }
+            });
+        }
+        
+        // Chat-Suchfeld (für Personensuche) - UNTEN LINKS
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', filterContacts);
+        }
+        
+        // Chat-Form
+        const chatForm = document.getElementById('chatForm');
+        if (chatForm) {
+            chatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput && chatInput.value.trim() && currentChatId) {
+                    sendRealMessage(chatInput.value.trim());
+                    chatInput.value = '';
+                }
+            });
+        }
+        
+        // Neuen Chat erstellen
+        const createChatButton = document.getElementById('createChatButton');
+        if (createChatButton) {
+            createChatButton.addEventListener('click', function() {
+                alert('Chat-Erstellung: Diese Funktion würde ein Modal öffnen um einen neuen Chat zu starten.');
+            });
+        }
+    }
+    
+    // Setze aktiven Benutzer (wie in showUserServices)
+    function setActiveUser(username) {
+        console.log('Chat: Setze aktiven Benutzer:', username);
+        
+        fetch(`${API_URL}/user`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(response => {
+            if (response.ok) {
+                currentUser = username;
+                localStorage.setItem('activeUser', username);
+                
+                // Update navbar
+                const activeUserDisplay = document.getElementById('activeUserDisplay');
+                const navUsernameInput = document.getElementById('navUsername');
+                
+                if (activeUserDisplay) {
+                    activeUserDisplay.textContent = username;
+                    activeUserDisplay.classList.add('user-active');
+                }
+                
+                if (navUsernameInput) {
+                    navUsernameInput.value = username;
+                }
+                
+                // Lade Chats für neuen Benutzer
+                loadRealChats();
+                
+                showMessage(`Angemeldet als ${username}`, 'success');
+                return response.text();
+            } else {
+                throw new Error(`Fehler beim Setzen von ${username} als aktiven Benutzer`);
+            }
+        })
+        .catch(error => {
+            console.error('Chat: API Fehler:', error);
+            currentUser = username;
+            localStorage.setItem('activeUser', username);
+            
+            const activeUserDisplay = document.getElementById('activeUserDisplay');
+            if (activeUserDisplay) {
+                activeUserDisplay.textContent = username;
+                activeUserDisplay.classList.add('user-active');
+            }
+            
+            loadRealChats();
+            showMessage(`${username} gesetzt (API nicht verfügbar)`, 'warning');
+        });
+    }
+    
+    // Rendere Chat-Liste
+    function renderChatList() {
+        const chatList = document.getElementById('chatItems');
+        if (!chatList) {
+            console.error('chatItems nicht gefunden!');
+            return;
+        }
+        
+        chatList.innerHTML = '';
+        
+        if (chats.length === 0) {
+            chatList.innerHTML = '<div class="no-contacts">Keine Chats vorhanden</div>';
+            return;
+        }
+        
+        chats.forEach(chat => {
+            const otherUser = chat.user2Username;
+            const firstLetter = otherUser.charAt(0).toUpperCase();
+            
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-item';
+            chatItem.setAttribute('data-chat-id', chat.id);
+            
+            chatItem.innerHTML = `
+                <div class="chat-avatar">${firstLetter}</div>
+                <div class="chat-details">
+                    <div class="chat-name">${escapeHtml(otherUser)}</div>
+                    <div class="chat-last-message">${escapeHtml(chat.lastMessage || 'Keine Nachrichten')}</div>
+                </div>
+                <div class="chat-meta">
+                    <div class="chat-time">${formatTime(chat.lastUpdate)}</div>
+                </div>
+            `;
+            
+            chatItem.addEventListener('click', () => selectChat(chat.id, otherUser));
+            chatList.appendChild(chatItem);
+        });
+        
+        console.log('Chat: ' + chats.length + ' Chats gerendert');
+    }
+    
+    // Chat auswählen
+    function selectChat(chatId, otherUser) {
+        console.log('Chat: Wähle Chat:', chatId, 'mit', otherUser);
+        currentChatId = chatId;
+        
+        const chatTitle = document.getElementById('chatTitle');
+        if (chatTitle) {
+            chatTitle.textContent = `Chat mit ${otherUser}`;
+        }
+        
+        // Markiere aktiven Chat
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
+        
+        // Lade echte Nachrichten
+        loadRealMessages(chatId);
+    }
+    
+    // Such-Funktionalität für Kontakte
+    function filterContacts() {
+        const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+        const chatItems = document.querySelectorAll('.chat-item');
+        
+        chatItems.forEach(item => {
+            const chatNameElement = item.querySelector('.chat-name');
+            const chatName = chatNameElement?.textContent?.toLowerCase() || '';
+            
+            if (chatName.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    // Hilfsfunktionen
+    function formatTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 0) {
+            return `${diffDays}d`;
+        } else if (diffHours > 0) {
+            return `${diffHours}h`;
+        } else {
+            return 'jetzt';
+        }
+    }
+    
+    function formatDateTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Nachrichten anzeigen (wie in showUserServices)
+    function showMessage(message, type) {
+        let messageElement = document.querySelector('.response-message');
+        
+        if (!messageElement) {
+            messageElement = document.createElement('div');
+            messageElement.className = 'response-message';
+            messageElement.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 10px 20px;
+                border-radius: 5px;
+                z-index: 1000;
+                max-width: 300px;
+                opacity: 0.95;
+            `;
+            document.body.appendChild(messageElement);
+        }
+        
+        messageElement.textContent = message;
+        messageElement.className = `response-message ${type}`;
+        
+        // Setze Farben basierend auf Typ
+        switch(type) {
+            case 'success':
+                messageElement.style.backgroundColor = '#d4edda';
+                messageElement.style.color = '#155724';
+                messageElement.style.border = '1px solid #c3e6cb';
+                break;
+            case 'info':
+                messageElement.style.backgroundColor = '#d1ecf1';
+                messageElement.style.color = '#0c5460';
+                messageElement.style.border = '1px solid #bee5eb';
+                break;
+            case 'warning':
+                messageElement.style.backgroundColor = '#fff3cd';
+                messageElement.style.color = '#856404';
+                messageElement.style.border = '1px solid #ffeaa7';
+                break;
+            case 'error':
+                messageElement.style.backgroundColor = '#f8d7da';
+                messageElement.style.color = '#721c24';
+                messageElement.style.border = '1px solid #f5c6cb';
+                break;
+        }
+        
+        messageElement.style.display = 'block';
+        
+        // Auto-hide nach 3 Sekunden
+        setTimeout(() => {
+            if (messageElement && messageElement.parentNode) {
+                messageElement.style.display = 'none';
+            }
+        }, 3000);
+    }
+    
+    // Rendere echte Nachrichten
+    function renderRealMessages(messages) {
+        const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages) return;
+        
+        chatMessages.innerHTML = '';
+        
+        if (messages.length === 0) {
+            showEmptyChat();
+            return;
+        }
+        
+        messages.forEach(message => {
+            const messageDiv = document.createElement('div');
+            const isCurrentUser = message.sender && message.sender.name === currentUser;
+            
+            messageDiv.className = `message ${isCurrentUser ? 'user' : 'other'}`;
+            
+            const senderName = message.sender ? message.sender.name : 'Unbekannt';
+            const messageTime = message.time ? formatDateTime(message.time) : 'Jetzt';
+            
+            messageDiv.innerHTML = `
+                <div class="message-sender">${escapeHtml(senderName)}</div>
+                <div>${escapeHtml(message.message)}</div>
+                <div class="message-time">${messageTime}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+        });
+        
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Sende echte Nachricht über API oder Demo
+    async function sendRealMessage(message) {
+        if (!message || !currentChatId || !currentUser) return;
+        
+        console.log('Chat: Sende Nachricht:', message);
+        
+        // Prüfe ob es ein Demo-Chat ist
+        if (typeof currentChatId === 'string' && currentChatId.startsWith('demo-')) {
+            sendDemoMessage(message);
+            return;
+        }
+        
+        try {
+            const currentUserId = await getCurrentUserId();
+            const response = await fetch(`${API_URL}/chatentry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: { id: currentUserId },
+                    receiver: { id: currentChatId },
+                    message: message,
+                    time: new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                console.log('Chat: Nachricht erfolgreich gesendet');
+                // Nachrichten neu laden
+                await loadRealMessages(currentChatId);
+                showMessage('Nachricht gesendet', 'success');
+            } else {
+                throw new Error(`API Error: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Chat: Fehler beim Senden:', error);
+            showMessage('Fehler beim Senden - verwende Demo-Modus', 'warning');
+            sendDemoMessage(message);
+        }
+    }
+    
+    // Demo-Nachricht senden (Fallback)
+    function sendDemoMessage(message) {
+        const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages || !currentChatId) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message user';
+        
+        const now = new Date();
+        const time = now.getHours() + ':' + now.getMinutes().toString().padStart(2, '0');
+        
+        messageDiv.innerHTML = `
+            <div class="message-sender">${escapeHtml(currentUser)}</div>
+            <div>${escapeHtml(message)}</div>
+            <div class="message-time">${time}</div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Update last message in chat list
+        const chat = chats.find(c => c.id === currentChatId);
+        if (chat) {
+            chat.lastMessage = message;
+            renderChatList();
+        }
+        
+        // Automatische Demo-Antwort nach 2 Sekunden
+        setTimeout(() => {
+            const otherUser = getOtherUserFromChat(currentChatId);
+            const responseMessages = [
+                "Das ist interessant!",
+                "Verstehe, danke für die Info.",
+                "Können wir uns morgen treffen?",
+                "Ja, das passt mir gut.",
+                "Super, freue mich darauf!"
+            ];
+            
+            const randomResponse = responseMessages[Math.floor(Math.random() * responseMessages.length)];
+            
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'message other';
+            
+            const responseTime = (now.getHours()) + ':' + (now.getMinutes() + 1).toString().padStart(2, '0');
+            
+            responseDiv.innerHTML = `
+                <div class="message-sender">${escapeHtml(otherUser)}</div>
+                <div>${escapeHtml(randomResponse)}</div>
+                <div class="message-time">${responseTime}</div>
+            `;
+            
+            chatMessages.appendChild(responseDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Update chat list
+            if (chat) {
+                chat.lastMessage = randomResponse;
+                renderChatList();
+            }
+        }, 2000);
+    }
+    
+    console.log('Chat: Initialisierung abgeschlossen');
+  </script>
   <script src="scripts/navbar-compat.js"></script>
 </body>
 </html>
