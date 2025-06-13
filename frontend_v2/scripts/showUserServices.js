@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const username = this.value.trim();
                 if (username) {
                     setActiveUser(username);
+                    // Dispatch event for compatibility
+                    window.dispatchEvent(new CustomEvent('userChanged', {
+                        detail: { username: username }
+                    }));
                 } else {
                     showMessage("Bitte gib einen Benutzernamen ein.", "error");
                 }
