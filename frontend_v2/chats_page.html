@@ -110,11 +110,23 @@
 
     /* Chat-Kategorien */
     .chat-category {
-      margin-bottom: 10px;
-      padding: 5px;
-      font-weight: 500;
-      color: #666;
+      margin: 15px 0 10px 0;
+      padding: 8px 5px;
+      font-weight: 600;
+      color: var(--primary-color);
       font-size: 0.9em;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-category i {
+      font-size: 0.9em;
+    }
+
+    .chat-category:first-child {
+      margin-top: 5px;
     }
 
     /* Chat-Items im WhatsApp-Stil */
@@ -174,6 +186,16 @@
       text-overflow: ellipsis;
     }
 
+    .chat-last-message.has-messages {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .chat-last-message.no-messages {
+      color: #999;
+      font-style: italic;
+    }
+
     .chat-meta {
       text-align: right;
       font-size: 0.75em;
@@ -181,22 +203,25 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
+      gap: 5px;
     }
 
     .chat-time {
       margin-bottom: 5px;
     }
 
-    .chat-badge {
-      background-color: var(--primary-color);
-      color: white;
+    .chat-indicator {
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7em;
+    }
+
+    .chat-indicator.active {
+      background-color: var(--primary-color);
+    }
+
+    .chat-indicator.new {
+      background-color: #ccc;
     }
 
     /* Chatbereich (rechts) */
@@ -1028,6 +1053,28 @@
                 alert('Chat-Erstellung: Diese Funktion würde ein Modal öffnen um einen neuen Chat zu starten.');
             });
         }
+        
+        // Starte automatische Aktualisierung
+        startAutoRefresh();
+    }
+    
+    // Automatische Aktualisierung der Chats und Nachrichten
+    function startAutoRefresh() {
+        // Aktualisiere Chat-Liste alle 10 Sekunden
+        setInterval(() => {
+            if (currentUser) {
+                console.log('Chat: Automatische Aktualisierung der Chat-Liste');
+                loadRealChats();
+            }
+        }, 10000);
+        
+        // Aktualisiere Nachrichten im aktiven Chat alle 5 Sekunden
+        setInterval(() => {
+            if (currentChatId && currentUser) {
+                console.log('Chat: Automatische Aktualisierung der Nachrichten');
+                loadRealMessages(currentChatId);
+            }
+        }, 5000);
     }
     
     // Setze aktiven Benutzer (wie in showUserServices)
@@ -1084,7 +1131,7 @@
         });
     }
     
-    // Rendere Chat-Liste
+    // Rendere Chat-Liste mit Kategorien
     function renderChatList() {
         const chatList = document.getElementById('chatItems');
         if (!chatList) {
@@ -1099,30 +1146,77 @@
             return;
         }
         
-        chats.forEach(chat => {
-            const otherUser = chat.user2Username;
-            const firstLetter = otherUser.charAt(0).toUpperCase();
-            
-            const chatItem = document.createElement('div');
-            chatItem.className = 'chat-item';
-            chatItem.setAttribute('data-chat-id', chat.id);
-            
-            chatItem.innerHTML = `
-                <div class="chat-avatar">${firstLetter}</div>
-                <div class="chat-details">
-                    <div class="chat-name">${escapeHtml(otherUser)}</div>
-                    <div class="chat-last-message">${escapeHtml(chat.lastMessage || 'Keine Nachrichten')}</div>
-                </div>
-                <div class="chat-meta">
-                    <div class="chat-time">${formatTime(chat.lastUpdate)}</div>
-                </div>
-            `;
-            
-            chatItem.addEventListener('click', () => selectChat(chat.id, otherUser));
-            chatList.appendChild(chatItem);
-        });
+        // Teile Chats in Kategorien auf
+        const activeChats = chats.filter(chat => 
+            chat.lastMessage && 
+            chat.lastMessage !== 'Starten Sie eine Unterhaltung' && 
+            chat.lastMessage.trim() !== ''
+        );
         
-        console.log('Chat: ' + chats.length + ' Chats gerendert');
+        const newChats = chats.filter(chat => 
+            !chat.lastMessage || 
+            chat.lastMessage === 'Starten Sie eine Unterhaltung' || 
+            chat.lastMessage.trim() === ''
+        );
+        
+        // Sortiere aktive Chats nach letzter Aktivität
+        activeChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+        
+        // Zeige aktive Chats zuerst
+        if (activeChats.length > 0) {
+            const activeCategoryHeader = document.createElement('div');
+            activeCategoryHeader.className = 'chat-category';
+            activeCategoryHeader.innerHTML = '<i class="fas fa-clock"></i> Letzte Chats';
+            chatList.appendChild(activeCategoryHeader);
+            
+            activeChats.forEach(chat => {
+                renderChatItem(chat, chatList);
+            });
+        }
+        
+        // Zeige neue Chats
+        if (newChats.length > 0) {
+            const newCategoryHeader = document.createElement('div');
+            newCategoryHeader.className = 'chat-category';
+            newCategoryHeader.innerHTML = '<i class="fas fa-plus-circle"></i> Neue Chats';
+            chatList.appendChild(newCategoryHeader);
+            
+            newChats.forEach(chat => {
+                renderChatItem(chat, chatList);
+            });
+        }
+        
+        console.log(`Chat: ${activeChats.length} aktive und ${newChats.length} neue Chats gerendert`);
+    }
+    
+    // Hilfsfunktion: Einzelnen Chat-Item rendern
+    function renderChatItem(chat, container) {
+        const otherUser = chat.user2Username;
+        const firstLetter = otherUser.charAt(0).toUpperCase();
+        
+        const chatItem = document.createElement('div');
+        chatItem.className = 'chat-item';
+        chatItem.setAttribute('data-chat-id', chat.id);
+        
+        // Bestimme ob Chat aktiv ist (hat Nachrichten)
+        const hasMessages = chat.lastMessage && 
+                           chat.lastMessage !== 'Starten Sie eine Unterhaltung' && 
+                           chat.lastMessage.trim() !== '';
+        
+        chatItem.innerHTML = `
+            <div class="chat-avatar">${firstLetter}</div>
+            <div class="chat-details">
+                <div class="chat-name">${escapeHtml(otherUser)}</div>
+                <div class="chat-last-message ${hasMessages ? 'has-messages' : 'no-messages'}">${escapeHtml(chat.lastMessage || 'Neue Unterhaltung starten')}</div>
+            </div>
+            <div class="chat-meta">
+                <div class="chat-time">${hasMessages ? formatTime(chat.lastUpdate) : ''}</div>
+                ${hasMessages ? '<div class="chat-indicator active"></div>' : '<div class="chat-indicator new"></div>'}
+            </div>
+        `;
+        
+        chatItem.addEventListener('click', () => selectChat(chat.id, otherUser));
+        container.appendChild(chatItem);
     }
     
     // Chat auswählen
