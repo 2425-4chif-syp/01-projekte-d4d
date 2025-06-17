@@ -11,6 +11,24 @@ let currentServices = []; // Speichert alle aktuell geladenen Services
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded event fired');
     
+    // Initialize user system
+    getActiveUser();
+    
+    // Event-Listener für Navigation Username Input
+    const navUsernameInput = document.getElementById("navUsername");
+    if (navUsernameInput) {
+        navUsernameInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                const username = this.value.trim();
+                if (username) {
+                    setActiveUser(username);
+                } else {
+                    showMessage("Bitte gib einen gültigen Benutzernamen ein.");
+                }
+            }
+        });
+    }
+    
     // Event-Listener für Create Offer Button
     const createOfferButton = document.getElementById('createOfferButton');
     if (createOfferButton) {
@@ -104,30 +122,50 @@ function handleServiceToggle() {
     }
 }
 
+function getCurrentUsername() {
+    const activeUserDisplay = document.getElementById("activeUserDisplay");
+    if (activeUserDisplay) {
+        const username = activeUserDisplay.textContent.trim();
+        return username !== "Nicht angemeldet" ? username : null;
+    }
+    return null;
+}
+
 function displayFilteredServices(services, toggleFilter = null) {
     const serviceList = document.getElementById("serviceList");
     serviceList.innerHTML = '';
 
     console.log('displayFilteredServices called with:', services.length, 'services, toggle:', toggleFilter); // Debug
 
-    if (services.length === 0) {
+    // Filtere die Dienste des aktuell eingeloggten Benutzers heraus
+    const currentUser = getCurrentUsername();
+    let filteredServices = [...services]; // Kopie erstellen
+    
+    if (currentUser) {
+        filteredServices = filteredServices.filter(service => {
+            const serviceUsername = service.user && service.user.name ? service.user.name.trim() : '';
+            return serviceUsername !== currentUser;
+        });
+        console.log('Filtered out current user services. Remaining:', filteredServices.length); // Debug
+    }
+
+    // Wenn Toggle-Filter aktiv ist, filtere entsprechend weiter
+    if (toggleFilter) {
+        if (toggleFilter === 'offers') {
+            filteredServices = filteredServices.filter(s => s.offer === 1);
+            console.log('Filtered to offers:', filteredServices.length); // Debug
+        } else if (toggleFilter === 'demands') {
+            filteredServices = filteredServices.filter(s => s.offer === 0);
+            console.log('Filtered to demands:', filteredServices.length); // Debug
+        }
+    }
+
+    if (filteredServices.length === 0) {
         const messageContainer = document.createElement("div");
         messageContainer.className = "no-results";
         messageContainer.innerHTML = `<p>Keine Ergebnisse gefunden.</p>`;
         serviceList.appendChild(messageContainer);
         return;
-    }
-
-    // Wenn Toggle-Filter aktiv ist, filtere entsprechend
-    let filteredServices = [...services]; // Kopie erstellen
-    if (toggleFilter) {
-        if (toggleFilter === 'offers') {
-            filteredServices = services.filter(s => s.offer === 1);
-            console.log('Filtered to offers:', filteredServices.length); // Debug
-        } else if (toggleFilter === 'demands') {
-            filteredServices = services.filter(s => s.offer === 0);
-            console.log('Filtered to demands:', filteredServices.length); // Debug
-        }
     }
 
     if (filteredServices.length === 0) {
@@ -189,6 +227,142 @@ function removeTag(tag) {
 // Make removeTag available globally for onclick handlers
 window.removeTag = removeTag;
 
+// User Management Functions
+function getActiveUser() {
+    fetch(`${API_URL}/user`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Fehler beim Abrufen des aktiven Benutzers");
+            }
+            return response.text();
+        })
+        .then(responseText => {
+            try {
+                const responseJson = JSON.parse(responseText);
+                const username = responseJson.username || "Nicht angemeldet";
+                
+                const activeUserDisplay = document.getElementById("activeUserDisplay");
+                if (activeUserDisplay) {
+                    activeUserDisplay.textContent = username;
+                    activeUserDisplay.classList.add("user-active");
+                }
+                
+                // Aktualisiere die Anzeige nach dem Laden des Benutzers
+                if (currentServices && currentServices.length > 0) {
+                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+                    displayFilteredServices(currentServices, toggleValue);
+                }
+            } catch (e) {
+                const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
+                
+                const activeUserDisplay = document.getElementById("activeUserDisplay");
+                if (activeUserDisplay) {
+                    activeUserDisplay.textContent = username !== "" ? username : "Nicht angemeldet";
+                    if (username !== "") {
+                        activeUserDisplay.classList.add("user-active");
+                    } else {
+                        activeUserDisplay.classList.remove("user-active");
+                    }
+                }
+                
+                // Aktualisiere die Anzeige nach dem Laden des Benutzers
+                if (currentServices && currentServices.length > 0) {
+                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+                    displayFilteredServices(currentServices, toggleValue);
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
+            const activeUserDisplay = document.getElementById("activeUserDisplay");
+            if (activeUserDisplay) {
+                activeUserDisplay.textContent = "Nicht angemeldet";
+                activeUserDisplay.classList.remove("user-active");
+            }
+        });
+}
+
+function setActiveUser(username) {
+    fetch(`${API_URL}/user`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.text().then(msg => {
+                const activeUserDisplay = document.getElementById("activeUserDisplay");
+                if (activeUserDisplay) {
+                    activeUserDisplay.textContent = username;
+                    activeUserDisplay.classList.add("user-active");
+                }
+                
+                // Clear the input field after successful login
+                const navUsernameInput = document.getElementById("navUsername");
+                if (navUsernameInput) {
+                    navUsernameInput.value = "";
+                }
+                
+                showMessage(`Erfolgreich als ${username} angemeldet.`);
+                
+                // Aktualisiere die Anzeige nach dem Login, um eigene Services zu verstecken
+                if (currentServices && currentServices.length > 0) {
+                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+                    displayFilteredServices(currentServices, toggleValue);
+                }
+                
+                return msg;
+            });
+        } else {
+            return response.text().then(errorMsg => {
+                throw new Error(errorMsg || `Fehler beim Setzen von ${username} als aktiven Benutzer`);
+            });
+        }
+    })
+    .catch(error => {
+        showMessage(error.message);
+    });
+}
+
+function showMessage(message) {
+    // Create a temporary message element
+    const messageElement = document.createElement('div');
+    messageElement.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #007bff;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 4px;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease-out;
+    `;
+    messageElement.textContent = message;
+    
+    // Add animation keyframes
+    if (!document.querySelector('#messageAnimations')) {
+        const style = document.createElement('style');
+        style.id = 'messageAnimations';
+        style.innerHTML = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(messageElement);
+    
+    setTimeout(() => {
+        messageElement.remove();
+    }, 3000);
+}
+
 function applyFilters() {
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     const selectedServiceType = document.getElementById('filterService').value;
@@ -207,7 +381,16 @@ function applyFilters() {
             return response.json();
         })
         .then(users => {
+            const currentUser = getCurrentUsername();
             const filteredUsers = users.filter(user => {
+                // Filtere den aktuell eingeloggten Benutzer heraus
+                if (currentUser) {
+                    const serviceUsername = user.user && user.user.name ? user.user.name.trim() : '';
+                    if (serviceUsername === currentUser) {
+                        return false; // Schließe eigene Services aus
+                    }
+                }
+                
                 // Toggle-Filter (offers vs demands) - WICHTIG: Das muss zuerst geprüft werden!
                 let matchesToggle = true;
                 if (toggleValue === 'offers') {
@@ -401,10 +584,7 @@ function loadAllOffers() {
                 return;
             }
             
-            // Erstelle eine einfache Liste zum Testen
-            createSimpleList(marketDtos);
-            
-            // Zeige initial alle Services mit dem aktuellen Toggle-Filter
+            // Zeige initial alle Services mit dem aktuellen Toggle-Filter (ohne aktiven Benutzer)
             const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
             console.log('Initial toggle value:', toggleValue);
             displayFilteredServices(marketDtos, toggleValue);
