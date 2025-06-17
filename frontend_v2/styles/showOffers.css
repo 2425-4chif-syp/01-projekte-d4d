@@ -231,9 +231,18 @@ button i {
 
 /* Container and Layout */
 .container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+    max-width: 1200px; /* Normale maximale Breite für andere Seiten */
+    width: 100%;
+    margin: 0 auto; /* Zentrierte Ausrichtung für andere Seiten */
+    padding: 2rem; /* Normales Padding für andere Seiten */
+}
+
+/* Spezifische Styles nur für die Marktplatz-Seite */
+.marketplace-container-page.container {
+    max-width: none; /* Entferne die maximale Breite nur für Marktplatz */
+    width: 100vw; /* Verwende die volle Viewport-Breite nur für Marktplatz */
+    margin: 0; /* Entferne Auto-Margin nur für Marktplatz */
+    padding: 0; /* Entferne Padding nur für Marktplatz */
 }
 
 /* Form Elements */
@@ -448,10 +457,31 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-header .badge {
-    background-color: rgba(255, 255, 255, 0.2);
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--text-color);
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.offer-card .card-header .badge {
+    background-color: var(--offer-color);
+    color: white;
+    border-color: var(--offer-color);
+}
+
+.demand-card .card-header .badge {
+    background-color: var(--demand-color);
+    color: white;
+    border-color: var(--demand-color);
+}
+
+.card-header h3 {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .card-body {
@@ -638,6 +668,11 @@ input:focus, select:focus, textarea:focus {
 
     .container {
         margin: 1rem auto;
+    }
+
+    /* Spezifische responsive Regel für Marktplatz-Seite */
+    .marketplace-container-page.container {
+        margin: 0;
     }
 
     .service-type-list {
@@ -1278,6 +1313,20 @@ input:focus, select:focus, textarea:focus {
     margin-top: 2rem;
 }
 
+.service-grid .service-item {
+    margin-bottom: 0; /* Entferne margin da gap verwendet wird */
+}
+
+.service-grid .service-item .card {
+    height: 100%; /* Gleiche Höhe für alle Cards im Grid */
+    display: flex;
+    flex-direction: column;
+}
+
+.service-grid .card-body {
+    flex-grow: 1; /* Lässt den Body-Bereich wachsen */
+}
+
 /* Step Number */
 .step-number {
     background-color: var(--primary-color);
@@ -1508,9 +1557,6 @@ input:focus, select:focus, textarea:focus {
     padding: 16px;
     margin: 16px 0;
     background-color: #fff;
-}
-
-.service-type-section {
 }
 
 .service-type-header h3 {
@@ -2079,3 +2125,639 @@ input:focus, select:focus, textarea:focus {
     margin: 0;
     list-style: none;
 }
+
+/* Marktplatz Container Layout */
+.marktplatz-container {
+    display: flex;
+    gap: 2rem; /* Abstand zwischen Filter und Marktplatz */
+    align-items: flex-start;
+    min-height: calc(100vh - 60px);
+    width: 100%;
+    padding: 0 2rem; /* Gleicher Abstand links und rechts */
+    box-sizing: border-box;
+}
+
+.filter-box-wrapper {
+    flex: 0 0 320px; /* Etwas breiterer Filter */
+    width: 320px;
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    order: 1;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.marktplatz-content {
+    flex: 1;
+    min-width: 0;
+    order: 2;
+    padding: 0; /* Entferne Padding für bessere Kontrolle */
+    box-sizing: border-box;
+}
+
+.filter-box-wrapper .search-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-color);
+    font-size: 1.5rem; /* Gleiche Größe wie Marktplatz-Überschrift */
+    font-weight: bold;
+    padding-bottom: 0;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-box-wrapper .search-container {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    position: relative;
+}
+
+.filter-box-wrapper .search-container::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    bottom: -10px;
+    left: -10px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: calc(var(--border-radius) + 5px);
+    z-index: -1;
+    opacity: 0.05;
+}
+
+.filter-box-wrapper .search-row {
+    display: block;
+    margin-bottom: 1.5rem;
+}
+
+.filter-box-wrapper .search-box {
+    width: 100%;
+    margin-bottom: 0;
+    position: relative;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.filter-box-wrapper .search-box:hover,
+.filter-box-wrapper .search-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.filter-box-wrapper .search-box input,
+.filter-box-wrapper .search-box select {
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    background: transparent;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.filter-box-wrapper .search-box input:focus,
+.filter-box-wrapper .search-box select:focus {
+    outline: none;
+}
+
+.filter-box-wrapper .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-color);
+    z-index: 1;
+}
+
+.filter-box-wrapper .search-box input[type="text"] {
+    padding-left: 2.5rem; /* Platz für Icon */
+}
+
+/* Date Box Styling */
+.filter-box-wrapper .date-box label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+.filter-box-wrapper .date-box input[type="date"] {
+    padding: 0.75rem;
+}
+
+/* Service Toggle Styles */
+.service-toggle {
+    margin-bottom: 2rem;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.toggle-buttons {
+    display: flex;
+    gap: 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.toggle-buttons input[type="radio"] {
+    display: none;
+}
+
+.toggle-button {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    color: var(--secondary-color);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    font-weight: 500;
+    margin: 0;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.toggle-button:last-child {
+    border-right: none;
+}
+
+.toggle-button:hover {
+    background-color: #e9ecef;
+}
+
+.toggle-buttons input[type="radio"]:checked + .toggle-button {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.toggle-buttons input[type="radio"]:checked + .toggle-button:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Responsive Design für Marktplatz Layout */
+@media (max-width: 768px) {
+    .marketplace-container-page.container {
+        width: 100vw;
+        padding: 0;
+    }
+    
+    .marktplatz-container {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        min-height: calc(100vh - 60px);
+    }
+    
+    .filter-box-wrapper {
+        flex: none;
+        width: 100%;
+        max-width: 100%;
+        position: static;
+        max-height: none;
+        order: 2; /* Filter unter den Karten auf Mobil */
+        margin-top: 1rem;
+    }
+    
+    .marktplatz-content {
+        order: 1; /* Marktplatz zuerst auf Mobil */
+        width: 100%;
+        padding: 0;
+    }
+    
+    .toggle-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .toggle-button {
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .toggle-button:last-child {
+        border-right: none;
+    }
+    
+    .service-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Service List Adjustments für Toggle */
+.service-list-hidden {
+    display: none !important;
+}
+
+/* Container Layout Adjustments */
+.marktplatz-content .services-container {
+    width: 100%;
+}
+
+.marktplatz-content .services-column {
+    width: 100%;
+}
+
+/* Scrollbar für Filter-Bereich */
+.filter-box-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-box-wrapper::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 3px;
+}
+
+.filter-box-wrapper::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.filter-box-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+/* Verbesserungen für Service Cards */
+.service-grid .service-item {
+    margin-bottom: 0; /* Entferne margin da gap verwendet wird */
+}
+
+.service-grid .service-item .card {
+    height: 100%; /* Gleiche Höhe für alle Cards im Grid */
+    display: flex;
+    flex-direction: column;
+}
+
+.service-grid .card-body {
+    flex-grow: 1; /* Lässt den Body-Bereich wachsen */
+}
+
+/* Verbesserte Badge-Anzeige */
+.card-header .badge {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--text-color);
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.offer-card .card-header .badge {
+    background-color: var(--offer-color);
+    color: white;
+    border-color: var(--offer-color);
+}
+
+.demand-card .card-header .badge {
+    background-color: var(--demand-color);
+    color: white;
+    border-color: var(--demand-color);
+}
+
+/* Verbesserte Card Header */
+.card-header h3 {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Loading State Verbesserungen */
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--secondary-color);
+    font-style: italic;
+}
+
+/* Marktplatz Bereich Optimierungen */
+.marktplatz-content {
+    width: 100%;
+}
+
+.marktplatz-content .content-section {
+    width: 100%;
+}
+
+.marktplatz-content .service-grid {
+    width: 100%;
+    max-width: none;
+}
+
+/* Service Cards Grid Optimierung für breiteren Bereich */
+.service-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    grid-gap: 1.2rem;
+}
+
+/* Für sehr breite Bildschirme (>1400px) */
+@media (min-width: 1400px) {
+    .service-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    }
+}
+
+/* Für mittlere Bildschirme (800px - 1200px) */
+@media (min-width: 800px) and (max-width: 1200px) {
+    .service-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    }
+}
+
+/* Verbesserte Checkbox und Tag Styles im Filter */
+.filter-box-wrapper .checkbox-container {
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-box-wrapper .checkbox-container:hover {
+    background-color: #e9ecef;
+    border-color: var(--primary-color);
+}
+
+.filter-box-wrapper .checkbox-container input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.filter-box-wrapper .checkbox-container label {
+    margin: 0;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+/* Selected Tags Styling */
+.filter-box-wrapper .selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.filter-box-wrapper .tag {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.filter-box-wrapper .tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.filter-box-wrapper .tag-remove:hover {
+    opacity: 1;
+    transform: none;
+}
+
+/* showUserServices - EXAKT GLEICH wie showOffers aber mit 3 Spalten */
+.main-services-section .service-grid,
+.perfect-matches .service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 1.2rem;
+}
+
+/* Für sehr breite Bildschirme (>1400px) - 4 Spalten */
+@media (min-width: 1400px) {
+    .main-services-section .service-grid,
+    .perfect-matches .service-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Für mittlere Bildschirme (800px - 1200px) - 3 Spalten */
+@media (min-width: 800px) and (max-width: 1200px) {
+    .main-services-section .service-grid,
+    .perfect-matches .service-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.main-services-section .service-item,
+.perfect-matches .service-item {
+    margin-bottom: 0; /* Entferne margin da gap verwendet wird */
+}
+
+.main-services-section .service-item .card,
+.perfect-matches .service-item .card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    margin-bottom: 16px;
+    height: auto;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid #f1f3f4;
+    overflow: hidden;
+}
+
+.main-services-section .service-item .card:hover,
+.perfect-matches .service-item .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.main-services-section .card-header,
+.perfect-matches .card-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 50px;
+}
+
+.main-services-section .card-body,
+.perfect-matches .card-body {
+    padding: 12px;
+    flex-grow: 1; /* Lässt den Body-Bereich wachsen */
+}
+
+.main-services-section .card-body p,
+.perfect-matches .card-body p {
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.main-services-section .card-body p:last-child,
+.perfect-matches .card-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* Badge styles - Professioneller mit Icons und runder */
+.main-services-section .badge,
+.perfect-matches .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    background-color: #007bff;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.main-services-section .badge:hover,
+.perfect-matches .badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.main-services-section .badge.perfect-match,
+.perfect-matches .badge.perfect-match {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #333;
+    border: 1px solid #e6c200;
+}
+
+.main-services-section .badge.perfect-match::before,
+.perfect-matches .badge.perfect-match::before {
+    content: "\f005"; /* fa-star */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+.main-services-section .badge.provider,
+.perfect-matches .badge.provider {
+    background: linear-gradient(135deg, #b15df5, #9f4de8);
+    color: white;
+    border: 1px solid #a855f7;
+}
+
+.main-services-section .badge.provider::before,
+.perfect-matches .badge.provider::before {
+    content: "\f0f3"; /* fa-bell */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+.main-services-section .badge.client,
+.perfect-matches .badge.client {
+    background: linear-gradient(135deg, #7eff5e, #65ff47);
+    color: #1a5a1a;
+    border: 1px solid #65ff47;
+    font-weight: 700;
+}
+
+.main-services-section .badge.client::before,
+.perfect-matches .badge.client::before {
+    content: "\f21b"; /* fa-hand-paper */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+/* Perfect Match Cards - Goldene Umrandung verstärkt */
+.main-services-section .perfect-match-card,
+.perfect-matches .perfect-match-card {
+    border: 3px solid #ffd700;
+    background-color: #fff7cc;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.main-services-section .perfect-match-card:hover,
+.perfect-matches .perfect-match-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    border-color: #e6c200;
+}
+
+/* Offer und Demand Cards - Komplett umrandet */
+.main-services-section .offer-card,
+.perfect-matches .offer-card {
+    border: 2px solid #b15df5;
+}
+
+.main-services-section .offer-card:hover,
+.perfect-matches .offer-card:hover {
+    border-color: #9f4de8;
+    box-shadow: 0 8px 25px rgba(177, 93, 245, 0.2);
+}
+
+.main-services-section .demand-card,
+.perfect-matches .demand-card {
+    border: 2px solid #7eff5e;
+}
+
+.main-services-section .demand-card:hover,
+.perfect-matches .demand-card:hover {
+    border-color: #65ff47;
+    box-shadow: 0 8px 25px rgba(126, 255, 94, 0.2);
+}
+
+/* Responsive - 3 Spalten Standard, 1 Spalte auf Mobile */
+@media (max-width: 768px) {
+    .main-services-section .service-grid,
+    .perfect-matches .service-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .main-services-section .service-item .card,
+    .perfect-matches .service-item .card {
+        min-height: 160px;
+    }
+    
+    .main-services-section .card-header,
+    .perfect-matches .card-header {
+        padding: 10px;
+    }
+    
+    .main-services-section .card-body,
+    .perfect-matches .card-body {
+        padding: 10px;
+    }
+}
+
+/* ...existing code...

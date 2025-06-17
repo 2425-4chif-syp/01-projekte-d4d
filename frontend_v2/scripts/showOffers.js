@@ -1,35 +1,165 @@
 import { API_URL } from './config.js';
 
-document.getElementById('createOfferButton').addEventListener('click', function () {
-    window.location.href = 'makeOffer.html';
-});
+console.log('showOffers.js loaded successfully');
+console.log('API_URL:', API_URL);
 
 // Tag-Verwaltung
 let selectedTags = new Set();
+let currentServices = []; // Speichert alle aktuell geladenen Services
 
-// Event-Listener für "Geschlossene Märkte anzeigen" Checkbox
-document.getElementById('showClosedMarkets').addEventListener('change', applyFilters);
-
-// Suchfunktionalität für beide Suchleisten
-document.getElementById('nameSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        applyFilters(); // Direkte Suche im Namen
+// Event-Listener für Service Toggle
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired');
+    
+    // Event-Listener für Create Offer Button
+    const createOfferButton = document.getElementById('createOfferButton');
+    if (createOfferButton) {
+        createOfferButton.addEventListener('click', function () {
+            window.location.href = 'makeOffer.html';
+        });
     }
+    
+    // Warte etwas, damit die DOM-Elemente vollständig geladen sind
+    setTimeout(() => {
+        console.log('Setting up event listeners...');
+        const toggleInputs = document.querySelectorAll('input[name="serviceToggle"]');
+        console.log('Toggle inputs found:', toggleInputs.length); // Debug
+        toggleInputs.forEach(input => {
+            input.addEventListener('change', handleServiceToggle);
+            console.log('Event listener added to:', input.value); // Debug
+        });
+        
+        // Event-Listener für "Geschlossene Märkte anzeigen" Checkbox
+        const showClosedMarketsCheckbox = document.getElementById('showClosedMarkets');
+        if (showClosedMarketsCheckbox) {
+            showClosedMarketsCheckbox.addEventListener('change', applyFilters);
+        }
+        
+        // Suchfunktionalität für Namenssuche
+        const nameSearchInput = document.getElementById('nameSearchInput');
+        if (nameSearchInput) {
+            nameSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+            // Event-Listener für Namenssuche (auch bei Input-Änderung)
+            nameSearchInput.addEventListener('input', debounce(applyFilters, 300));
+        }
+        
+        // Event-Listener für Beschreibungssuche
+        const detailSearchInput = document.getElementById('detailSearchInput');
+        if (detailSearchInput) {
+            detailSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = this.value.trim();
+                    if (searchTerm) {
+                        addTag(searchTerm);
+                        this.value = '';
+                    }
+                }
+            });
+        }
+        
+        // Event-Listener für Datumsfelder
+        const fromDateInput = document.getElementById('fromDateInput');
+        const toDateInput = document.getElementById('toDateInput');
+        if (fromDateInput) fromDateInput.addEventListener('change', applyFilters);
+        if (toDateInput) toDateInput.addEventListener('change', applyFilters);
+        
+        // Event-Listener für Filter-Dropdown
+        const filterService = document.getElementById("filterService");
+        if (filterService) {
+            filterService.addEventListener('change', applyFilters);
+        }
+        
+        // Lade initiale Daten
+        console.log('Loading initial data...');
+        loadServiceTypesAndOffers();
+    }, 100);
 });
 
-document.getElementById('detailSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        const searchTerm = this.value.trim();
-        if (searchTerm) {
-            addTag(searchTerm);
-            this.value = '';
+// Debounce-Funktion für bessere Performance bei der Eingabe
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function handleServiceToggle() {
+    const selectedValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+    console.log('Toggle changed to:', selectedValue); // Debug
+    
+    if (currentServices && currentServices.length > 0) {
+        displayFilteredServices(currentServices, selectedValue);
+    } else {
+        // Falls noch keine Services geladen sind, lade sie
+        loadAllOffers();
+    }
+}
+
+function displayFilteredServices(services, toggleFilter = null) {
+    const serviceList = document.getElementById("serviceList");
+    serviceList.innerHTML = '';
+
+    console.log('displayFilteredServices called with:', services.length, 'services, toggle:', toggleFilter); // Debug
+
+    if (services.length === 0) {
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "no-results";
+        messageContainer.innerHTML = `<p>Keine Ergebnisse gefunden.</p>`;
+        serviceList.appendChild(messageContainer);
+        return;
+    }
+
+    // Wenn Toggle-Filter aktiv ist, filtere entsprechend
+    let filteredServices = [...services]; // Kopie erstellen
+    if (toggleFilter) {
+        if (toggleFilter === 'offers') {
+            filteredServices = services.filter(s => s.offer === 1);
+            console.log('Filtered to offers:', filteredServices.length); // Debug
+        } else if (toggleFilter === 'demands') {
+            filteredServices = services.filter(s => s.offer === 0);
+            console.log('Filtered to demands:', filteredServices.length); // Debug
         }
     }
-});
 
-// Event-Listener für Datumsfelder
-document.getElementById('fromDateInput').addEventListener('change', applyFilters);
-document.getElementById('toDateInput').addEventListener('change', applyFilters);
+    if (filteredServices.length === 0) {
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "no-results";
+        messageContainer.innerHTML = `<p>Keine ${toggleFilter === 'offers' ? 'Angebote' : 'Gesuche'} gefunden.</p>`;
+        serviceList.appendChild(messageContainer);
+        return;
+    }
+
+    // Erstelle Container für die Services
+    const servicesGrid = document.createElement("div");
+    servicesGrid.className = "service-grid";
+    servicesGrid.style.display = "grid";
+    servicesGrid.style.gap = "1rem";
+    servicesGrid.style.gridTemplateColumns = "repeat(auto-fill, minmax(280px, 1fr))";
+
+    filteredServices.forEach(m => {
+        const listItem = createServiceCard(
+            m.serviceType && m.serviceType.name ? m.serviceType.name : '',
+            "",
+            m.user && m.user.name ? m.user.name : '',
+            m.description || "",
+            m.startDate,
+            m.endDate,
+            m.offer === 1
+        );
+        servicesGrid.appendChild(listItem);
+    });
+
+    serviceList.appendChild(servicesGrid);
+}
 
 function addTag(tag) {
     if (!selectedTags.has(tag)) {
@@ -56,12 +186,17 @@ function removeTag(tag) {
     applyFilters();
 }
 
+// Make removeTag available globally for onclick handlers
+window.removeTag = removeTag;
+
 function applyFilters() {
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     const selectedServiceType = document.getElementById('filterService').value;
     const fromDate = document.getElementById('fromDateInput').value;
     const toDate = document.getElementById('toDateInput').value;
     const showClosedMarkets = document.getElementById('showClosedMarkets').checked;
+    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+    
     showLoading();
 
     fetch(`${API_URL}/market`)
@@ -73,6 +208,14 @@ function applyFilters() {
         })
         .then(users => {
             const filteredUsers = users.filter(user => {
+                // Toggle-Filter (offers vs demands) - WICHTIG: Das muss zuerst geprüft werden!
+                let matchesToggle = true;
+                if (toggleValue === 'offers') {
+                    matchesToggle = user.offer === 1;
+                } else if (toggleValue === 'demands') {
+                    matchesToggle = user.offer === 0;
+                }
+                
                 // Name-Filter
                 const matchesName = nameSearch === '' || (user.user && user.user.name && user.user.name.toLowerCase().includes(nameSearch));
                 // ServiceType-Filter
@@ -115,94 +258,12 @@ function applyFilters() {
                     // Zeige nur offene Märkte (kein Enddatum oder Enddatum in der Zukunft)
                     matchesActive = !user.endDate || new Date(user.endDate) >= new Date();
                 }
-                return matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
+                return matchesToggle && matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
             });
 
+            currentServices = filteredUsers; // Speichere gefilterte Services
             clearLoading();
-            const serviceList = document.getElementById("serviceList");
-            serviceList.innerHTML = ''; // Liste leeren vor neuem Rendern
-            if (filteredUsers.length === 0) {
-                const messageContainer = document.createElement("div");
-                messageContainer.className = "no-results";
-                messageContainer.innerHTML = `<p>Keine Ergebnisse gefunden.</p>`;
-                serviceList.appendChild(messageContainer);
-                return;
-            }
-
-            // Container für beide Listen mit festgelegter Breite
-            const offersContainer = document.createElement("div");
-            offersContainer.className = "services-container";
-            offersContainer.style.display = "flex";
-            offersContainer.style.gap = "20px";
-            offersContainer.style.width = "100%";
-            offersContainer.style.margin = "0 auto";
-            
-            // Container für isOffer = false (Gesuche - links)
-            const falseContainer = document.createElement("div");
-            falseContainer.className = "services-column false-offers";
-            falseContainer.style.flex = "1";
-            falseContainer.style.minWidth = "45%";
-            
-            // Überschrift für isOffer = false
-            const falseHeader = document.createElement("h3");
-            falseHeader.innerHTML = '<i class="fas fa-hand-holding"></i> Gesuchte Dienste';
-            falseHeader.style.marginBottom = "15px";
-            falseContainer.appendChild(falseHeader);
-            
-            // Liste für isOffer = false
-            const falseList = document.createElement("ul");
-            falseList.className = "service-list";
-            falseList.style.padding = "0";
-            falseList.style.margin = "0";
-            falseList.style.listStyle = "none";
-            falseList.style.width = "100%";
-            falseContainer.appendChild(falseList);
-            
-            // Container für isOffer = true (Angebote - rechts)
-            const trueContainer = document.createElement("div");
-            trueContainer.className = "services-column true-offers";
-            trueContainer.style.flex = "1";
-            trueContainer.style.minWidth = "45%";
-            
-            // Überschrift für isOffer = true
-            const trueHeader = document.createElement("h3");
-            trueHeader.innerHTML = '<i class="fas fa-hands-helping"></i> Angebotene Dienste';
-            trueHeader.style.marginBottom = "15px";
-            trueContainer.appendChild(trueHeader);
-            
-            // Liste für isOffer = true
-            const trueList = document.createElement("ul");
-            trueList.className = "service-list";
-            trueList.style.padding = "0";
-            trueList.style.margin = "0";
-            trueList.style.listStyle = "none";
-            trueList.style.width = "100%";
-            trueContainer.appendChild(trueList);
-            
-            // Sortieren und Hinzufügen der gefilterten Dienste
-            filteredUsers.forEach(m => {
-                const listItem = createServiceCard(
-                    m.serviceType && m.serviceType.name ? m.serviceType.name : '',
-                    "",
-                    m.user && m.user.name ? m.user.name : '',
-                    m.description || "",
-                    m.startDate,
-                    m.endDate,
-                    m.offer === 1 // Angebot: offer==1, Gesuch: offer==0
-                );
-                if (m.offer === 1) {
-                    trueList.appendChild(listItem);
-                } else {
-                    falseList.appendChild(listItem);
-                }
-            });
-            
-            // Container zum Layout hinzufügen
-            offersContainer.appendChild(falseContainer);
-            offersContainer.appendChild(trueContainer);
-            
-            // Zum Hauptcontainer hinzufügen
-            serviceList.appendChild(offersContainer);
+            displayFilteredServices(filteredUsers, toggleValue);
         })
         .catch(error => {
             console.error("Fehler:", error);
@@ -278,22 +339,27 @@ function clearLoading() {
 }
 
 function loadServiceTypesAndOffers() {
+    console.log('loadServiceTypesAndOffers() called');
     loadServiceTypes();
     loadAllOffers();
 }
 
 function loadServiceTypes() {
+    console.log('loadServiceTypes() called');
     const filterService = document.getElementById("filterService");
     const url = `${API_URL}/servicetype`;
+    console.log('Fetching service types from:', url);
 
     fetch(url)
         .then(response => {
+            console.log('ServiceTypes response:', response);
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Kategorien");
             }
             return response.json();
         })
         .then(serviceTypes => {
+            console.log('ServiceTypes loaded:', serviceTypes);
             filterService.innerHTML = '<option value="all">Alle Fächer</option>';
             serviceTypes.forEach(type => {
                 const option = document.createElement("option");
@@ -308,17 +374,23 @@ function loadServiceTypes() {
 }
 
 function loadAllOffers() {
+    console.log('loadAllOffers() called');
     const url = `${API_URL}/market`;
+    console.log('Fetching offers from:', url);
     showLoading();
     fetch(url)
         .then(response => {
+            console.log('Market response:', response);
             if (!response.ok) {
                 throw new Error("Fehler beim Abrufen der Daten");
             }
             return response.json();
         })
         .then(marketDtos => {
+            console.log('Market data loaded:', marketDtos.length, 'items');
             clearLoading();
+            currentServices = marketDtos; // Speichere alle Services
+            
             if (marketDtos.length === 0) {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
@@ -328,78 +400,53 @@ function loadAllOffers() {
                 document.getElementById("serviceList").appendChild(messageContainer);
                 return;
             }
-            // Aufteilung in zwei Listen basierend auf offer
-            const offersContainer = document.createElement("div");
-            offersContainer.className = "services-container";
-            offersContainer.style.display = "flex";
-            offersContainer.style.gap = "20px";
-            offersContainer.style.maxWidth = "100%";
-            offersContainer.style.margin = "0 auto";
-            // Container für offer = 0 (links)
-            const falseContainer = document.createElement("div");
-            falseContainer.className = "services-column false-offers";
-            falseContainer.style.flex = "1";
             
-            // Überschrift für offer = 0
-            const falseHeader = document.createElement("h3");
-            falseHeader.innerHTML = '<i class="fas fa-hand-holding"></i> Gesuchte Dienste';
-            falseHeader.style.marginBottom = "15px";
-            falseContainer.appendChild(falseHeader);
+            // Erstelle eine einfache Liste zum Testen
+            createSimpleList(marketDtos);
             
-            // Liste für offer = 0
-            const falseList = document.createElement("ul");
-            falseList.className = "service-list";
-            falseList.style.padding = "0";
-            falseList.style.margin = "0";
-            falseList.style.listStyle = "none";
-            falseContainer.appendChild(falseList);
-            
-            // Container für offer = 1 (rechts)
-            const trueContainer = document.createElement("div");
-            trueContainer.className = "services-column true-offers";
-            trueContainer.style.flex = "1";
-            
-            // Überschrift für offer = 1
-            const trueHeader = document.createElement("h3");
-            trueHeader.innerHTML = '<i class="fas fa-hands-helping"></i> Angebotene Dienste';
-            trueHeader.style.marginBottom = "15px";
-            trueContainer.appendChild(trueHeader);
-            
-            // Liste für offer = 1
-            const trueList = document.createElement("ul");
-            trueList.className = "service-list";
-            trueList.style.padding = "0";
-            trueList.style.margin = "0";
-            trueList.style.listStyle = "none";
-            trueContainer.appendChild(trueList);
-            
-            // Sortieren und Hinzufügen der Dienste
-            marketDtos.forEach(m => {
-                const listItem = createServiceCard(
-                    m.serviceType && m.serviceType.name ? m.serviceType.name : '',
-                    "",
-                    m.user && m.user.name ? m.user.name : '',
-                    m.description || "",
-                    m.startDate,
-                    m.endDate,
-                    m.offer === 1
-                );
-                if (m.offer === 1) {
-                    trueList.appendChild(listItem);
-                } else {
-                    falseList.appendChild(listItem);
-                }
-            });
-            offersContainer.appendChild(falseContainer);
-            offersContainer.appendChild(trueContainer);
-            const serviceList = document.getElementById("serviceList");
-            serviceList.appendChild(offersContainer);
+            // Zeige initial alle Services mit dem aktuellen Toggle-Filter
+            const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+            console.log('Initial toggle value:', toggleValue);
+            displayFilteredServices(marketDtos, toggleValue);
         })
         .catch(error => {
-            console.error("Fehler:", error);
+            console.error("Fehler beim Laden der Marktdaten:", error);
             clearLoading();
-            alert("Es gab ein Problem beim Abrufen der Daten.");
+            const serviceList = document.getElementById("serviceList");
+            if (serviceList) {
+                serviceList.innerHTML = `<li style="color: red;">❌ Fehler: ${error.message}</li>`;
+            }
         });
+}
+
+// Neue einfache Funktion zum Testen
+function createSimpleList(data) {
+    console.log('createSimpleList called with', data.length, 'items');
+    const serviceList = document.getElementById("serviceList");
+    
+    if (!serviceList) {
+        console.error('Element "serviceList" nicht gefunden!');
+        return;
+    }
+    
+    // Lösche vorherige Inhalte
+    serviceList.innerHTML = '';
+    
+    // Erstelle einfache Listenelemennete
+    data.slice(0, 10).forEach((item, index) => { // Nur erste 10 für Test
+        const li = document.createElement('li');
+        li.style.cssText = 'margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px;';
+        li.innerHTML = `
+            <strong>${index + 1}. ${item.serviceType.name}</strong><br>
+            <em>Von: ${item.user.name}</em><br>
+            <span style="color: ${item.offer ? 'green' : 'red'}">
+                ${item.offer ? '🟢 Angebot' : '🔴 Gesucht'}
+            </span>
+        `;
+        serviceList.appendChild(li);
+    });
+    
+    console.log('Simple list created with', serviceList.children.length, 'items');
 }
 
 function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer) {
@@ -456,11 +503,14 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
     // Klassenname je nach isOffer-Wert
     const cardClassName = isOffer ? "offer-card" : "demand-card";
     const badgeText = isOffer ? "Angebot" : "Gesucht";
+    const cardIcon = isOffer ? "fas fa-hands-helping" : "fas fa-hand-holding";
 
     listItem.innerHTML = `
         <div class="card ${cardClassName}" style="height: auto; min-height: 200px;">
             <div class="card-header">
-                <h3 style="margin: 0 0 8px 0; font-size: 1rem; color: #333;">${serviceOffer}</h3>
+                <h3 style="margin: 0 0 8px 0; font-size: 1rem; color: #333;">
+                    <i class="${cardIcon}"></i> ${serviceOffer}
+                </h3>
                 <p style="margin: 0; font-size: 0.85rem; color: #666;">${dateRange}</p>
                 <span class="badge">${badgeText}</span>
             </div>
@@ -474,7 +524,36 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
     return listItem;
 }
 
-document.addEventListener("DOMContentLoaded", loadServiceTypesAndOffers);
-
-// Event Listener für die Filterauswahl
-document.getElementById("filterService").addEventListener('change', applyFilters);
+// Einfache Test-Funktion um zu sehen ob das HTML funktioniert
+function createSimpleTestList() {
+    console.log('Creating simple test list...');
+    const serviceList = document.getElementById("serviceList");
+    
+    if (!serviceList) {
+        console.error('serviceList element not found!');
+        return;
+    }
+    
+    console.log('serviceList element found:', serviceList);
+    
+    // Lade direkt die API-Daten
+    console.log('Loading real API data...');
+    fetch(`${API_URL}/market`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Got data:', data.length, 'items');
+            
+            // Erstelle einfache Liste
+            let html = '';
+            data.slice(0, 10).forEach(item => { // Die ersten 10 Items
+                html += `<li>${item.user.name} - ${item.serviceType.name} (${item.offer ? 'Angebot' : 'Nachfrage'})</li>`;
+            });
+            
+            serviceList.innerHTML = html;
+            console.log('List updated with real data');
+        })
+        .catch(error => {
+            console.error('API Error:', error);
+            serviceList.innerHTML = '<li>Fehler beim Laden der Daten</li>';
+        });
+}

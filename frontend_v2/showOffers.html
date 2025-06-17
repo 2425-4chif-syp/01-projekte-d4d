@@ -43,68 +43,101 @@
         </div>
     </nav>
 
-    <main class="container">
-        <div class="search-section">
-            <!-- Erweiterte Suchleiste -->
-            <div class="search-container">
-                <div class="search-row">
-                    <!-- Namenssuche -->
-                    <div class="search-box">
-                        <i class="fas fa-user search-icon"></i>
-                        <input type="text" id="nameSearchInput" placeholder="Nach Namen suchen...">
+    <main class="container marketplace-container-page">
+        <div class="marktplatz-container">
+            <!-- Filter-Bereich (links) -->
+            <div class="filter-box-wrapper">
+                <div class="search-section">
+                    <h3><i class="fas fa-filter"></i> Filter</h3>
+                    <!-- Erweiterte Suchleiste -->
+                    <div class="search-container">
+                        <div class="search-row">
+                            <!-- Namenssuche -->
+                            <div class="search-box">
+                                <i class="fas fa-user search-icon"></i>
+                                <input type="text" id="nameSearchInput" placeholder="Nach Namen suchen...">
+                            </div>
+                        </div>
+                        
+                        <div class="search-row">
+                            <!-- Fach/Kategorie Filter -->
+                            <div class="search-box">
+                                <select id="filterService" class="filter-select">
+                                    <option value="all">Alle Fächer</option>
+                                    <!-- Optionen werden per JavaScript geladen -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="search-row date-search-row">
+                            <!-- Zeitraum Suche - Von Datum -->
+                            <div class="search-box date-box">
+                                <label for="fromDateInput">Von Datum:</label>
+                                <input type="date" 
+                                       id="fromDateInput" 
+                                       placeholder="Von Datum...">
+                            </div>
+                        </div>
+                        
+                        <div class="search-row date-search-row">
+                            <!-- Zeitraum Suche - Bis Datum -->
+                            <div class="search-box date-box">
+                                <label for="toDateInput">Bis Datum:</label>
+                                <input type="date" 
+                                       id="toDateInput" 
+                                       placeholder="Bis Datum...">
+                            </div>
+                        </div>
+                        
+                        <div class="search-row">
+                            <!-- Erweiterte Suche -->
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="detailSearchInput" placeholder="In Beschreibung suchen...">
+                            </div>
+                        </div>
+                        
+                        <!-- Checkbox für geschlossene Märkte -->
+                        <div class="search-row checkbox-row">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="showClosedMarkets" name="showClosedMarkets">
+                                <label for="showClosedMarkets">Geschlossene Märkte anzeigen</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Such-Tags -->
+                        <div class="search-tags">
+                            <div id="selectedTags" class="selected-tags"></div>
+                        </div>
                     </div>
-                    
-                    <!-- Fach/Kategorie Filter -->
-                    <div class="search-box">
-                        <select id="filterService" class="filter-select">
-                            <option value="all">Alle Fächer</option>
-                            <!-- Optionen werden per JavaScript geladen -->
-                        </select>
-                    </div>
-                </div>
-                <div class="search-row date-search-row">
-                    <!-- Zeitraum Suche - Von Datum -->
-                    <div class="search-box date-box">
-                        <label for="fromDateInput"></label>
-                        <input type="date" 
-                               id="fromDateInput" 
-                               placeholder="Von Datum...">
-                    </div>
-
-                    <!-- Zeitraum Suche - Bis Datum -->
-                    <div class="search-box date-box">
-                        <label for="toDateInput"></label>
-                        <input type="date" 
-                               id="toDateInput" 
-                               placeholder="Bis Datum...">
-                    </div>
-                </div>
-                <div class="search-row">
-                    <!-- Erweiterte Suche -->
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="detailSearchInput" placeholder="In Beschreibung suchen...">
-                    </div>
-                </div>
-                
-                <!-- Checkbox für geschlossene Märkte -->
-                <div class="search-row checkbox-row">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="showClosedMarkets" name="showClosedMarkets">
-                        <label for="showClosedMarkets">Geschlossene Märkte anzeigen</label>
-                    </div>
-                </div>
-                
-                <!-- Such-Tags -->
-                <div class="search-tags">
-                    <div id="selectedTags" class="selected-tags"></div>
                 </div>
             </div>
-        </div>
-
-        <div class="content-section">
-            <h1><i class="fas fa-list-alt"></i> Marktplatz</h1>
-            <ul id="serviceList"></ul>
+            
+            <!-- Marktplatz-Bereich (rechts, breiter) -->
+            <div class="marktplatz-content">
+                <div class="content-section">
+                    <h1><i class="fas fa-list-alt"></i> Marktplatz</h1>
+                    
+                    <!-- Umschaltoption für Dienst-Typen -->
+                    <div class="service-toggle">
+                        <div class="toggle-buttons">
+                            <input type="radio" id="toggle-demands" name="serviceToggle" value="demands" checked>
+                            <label for="toggle-demands" class="toggle-button">
+                                <i class="fas fa-hand-holding"></i>
+                                Gesuchte Dienste
+                            </label>
+                            
+                            <input type="radio" id="toggle-offers" name="serviceToggle" value="offers">
+                            <label for="toggle-offers" class="toggle-button">
+                                <i class="fas fa-hands-helping"></i>
+                                Angebotene Dienste
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <ul id="serviceList"></ul>
+                </div>
+            </div>
         </div>
     </main>
 
