@@ -241,31 +241,6 @@ function loadUserMarkets(username) {
         });
 }
 
-function getServiceTypeName(id) {
-    return serviceIdToNameMap[id] || `Servicetyp ${id}`;
-}
-
-function selectItemByServiceName(serviceName, type) {
-    const selector = type === 'offer' ? '#offeredServicesList' : '#demandedServicesList';
-    const listItems = document.querySelectorAll(`${selector} .service-item`);
-    
-    listItems.forEach(item => {
-        if (item.dataset.name === serviceName) {
-            item.classList.add('selected');
-            
-            if (type === 'offer') {
-                if (!selectedOffers.includes(item.dataset.id)) {
-                    selectedOffers.push(item.dataset.id);
-                }
-            } else {
-                if (!selectedDemands.includes(item.dataset.id)) {
-                    selectedDemands.push(item.dataset.id);
-                }
-            }
-        }
-    });
-}
-
 function selectItemByServiceId(serviceTypeId, type) {
     const selector = type === 'offer' ? '#offeredServicesList' : '#demandedServicesList';
     const listItems = document.querySelectorAll(`${selector} .service-item`);

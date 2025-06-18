@@ -5,6 +5,7 @@ import at.htl.entity.Market;
 import at.htl.entity.ServiceType;
 import at.htl.entity.User;
 import at.htl.repository.MarketRepository;
+import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceTypeRepository;
 import at.htl.repository.UserRepository;
 import jakarta.inject.Inject;
@@ -25,6 +26,8 @@ public class MarketResource {
     MarketRepository marketRepository;
     @Inject
     ServiceTypeRepository serviceTypeRepository;
+    @Inject
+    ServiceRepository serviceRepository;
     @Inject
     UserRepository userRepository;
 
@@ -77,7 +80,10 @@ public class MarketResource {
             }
 
             if (!found) {
-                marketRepository.deleteById(market.getId());
+                if (market != null && market.getId() != null) {
+                    serviceRepository.delete("marketProvider.id = ?1 OR marketClient.id = ?1", market.getId());
+                    marketRepository.deleteById(market.getId());
+                }
             }
         }
 
@@ -113,7 +119,10 @@ public class MarketResource {
             }
 
             if (!found) {
-                marketRepository.deleteById(market.getId());
+                if (market != null && market.getId() != null) {
+                    serviceRepository.delete("marketProvider.id = ?1 OR marketClient.id = ?1", market.getId());
+                    marketRepository.deleteById(market.getId());
+                }
             }
         }
 
