@@ -79,11 +79,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Event-Listener für Datumsfelder
+        // Event-Listener für Datumsfelder (deaktiviert)
+        /*
         const fromDateInput = document.getElementById('fromDateInput');
         const toDateInput = document.getElementById('toDateInput');
         if (fromDateInput) fromDateInput.addEventListener('change', applyFilters);
         if (toDateInput) toDateInput.addEventListener('change', applyFilters);
+        */
         
         // Event-Listener für Filter-Dropdown
         const filterService = document.getElementById("filterService");
@@ -123,12 +125,8 @@ function handleServiceToggle() {
     const selectedValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
     console.log('Toggle changed to:', selectedValue); // Debug
     
-    if (currentServices && currentServices.length > 0) {
-        displayFilteredServices(currentServices, selectedValue);
-    } else {
-        // Falls noch keine Services geladen sind, lade sie
-        loadAllOffers();
-    }
+    // Verwende applyFilters() um alle aktiven Filter zu berücksichtigen
+    applyFilters();
 }
 
 function getCurrentUsername() {
@@ -291,10 +289,7 @@ function getActiveUser() {
                 }
                 
                 // Aktualisiere die Anzeige nach dem Laden des Benutzers
-                if (currentServices && currentServices.length > 0) {
-                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
-                    displayFilteredServices(currentServices, toggleValue);
-                }
+                loadAllOffers();
             } catch (e) {
                 const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
                 
@@ -309,10 +304,7 @@ function getActiveUser() {
                 }
                 
                 // Aktualisiere die Anzeige nach dem Laden des Benutzers
-                if (currentServices && currentServices.length > 0) {
-                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
-                    displayFilteredServices(currentServices, toggleValue);
-                }
+                loadAllOffers();
             }
         })
         .catch(error => {
@@ -350,11 +342,8 @@ function setActiveUser(username) {
                 
                 showMessage(`Erfolgreich als ${username} angemeldet.`);
                 
-                // Aktualisiere die Anzeige nach dem Login, um eigene Services zu verstecken
-                if (currentServices && currentServices.length > 0) {
-                    const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
-                    displayFilteredServices(currentServices, toggleValue);
-                }
+                // Lade Services neu, um den neuen Benutzer herauszufiltern
+                loadAllOffers();
                 
                 return msg;
             });
@@ -409,8 +398,9 @@ function showMessage(message) {
 function applyFilters() {
     const nameSearch = document.getElementById('nameSearchInput').value.trim().toLowerCase();
     const selectedServiceType = document.getElementById('filterService').value;
-    const fromDate = document.getElementById('fromDateInput').value;
-    const toDate = document.getElementById('toDateInput').value;
+    // Datum-Filter sind deaktiviert (auskommentiert)
+    // const fromDate = document.getElementById('fromDateInput').value;
+    // const toDate = document.getElementById('toDateInput').value;
     const showClosedMarkets = document.getElementById('showClosedMarkets').checked;
     const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
     
@@ -453,8 +443,9 @@ function applyFilters() {
                     const inDescription = user.description && user.description.toLowerCase().includes(tagLower);
                     return inServiceType || inDescription;
                 });
-                // Datumsfilter (startDate)
+                // Datumsfilter (startDate) - deaktiviert
                 let matchesDateRange = true;
+                /* Datum-Filter auskommentiert
                 if (fromDate || toDate) {
                     if (user.startDate) {
                         const userStartDate = new Date(user.startDate);
@@ -470,6 +461,7 @@ function applyFilters() {
                         matchesDateRange = false;
                     }
                 }
+                */
                 // Geschlossene Märkte (endDate)
                 let matchesActive = true;
                 if (showClosedMarkets) {
@@ -739,10 +731,29 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
             </div>
             <div class="card-body">
                 <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${name}</p>
-                <p style="margin: 0;"><strong>Beschreibung: </strong> ${description}</p>
+                <p style="margin: 0 0 8px 0;"><strong>Beschreibung:</strong> ${description}</p>
+                ${isOffer ? '<div class="rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>' : ''}
             </div>
         </div>
     `;
+
+    // If it's an offer, fetch and display the average rating
+    if (isOffer && serviceOffer && name && serviceOffer !== 'Unbekannter Dienstleistungstyp' && name !== 'Unbekannter Benutzer') {
+        const ratingContainer = listItem.querySelector('.rating-container');
+        
+        getUserServiceRating(name, serviceOffer)
+            .then(rating => {
+                if (ratingContainer) {
+                    ratingContainer.innerHTML = generateStarHTML(rating);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Laden der Bewertung:', error);
+                if (ratingContainer) {
+                    ratingContainer.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+                }
+            });
+    }
 
     return listItem;
 }
@@ -779,4 +790,58 @@ function createSimpleTestList() {
             console.error('API Error:', error);
             serviceList.innerHTML = '<li>Fehler beim Laden der Daten</li>';
         });
+}
+
+// Bewertungsfunktionen (von showUserServices.js übernommen)
+// Fetch the average rating for a service type (general)
+async function getAverageRating(serviceTypeName) {
+    try {
+        const response = await fetch(`${API_URL}/rating/average/service-type/${encodeURIComponent(serviceTypeName)}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.averageRating || 0;
+    } catch (error) {
+        console.error('Fehler beim Abrufen der durchschnittlichen Bewertung:', error);
+        return 0;
+    }
+}
+
+// Fetch the average rating for a specific user and service type
+async function getUserServiceRating(username, serviceTypeName) {
+    try {
+        const response = await fetch(`${API_URL}/review/average-rating/${encodeURIComponent(username)}/${encodeURIComponent(serviceTypeName)}`);
+        if (response.ok) {
+            return await response.json();
+        }
+        return 0;
+    } catch (error) {
+        console.error('Fehler beim Abrufen der benutzerspezifischen Bewertung:', error);
+        return 0;
+    }
+}
+
+// Generate HTML for star rating display
+function generateStarHTML(rating) {
+    // Check if rating is null, undefined, or 0 (no rating)
+    if (rating === null || rating === undefined || rating === 0) {
+        return '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+    }
+    
+    let starsHTML = "";
+    
+    for (let i = 1; i <= 5; i++) {
+        if (i <= Math.floor(rating)) {
+            // Full star
+            starsHTML += '<i class="fas fa-star selected"></i>';
+        } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
+            // Half star
+            starsHTML += '<i class="fas fa-star-half-alt selected"></i>';
+        } else {
+            // Empty star
+            starsHTML += '<i class="fas fa-star"></i>';
+        }
+    }
+    return `<div class="service-rating">${starsHTML} (${rating.toFixed(1)})</div>`;
 }

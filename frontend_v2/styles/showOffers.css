@@ -2030,17 +2030,19 @@ input:focus, select:focus, textarea:focus {
 }
 
 .date-box {
-    flex: 1;
+    flex: 0 1 auto;
+    max-width: 200px;
+    min-width: 160px;
     position: relative;
-    padding: 8px;  /* Mehr Innenabstand */
-    display: flex;
-    align-items: center; /* Align label and input vertically */
-    gap: 10px; /* Add spacing between label and input */
-    flex-direction: row; /* Ensure label and input are in a row */
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     background-color: #f8f9fa;
     transition: all 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.6rem;
 }
 
 .date-box:hover, .date-box:focus-within {
@@ -2049,28 +2051,43 @@ input:focus, select:focus, textarea:focus {
 }
 
 .date-box label {
-    position: static; /* Ensure label is inline */
-    margin-bottom: 0; /* Remove bottom margin */
-    font-size: 0.95rem; /* Consistent with other inputs */
-    color: var(--secondary-color); /* Match other labels */
-    font-weight: normal; /* Use normal font weight to match other elements */
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .date-box input[type="date"] {
-    padding: 8px 10px; /* Maintain padding for input fields */
-    font-size: 0.95rem; /* Keep font size consistent with other inputs */
-    border: none; /* Remove border to match other search inputs */
-    border-radius: var(--border-radius);
-    background: transparent;
     flex: 1;
+    padding: 0.6rem 0;
+    font-size: 0.95rem;
+    border: none;
+    background: transparent;
     margin: 0;
+    color: var(--text-color);
 }
 
 .date-box input[type="date"]:focus {
     outline: none;
 }
 
-/* Restliches CSS bleibt unverändert */
+/* Responsive adjustments for date fields */
+@media (max-width: 768px) {
+    .date-box {
+        max-width: 200px;
+        min-width: 160px;
+    }
+    
+    .date-box label {
+        font-size: 0.8rem;
+    }
+    
+    .date-search-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
 
 .checkbox-row {
     margin-bottom: 15px;
@@ -2245,18 +2262,7 @@ input:focus, select:focus, textarea:focus {
     padding-left: 2.5rem; /* Platz für Icon */
 }
 
-/* Date Box Styling */
-.filter-box-wrapper .date-box label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--secondary-color);
-    font-weight: 500;
-}
-
-.filter-box-wrapper .date-box input[type="date"] {
-    padding: 0.75rem;
-}
+/* Date Box Styling - inherits from .date-box above */
 
 /* Service Toggle Styles */
 .service-toggle {
@@ -2790,6 +2796,7 @@ input:focus, select:focus, textarea:focus {
 .popular-tag-pill {
     display: inline-flex;
     align-items: center;
+
     gap: 0.3rem;
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
