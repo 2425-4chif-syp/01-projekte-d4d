@@ -91,6 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
             filterService.addEventListener('change', applyFilters);
         }
         
+        // Event-Listener für beliebte Tags
+        const popularTagPills = document.querySelectorAll('.popular-tag-pill');
+        popularTagPills.forEach(pill => {
+            pill.addEventListener('click', function() {
+                const tag = this.getAttribute('data-tag');
+                togglePopularTag(this, tag);
+            });
+        });
+        
         // Lade initiale Daten
         console.log('Loading initial data...');
         loadServiceTypesAndOffers();
@@ -202,26 +211,60 @@ function displayFilteredServices(services, toggleFilter = null) {
 function addTag(tag) {
     if (!selectedTags.has(tag)) {
         selectedTags.add(tag);
-        const tagElement = document.createElement('span');
-        tagElement.className = 'tag';
-        tagElement.innerHTML = `
-            ${tag}
-            <button class="tag-remove" onclick="removeTag('${tag}')">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        document.getElementById('selectedTags').appendChild(tagElement);
+        
+        // Prüfe ob es ein beliebter Tag ist
+        const popularTagPill = document.querySelector(`.popular-tag-pill[data-tag="${tag}"]`);
+        
+        if (popularTagPill) {
+            // Für beliebte Tags: nur visuell markieren, kein separates Element erstellen
+            popularTagPill.classList.add('active');
+        } else {
+            // Für manuelle Tags: separates Element in der Tag-Liste erstellen
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.innerHTML = `
+                ${tag}
+                <button class="tag-remove" onclick="removeTag('${tag}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.getElementById('selectedTags').appendChild(tagElement);
+        }
+        
         applyFilters();
     }
 }
 
 function removeTag(tag) {
     selectedTags.delete(tag);
-    const tagElement = document.querySelector(`.tag:has(button[onclick*="${tag}"])`);
-    if (tagElement) {
-        tagElement.remove();
+    
+    // Prüfe ob es ein beliebter Tag ist
+    const popularTagPill = document.querySelector(`.popular-tag-pill[data-tag="${tag}"]`);
+    
+    if (popularTagPill) {
+        // Für beliebte Tags: nur visuell deaktivieren
+        popularTagPill.classList.remove('active');
+    } else {
+        // Für manuelle Tags: DOM-Element entfernen
+        const tagElement = document.querySelector(`.tag:has(button[onclick*="${tag}"])`);
+        if (tagElement) {
+            tagElement.remove();
+        }
     }
+    
     applyFilters();
+}
+
+function togglePopularTag(pill, tag) {
+    if (pill.classList.contains('active')) {
+        // Tag entfernen
+        pill.classList.remove('active');
+        removeTag(tag);
+    } else {
+        // Tag hinzufügen
+        pill.classList.add('active');
+        addTag(tag);
+    }
 }
 
 // Make removeTag available globally for onclick handlers
