@@ -7,7 +7,6 @@
 * Leon Zehetner
 * Michael Birklbauer
 * Stefan Jelic
-* Semih Yüzüak
 
 == CLD
 [.stretch]
