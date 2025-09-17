@@ -1,0 +1,17 @@
+= Product Backlog
+
+== Als User möchte ich zu jeder angebotenen Dienstleistung die Gesamtbewertung des Anbieters einsehen können (17 Storypoints)
+* Bewertungen-Tab aus dem UI entfernen
+* Funktionalität und Prinzip der Bewertungen fixen / verbessern
+** Aktuell niemand dafür zuständig
+
+== Als User möchte ich mich leicht auf der Seite zurechtfinden, um mich wohlzufühlen und die Seite intuitiv nutzen zu können (20 Storypoints)
+* verständliche Namensgebungen → Beschreibungen: Was macht was?
+* leicht zu verstehender Seitenaufbau → z.B. Seite „Matches“ mit Links- und Rechts-Swipe-Funktion
+* Optimierung des Farbenspiels und der Schriftgrößen
+
+== Als User möchte ich mit dem Admin chatten können (12 Storypoints)
+* Vorschläge für neue Dienstleistungsarten usw. machen
+* Hilfe anfordern können
+
+==== Storypoints: 1 Storypoint = eine Person schafft Aufgabe an einem Tag
