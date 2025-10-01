@@ -43,7 +43,7 @@ public class ReviewResource {
         }
         return Response.ok(reviews).build();
     }
-
+    /*
     @GET
     @Path("/{serviceType}")
     @Transactional
@@ -146,5 +146,5 @@ public class ReviewResource {
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
-    }
+    }*/
 }

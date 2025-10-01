@@ -11,16 +11,8 @@ public class Review {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name="r_u_evaluatee_id")
-    private User evaluatee;
-
-    @ManyToOne
-    @JoinColumn(name="r_u_evaluator_id")
-    private User evaluator;
-
-    @ManyToOne
-    @JoinColumn(name="r_st_id")
-    private ServiceType serviceType;
+    @JoinColumn(name="r_s_id")
+    private Service service;
 
     @Column(name="r_rating")
     private Double rating;
@@ -32,12 +24,18 @@ public class Review {
 
     }
 
-    public Review(User evaluatee, User evaluator, ServiceType serviceType, Double rating, String comment) {
-        this.evaluatee = evaluatee;
-        this.evaluator = evaluator;
-        this.serviceType = serviceType;
+    public Review(Service service, Double rating, String comment) {
+        this.service = service;
         this.rating = rating;
         this.comment = comment;
+    }
+
+    public Service getService() {
+        return service;
+    }
+
+    public void setService(Service service) {
+        this.service = service;
     }
 
     public Long getId() {
@@ -46,30 +44,6 @@ public class Review {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public User getEvaluatee() {
-        return evaluatee;
-    }
-
-    public void setEvaluatee(User evaluatee) {
-        this.evaluatee = evaluatee;
-    }
-
-    public User getEvaluator() {
-        return evaluator;
-    }
-
-    public void setEvaluator(User evaluator) {
-        this.evaluator = evaluator;
-    }
-
-    public ServiceType getServiceType() {
-        return serviceType;
-    }
-
-    public void setServiceType(ServiceType serviceType) {
-        this.serviceType = serviceType;
     }
 
     public Double getRating() {

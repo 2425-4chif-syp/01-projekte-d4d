@@ -8,7 +8,7 @@ import java.util.List;
 
 @ApplicationScoped
 public class ReviewRepository implements PanacheRepository<Review> {
-    public Double getAverageRatingForServiceType(String serviceType) {
+    /* public Double getAverageRatingForServiceType(String serviceType) {
         List<Review> reviews = list("serviceType.name", serviceType);
 
         return reviews.stream()
@@ -24,5 +24,5 @@ public class ReviewRepository implements PanacheRepository<Review> {
                 .mapToDouble(r -> r.getRating() != null ? r.getRating() : 0.0)
                 .average()
                 .orElse(0.0);
-    }
+    }*/
 }

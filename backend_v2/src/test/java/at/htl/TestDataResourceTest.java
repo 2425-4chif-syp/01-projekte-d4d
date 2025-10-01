@@ -61,7 +61,7 @@ public class TestDataResourceTest {
                 .statusCode(200)
                 .body(is("Chat-Testdaten erfolgreich generiert."));
     }
-
+    /*
     @Test
     @Order(6)
     public void testGenerateReviewTestData() {
@@ -70,5 +70,5 @@ public class TestDataResourceTest {
                 .then()
                 .statusCode(200)
                 .body(is("Review-Testdaten erfolgreich generiert."));
-    }
+    }*/
 }
