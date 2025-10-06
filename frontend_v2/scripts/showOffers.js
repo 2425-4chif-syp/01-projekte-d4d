@@ -538,11 +538,17 @@ function addUserToList(serviceOffer, serviceWanted, name, description, startdate
                 <p><strong>Beschreibung:</strong> ${description}</p>
                 <p><strong>Von:</strong> ${formattedStartDate}</p>
                 <p><strong>Bis:</strong> ${formattedEndDate}</p>
+                <div class="rating-container" data-username="${name}">
+                    <i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...
+                </div>
             </div>
         </div>
     `;
 
     serviceList.appendChild(listItem);
+    
+    // Load rating for this user
+    loadUserRating(name, listItem.querySelector('.rating-container'));
 }
 
 
@@ -738,21 +744,11 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
     `;
 
     // If it's an offer, fetch and display the average rating
-    if (isOffer && serviceOffer && name && serviceOffer !== 'Unbekannter Dienstleistungstyp' && name !== 'Unbekannter Benutzer') {
+    if (isOffer && name && name !== 'Unbekannter Benutzer') {
         const ratingContainer = listItem.querySelector('.rating-container');
         
-        getUserServiceRating(name, serviceOffer)
-            .then(rating => {
-                if (ratingContainer) {
-                    ratingContainer.innerHTML = generateStarHTML(rating);
-                }
-            })
-            .catch(error => {
-                console.error('Fehler beim Laden der Bewertung:', error);
-                if (ratingContainer) {
-                    ratingContainer.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
-                }
-            });
+        // Load rating for this user using the new API
+        loadUserRating(name, ratingContainer);
     }
 
     return listItem;
@@ -844,4 +840,32 @@ function generateStarHTML(rating) {
         }
     }
     return `<div class="service-rating">${starsHTML} (${rating.toFixed(1)})</div>`;
+}
+
+// Load user rating from API
+async function loadUserRating(username, container) {
+    if (!username || !container) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
+        if (response.ok) {
+            const stats = await response.json();
+            
+            // Generate rating HTML
+            if (stats.averageRating && stats.averageRating > 0) {
+                const starsHTML = generateStarHTML(stats.averageRating);
+                // Add review count
+                container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${stats.totalReviews} ${stats.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+            }
+        } else {
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Bewertung:', error);
+        container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+    }
 }

@@ -33,7 +33,7 @@
             </button>
             <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
                 <i class="fas fa-search"></i>
-                Services
+                Matches
             </button>
             <button onclick="window.location.href='chats_page.html'">
                 <i class="fas fa-comments"></i>
@@ -55,6 +55,47 @@
             </div>
         </div>
     </main>
+
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-star"></i> Bewertung abgeben</h3>
+                <button class="close-modal" onclick="closeRatingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="rating-info">
+                    <p><strong>Anbieter:</strong> <span id="ratingProviderName"></span></p>
+                    <p><strong>Service:</strong> <span id="ratingServiceType"></span></p>
+                </div>
+                
+                <div class="star-rating-input">
+                    <label>Bewertung (0-5 Sterne):</label>
+                    <div class="stars-container">
+                        <i class="far fa-star" data-rating="1"></i>
+                        <i class="far fa-star" data-rating="2"></i>
+                        <i class="far fa-star" data-rating="3"></i>
+                        <i class="far fa-star" data-rating="4"></i>
+                        <i class="far fa-star" data-rating="5"></i>
+                    </div>
+                    <p class="rating-value">Keine Bewertung ausgewählt (0 Sterne)</p>
+                </div>
+                
+                <div class="comment-input">
+                    <label for="ratingComment">Kommentar (optional, max. 1000 Zeichen):</label>
+                    <textarea id="ratingComment" rows="4" maxlength="1000" placeholder="Beschreibe deine Erfahrung..."></textarea>
+                    <p class="char-count">0 / 1000 Zeichen</p>
+                </div>
+                
+                <div class="modal-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeRatingModal()">Abbrechen</button>
+                <button class="btn-primary" onclick="submitRating()">Bewertung abgeben</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="scripts/showUserServices.js"></script>
 </body>
 </html>

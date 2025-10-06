@@ -669,22 +669,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         cardDiv.innerHTML = cardHTML;
         
-        // If it's an offer, fetch and display the average rating
+        // If it's an offer, make it clickable and add rating functionality
         if (offer === 1 && serviceTypeName !== 'Unbekannter Dienstleistungstyp' && username !== 'Unbekannter Benutzer') {
-            const ratingContainer = cardDiv.querySelector('.rating-container');
+            // Make card clickable
+            cardDiv.classList.add('clickable');
+            cardDiv.style.cursor = 'pointer';
             
-            getUserServiceRating(username, serviceTypeName)
-                .then(rating => {
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = generateStarHTML(rating);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fehler beim Anzeigen der Bewertung:', error);
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
-                    }
-                });
+            // Add click handler to open rating modal
+            cardDiv.addEventListener('click', function(e) {
+                // Check if we have a serviceId from the service object
+                const serviceId = service.id || service.serviceId || null;
+                if (serviceId) {
+                    openRatingModal(serviceId, username, serviceTypeName);
+                } else {
+                    console.warn('Service ID not found for rating:', service);
+                    alert('Bewertung nicht möglich: Service-ID fehlt');
+                }
+            });
+            
+            // Load rating using the same approach as showOffers.js
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            if (ratingContainer) {
+                loadUserRating(username, ratingContainer);
+            }
         }
         
         return cardDiv;
@@ -754,14 +761,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch the average rating for a specific user and service type
     async function getUserServiceRating(username, serviceTypeName) {
         try {
-            const response = await fetch(`${API_URL}/review/average-rating/${encodeURIComponent(username)}/${encodeURIComponent(serviceTypeName)}`);
+            // Use the new ratings endpoint
+            const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
             if (response.ok) {
-                return await response.json();
+                const stats = await response.json();
+                // Return the full stats object
+                return stats;
             }
-            return 0;
+            return { averageRating: 0, totalReviews: 0 };
         } catch (error) {
-            console.error('Fehler beim Abrufen der benutzerspezifischen Bewertung:', error);
-            return 0;
+            console.error('Fehler beim Abrufen der Bewertung:', error);
+            return { averageRating: 0, totalReviews: 0 };
         }
     }
 
@@ -769,35 +779,55 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateStarHTML(rating) {
         // Check if rating is null, undefined, or 0 (no rating)
         if (rating === null || rating === undefined || rating === 0) {
-            return `<div class="service-rating"><i class="fas fa-question-circle" style="color: #dc3545; margin-right: 5px;"></i>Noch nicht bewertet</div>`;
+            return '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
         }
         
         let starsHTML = "";
         
         for (let i = 1; i <= 5; i++) {
-            const decimal = rating - Math.floor(rating);
-            
             if (i <= Math.floor(rating)) {
                 // Full star
-                starsHTML += `<i class="fas fa-star selected"></i>`;
-            } else if (i === Math.ceil(rating) && decimal !== 0) {
-                // Half or full star based on decimal value
-                if (decimal >= 0.8) {
-                    starsHTML += `<i class="fas fa-star selected"></i>`;
-                } else if (decimal >= 0.4) {
-                    starsHTML += `<i class="fas fa-star-half-alt selected"></i>`;
-                } else {
-                    starsHTML += `<i class="fas fa-star"></i>`;
-                }
+                starsHTML += '<i class="fas fa-star selected"></i>';
+            } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
+                // Half star
+                starsHTML += '<i class="fas fa-star-half-alt selected"></i>';
             } else {
                 // Empty star
-                starsHTML += `<i class="fas fa-star"></i>`;
+                starsHTML += '<i class="fas fa-star"></i>';
             }
         }
         return `<div class="service-rating">${starsHTML} (${rating.toFixed(1)})</div>`;
     }
 
-    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider }) {
+    // Load user rating from API
+    async function loadUserRating(username, container) {
+        if (!username || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
+            if (response.ok) {
+                const stats = await response.json();
+                
+                // Generate rating HTML
+                if (stats.averageRating && stats.averageRating > 0) {
+                    const starsHTML = generateStarHTML(stats.averageRating);
+                    // Add review count
+                    container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${stats.totalReviews} ${stats.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+                } else {
+                    container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+                }
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Bewertung:', error);
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+        }
+    }
+
+    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider, serviceId, id }) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
         
@@ -810,6 +840,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const displayServiceType = serviceTypeName || 
             (marketProvider && marketProvider.serviceType && marketProvider.serviceType.name ? 
                 marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
+        
+        // Get service ID from various sources
+        const finalServiceId = serviceId || id || null;
         
         // Create the card without the rating first
         const cardHTML = `
@@ -829,22 +862,27 @@ document.addEventListener('DOMContentLoaded', function() {
         
         cardDiv.innerHTML = cardHTML;
         
-        // If it's an offer, fetch and display the average rating
+        // If it's an offer, make it clickable and fetch rating
         if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp' && displayUsername !== 'Unbekannter Benutzer') {
-            const ratingContainer = cardDiv.querySelector('.rating-container');
+            // Make card clickable
+            cardDiv.classList.add('clickable');
+            cardDiv.style.cursor = 'pointer';
             
-            getUserServiceRating(displayUsername, displayServiceType)
-                .then(rating => {
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = generateStarHTML(rating);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fehler beim Anzeigen der Bewertung:', error);
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
-                    }
-                });
+            // Add click handler to open rating modal
+            cardDiv.addEventListener('click', function(e) {
+                if (finalServiceId) {
+                    openRatingModal(finalServiceId, displayUsername, displayServiceType);
+                } else {
+                    console.warn('Service ID not found for rating');
+                    alert('Bewertung nicht möglich: Service-ID fehlt');
+                }
+            });
+            
+            // Load rating using the same approach as showOffers.js
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            if (ratingContainer) {
+                loadUserRating(displayUsername, ratingContainer);
+            }
         }
         
         return cardDiv;
@@ -1054,3 +1092,206 @@ document.addEventListener('DOMContentLoaded', function() {
         searchUserServices(navUsernameInput.value.trim());
     }
 });
+// ==================== RATING MODAL FUNCTIONALITY ====================
+
+let currentRatingData = {
+    serviceId: null,
+    providerName: null,
+    serviceType: null,
+    selectedStars: 0
+};
+
+// Initialize rating modal functionality
+function initializeRatingModal() {
+    const stars = document.querySelectorAll('.stars-container i');
+    const commentTextarea = document.getElementById('ratingComment');
+    const charCount = document.querySelector('.char-count');
+    
+    // Star rating selection
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            currentRatingData.selectedStars = rating;
+            updateStarDisplay(rating);
+            updateRatingValue(rating);
+        });
+        
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            updateStarDisplay(rating, true);
+        });
+    });
+    
+    // Reset stars on mouse leave
+    document.querySelector('.stars-container').addEventListener('mouseleave', function() {
+        updateStarDisplay(currentRatingData.selectedStars);
+    });
+    
+    // Character count for comment
+    if (commentTextarea) {
+        commentTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = `${length} / 1000 Zeichen`;
+        });
+    }
+}
+
+function updateStarDisplay(rating, isHover = false) {
+    const stars = document.querySelectorAll('.stars-container i');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('far');
+            star.classList.add('fas');
+        } else {
+            star.classList.remove('fas');
+            star.classList.add('far');
+        }
+    });
+}
+
+function updateRatingValue(rating) {
+    const ratingValue = document.querySelector('.rating-value');
+    if (rating === 0) {
+        ratingValue.textContent = 'Keine Bewertung ausgewählt (0 Sterne)';
+    } else {
+        ratingValue.textContent = `${rating} ${rating === 1 ? 'Stern' : 'Sterne'}`;
+    }
+}
+
+// Open rating modal for a service
+window.openRatingModal = function(serviceId, providerName, serviceType) {
+    currentRatingData = {
+        serviceId: serviceId,
+        providerName: providerName,
+        serviceType: serviceType,
+        selectedStars: 0
+    };
+    
+    // Update modal display
+    document.getElementById('ratingProviderName').textContent = providerName;
+    document.getElementById('ratingServiceType').textContent = serviceType;
+    document.getElementById('ratingComment').value = '';
+    document.querySelector('.char-count').textContent = '0 / 1000 Zeichen';
+    document.querySelector('.modal-message').style.display = 'none';
+    document.querySelector('.modal-message').className = 'modal-message';
+    
+    // Reset stars
+    updateStarDisplay(0);
+    updateRatingValue(0);
+    
+    // Show modal
+    document.getElementById('ratingModal').classList.add('active');
+    
+    // Initialize if not already done
+    if (!window.ratingModalInitialized) {
+        initializeRatingModal();
+        window.ratingModalInitialized = true;
+    }
+};
+
+// Close rating modal
+window.closeRatingModal = function() {
+    document.getElementById('ratingModal').classList.remove('active');
+    currentRatingData = {
+        serviceId: null,
+        providerName: null,
+        serviceType: null,
+        selectedStars: 0
+    };
+};
+
+// Submit rating
+window.submitRating = async function() {
+    const modalMessage = document.querySelector('.modal-message');
+    const commentInput = document.getElementById('ratingComment');
+    
+    // Validation
+    if (currentRatingData.selectedStars === 0) {
+        showModalMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
+        return;
+    }
+    
+    if (!currentRatingData.serviceId) {
+        showModalMessage('Fehler: Service-ID nicht gefunden', 'error');
+        return;
+    }
+    
+    const comment = commentInput.value.trim();
+    if (comment.length > 1000) {
+        showModalMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
+        return;
+    }
+    
+    // Prepare request
+    const ratingData = {
+        serviceId: currentRatingData.serviceId,
+        stars: currentRatingData.selectedStars,
+        comment: comment || null
+    };
+    
+    try {
+        const response = await fetch(`${API_URL}/ratings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ratingData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            if (response.status === 409) {
+                showModalMessage('Du hast diesen Service bereits bewertet', 'error');
+            } else if (response.status === 404) {
+                showModalMessage('Service nicht gefunden', 'error');
+            } else if (response.status === 400) {
+                showModalMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+            } else {
+                showModalMessage('Fehler beim Speichern der Bewertung', 'error');
+            }
+            return;
+        }
+        
+        const result = await response.json();
+        
+        showModalMessage('Bewertung erfolgreich gespeichert!', 'success');
+        
+        // Close modal after 1.5 seconds
+        setTimeout(() => {
+            closeRatingModal();
+            // Reload page to show updated ratings
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Fehler beim Absenden der Bewertung:', error);
+        showModalMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+    }
+};
+
+function showModalMessage(message, type) {
+    const modalMessage = document.querySelector('.modal-message');
+    modalMessage.textContent = message;
+    modalMessage.className = `modal-message ${type}`;
+    modalMessage.style.display = 'block';
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('ratingModal');
+    if (e.target === modal) {
+        closeRatingModal();
+    }
+});
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('ratingModal');
+        if (modal && modal.classList.contains('active')) {
+            closeRatingModal();
+        }
+    }
+});
+
+console.log('Rating modal functionality loaded');
