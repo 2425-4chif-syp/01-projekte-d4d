@@ -4,6 +4,7 @@ import at.htl.entity.ChatEntry;
 import at.htl.entity.ServiceType;
 import at.htl.entity.User;
 import at.htl.repository.ChatEntryRepository;
+import at.htl.repository.UserRepository;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -20,26 +21,17 @@ import java.util.List;
 public class ChatEntryResource {
     @Inject
     ChatEntryRepository chatEntryRepository;
+    
+    @Inject
+    UserRepository userRepository;
 
     @GET
     @Path("/users")
     @Transactional
     public Response getAllUsers() {
-        List<ChatEntry> chatEntries = chatEntryRepository.listAll();
-        List<User> users = new ArrayList<>();
-
-        for (ChatEntry chatEntry : chatEntries) {
-            User sender = chatEntry.getSender();
-            User receiver = chatEntry.getReceiver();
-
-            if (!users.contains(sender)) {
-                users.add(sender);
-            }
-            if (!users.contains(receiver)) {
-                users.add(receiver);
-            }
-        }
-
+        // Gibt ALLE Benutzer aus der Datenbank zurück, nicht nur die mit Chat-Einträgen
+        List<User> users = userRepository.listAll();
+        
         if (users.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("Keine Benutzer gefunden!").build();
