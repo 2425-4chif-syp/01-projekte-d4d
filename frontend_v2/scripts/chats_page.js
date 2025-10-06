@@ -93,61 +93,87 @@ async function loadRealChats() {
         }
         
         const contacts = await contactsResponse.json();
-        console.log('Chat: Benutzer von API erhalten:', contacts);
+        console.log('Chat: Benutzer von API erhalten:', contacts.length, 'Benutzer');
         
         if (contacts.length === 0) {
             showFallbackChats();
             return;
         }
         
-        // 2. Für jeden Kontakt Chat-Daten aufbauen und letzte Nachricht laden
+        // 2. Erstelle Chat-Objekte für alle Kontakte
+        // WICHTIG: Prüfe für Chats ob Nachrichten existieren (mit Batch-Verarbeitung)
         const currentUserId = await getCurrentUserId();
-        const chatPromises = contacts
-            .filter(contact => contact.name !== currentUser) // Nicht mit sich selbst chatten
-            .map(async (contact) => {
+        const filteredContacts = contacts.filter(contact => contact.name !== currentUser);
+        
+        console.log('Chat: Starte Laden von', filteredContacts.length, 'Chats...');
+        
+        // Verarbeite Chats in Batches von 50 gleichzeitig (Performance)
+        const batchSize = 50;
+        chats = [];
+        
+        for (let i = 0; i < filteredContacts.length; i += batchSize) {
+            const batch = filteredContacts.slice(i, i + batchSize);
+            console.log(`Chat: Verarbeite Batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(filteredContacts.length/batchSize)} (${batch.length} Chats)`);
+            
+            const batchPromises = batch.map(async (contact) => {
                 try {
-                    // Lade letzte Nachrichten zwischen currentUser und diesem Kontakt
+                    // Prüfe ob es bereits Nachrichten gibt
                     const messagesResponse = await fetch(`${API_URL}/chatentry/${currentUserId}/${contact.id}`);
                     
-                    let lastMessage = 'Starten Sie eine Unterhaltung';
+                    let lastMessage = 'Neue Unterhaltung starten';
                     let lastUpdate = new Date().toISOString();
                     
                     if (messagesResponse.ok) {
                         const messages = await messagesResponse.json();
                         if (messages.length > 0) {
                             const lastMsg = messages[messages.length - 1];
-                            lastMessage = lastMsg.message || 'Nachricht';
+                            lastMessage = (lastMsg.message || 'Nachricht');
+                            lastMessage = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
                             lastUpdate = lastMsg.time || new Date().toISOString();
                         }
                     }
                     
+                    // KORRIGIERT: Extrahiere Namen korrekt (falls contact.name ein Objekt ist)
+                    const contactName = typeof contact.name === 'object' && contact.name !== null 
+                        ? (contact.name.username || contact.name.name || String(contact.name))
+                        : (contact.name || 'Unbekannt');
+                    
                     return {
                         id: contact.id,
                         user1Username: currentUser,
-                        user2Username: contact.name,
+                        user2Username: contactName,
                         lastMessage: lastMessage,
                         lastUpdate: lastUpdate,
-                        isAdmin: contact.name.toLowerCase() === 'admin'
+                        isAdmin: contactName.toLowerCase() === 'admin'
                     };
                 } catch (error) {
-                    console.error('Chat: Fehler beim Laden der letzten Nachricht für', contact.name, ':', error);
+                    // KORRIGIERT: Extrahiere Namen korrekt (falls contact.name ein Objekt ist)
+                    const contactName = typeof contact.name === 'object' && contact.name !== null 
+                        ? (contact.name.username || contact.name.name || String(contact.name))
+                        : (contact.name || 'Unbekannt');
+                    
+                    console.debug('Chat: Fehler beim Prüfen von', contactName, ':', error);
                     return {
                         id: contact.id,
                         user1Username: currentUser,
-                        user2Username: contact.name,
-                        lastMessage: 'Starten Sie eine Unterhaltung',
+                        user2Username: contactName,
+                        lastMessage: 'Neue Unterhaltung starten',
                         lastUpdate: new Date().toISOString(),
-                        isAdmin: contact.name.toLowerCase() === 'admin'
+                        isAdmin: contactName.toLowerCase() === 'admin'
                     };
                 }
             });
+            
+            const batchResults = await Promise.all(batchPromises);
+            chats.push(...batchResults);
+            
+            // Rendere nach jedem Batch, damit User nicht zu lange warten muss
+            if (i === 0) {
+                renderChatList();
+            }
+        }
         
-        chats = await Promise.all(chatPromises);
-        
-        // 3. Admin-Chat erstellen/sicherstellen
-        await ensureAdminChat();
-        
-        console.log('Chat: Verarbeitete Chats mit letzten Nachrichten:', chats);
+        console.log('Chat: Alle Chats geladen mit Nachrichtenstatus:', chats.length);
         
         if (chats.length === 0) {
             showFallbackChats();
@@ -165,41 +191,48 @@ async function loadRealChats() {
 
 // Stelle sicher, dass ein Admin-Chat existiert
 async function ensureAdminChat() {
-    // Prüfe ob der aktuelle Benutzer der Admin ist
-    if (currentUser && currentUser.toLowerCase() === 'admin') {
-        console.log('Chat: Aktueller Benutzer ist Admin - kein Admin-Chat nötig');
-        return; // Admin chattet nicht mit sich selbst
-    }
-    
-    // Prüfe ob Admin bereits in den Chats ist
-    let adminChat = chats.find(chat => chat.isAdmin || chat.user2Username.toLowerCase() === 'admin');
-    
-    if (!adminChat) {
-        // Erstelle Admin-Chat wenn er nicht existiert
-        console.log('Chat: Erstelle Admin-Chat');
-        
-        adminChat = {
-            id: 'admin-chat',
-            user1Username: currentUser,
-            user2Username: 'Admin',
-            lastMessage: 'Hallo, schreibe mir wenn du Hilfe brauchst.',
-            lastUpdate: new Date().toISOString(),
-            isAdmin: true,
-            isPinned: true
-        };
-        
-        // Füge Admin-Chat an den Anfang hinzu
-        chats.unshift(adminChat);
-    } else {
-        // Markiere existierenden Admin-Chat als gepinnt
-        adminChat.isPinned = true;
-        adminChat.isAdmin = true;
-        
-        // Wenn Admin-Chat keine Nachricht hat, setze Willkommensnachricht
-        if (!adminChat.lastMessage || adminChat.lastMessage === 'Starten Sie eine Unterhaltung') {
-            adminChat.lastMessage = 'Hallo, schreibe mir wenn du Hilfe brauchst.';
-            adminChat.lastUpdate = new Date().toISOString();
+    try {
+        // Prüfe ob der aktuelle Benutzer der Admin ist
+        if (currentUser && currentUser.toLowerCase() === 'admin') {
+            console.log('Chat: Aktueller Benutzer ist Admin - kein Admin-Chat nötig');
+            return; // Admin chattet nicht mit sich selbst
         }
+        
+        // Prüfe ob Admin bereits in den Chats ist
+        let adminChat = chats.find(chat => {
+            if (!chat || !chat.user2Username) return false;
+            return chat.isAdmin || chat.user2Username.toLowerCase() === 'admin';
+        });
+        
+        if (!adminChat) {
+            // Erstelle Admin-Chat wenn er nicht existiert
+            console.log('Chat: Erstelle Admin-Chat');
+            
+            adminChat = {
+                id: 'admin-chat',
+                user1Username: currentUser,
+                user2Username: 'Admin',
+                lastMessage: 'Hallo, schreibe mir wenn du Hilfe brauchst.',
+                lastUpdate: new Date().toISOString(),
+                isAdmin: true,
+                isPinned: true
+            };
+            
+            // Füge Admin-Chat an den Anfang hinzu
+            chats.unshift(adminChat);
+        } else {
+            // Markiere existierenden Admin-Chat als gepinnt
+            adminChat.isPinned = true;
+            adminChat.isAdmin = true;
+            
+            // Wenn Admin-Chat keine Nachricht hat, setze Willkommensnachricht
+            if (!adminChat.lastMessage || adminChat.lastMessage === 'Starten Sie eine Unterhaltung') {
+                adminChat.lastMessage = 'Hallo, schreibe mir wenn du Hilfe brauchst.';
+                adminChat.lastUpdate = new Date().toISOString();
+            }
+        }
+    } catch (error) {
+        console.error('Chat: Fehler in ensureAdminChat:', error);
     }
 }
 
@@ -382,12 +415,14 @@ function renderChatList() {
     const activeChats = regularChats.filter(chat => 
         chat.lastMessage && 
         chat.lastMessage !== 'Starten Sie eine Unterhaltung' && 
+        chat.lastMessage !== 'Neue Unterhaltung starten' &&
         chat.lastMessage.trim() !== ''
     );
     
     const newChats = regularChats.filter(chat => 
         !chat.lastMessage || 
         chat.lastMessage === 'Starten Sie eine Unterhaltung' || 
+        chat.lastMessage === 'Neue Unterhaltung starten' ||
         chat.lastMessage.trim() === ''
     );
     
@@ -399,6 +434,8 @@ function renderChatList() {
     
     // KORRIGIERT: Sortiere auch neue Chats nach Erstellungszeit (neueste zuerst)
     newChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+    
+    console.log(`Chat: Rendere ${adminChats.length} Admin, ${activeChats.length} aktive und ${newChats.length} neue Chats`);
     
     // 1. ADMIN-CHAT GANZ OBEN (angepinnt und nach Aktivität sortiert)
     if (adminChats.length > 0) {
@@ -412,11 +449,11 @@ function renderChatList() {
         });
     }
     
-    // 2. Aktive Chats (neueste zuerst)
+    // 2. Kürzliche Chats (neueste zuerst)
     if (activeChats.length > 0) {
         const activeCategoryHeader = document.createElement('div');
         activeCategoryHeader.className = 'chat-category';
-        activeCategoryHeader.innerHTML = '<i class="fas fa-clock"></i> Aktive Chats';
+        activeCategoryHeader.innerHTML = '<i class="fas fa-clock"></i> Kürzliche Chats';
         chatList.appendChild(activeCategoryHeader);
         
         activeChats.forEach(chat => {
@@ -441,7 +478,14 @@ function renderChatList() {
 
 // Hilfsfunktion: Einzelnen Chat-Item rendern
 function renderChatItem(chat, container, isAdmin = false) {
-    const otherUser = chat.user1Username === currentUser ? chat.user2Username : chat.user1Username;
+    // KORRIGIERT: Stelle sicher dass otherUser ein String ist
+    let otherUser = chat.user1Username === currentUser ? chat.user2Username : chat.user1Username;
+    
+    // Falls otherUser ein Objekt ist, extrahiere den Namen
+    if (typeof otherUser === 'object' && otherUser !== null) {
+        otherUser = otherUser.username || otherUser.name || 'Unbekannt';
+    }
+    
     const firstLetter = otherUser.charAt(0).toUpperCase();
     
     const chatItem = document.createElement('div');
@@ -513,6 +557,25 @@ async function loadMessagesForChat(chatId) {
         if (response.ok) {
             const messages = await response.json();
             console.log('Chat: Echte Nachrichten von API erhalten:', messages);
+            
+            // Aktualisiere Chat-Objekt mit letzter Nachricht
+            if (messages.length > 0) {
+                const chat = chats.find(c => c.id === chatId);
+                if (chat) {
+                    const lastMsg = messages[messages.length - 1];
+                    const lastMessage = lastMsg.message || 'Nachricht';
+                    chat.lastMessage = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                    chat.lastUpdate = lastMsg.time || new Date().toISOString();
+                    
+                    // Chat-Liste neu rendern um die Kategorie zu aktualisieren
+                    renderChatList();
+                    // Aktiven Chat wieder markieren
+                    setTimeout(() => {
+                        document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
+                    }, 100);
+                }
+            }
+            
             renderRealMessages(messages);
         } else {
             console.log('Chat: Keine echten Nachrichten gefunden, zeige leeren Chat');
@@ -769,20 +832,25 @@ function sendDemoMessage(message) {
 function updateChatListAfterMessage(message) {
     const chat = chats.find(c => c.id === currentChatId);
     if (chat) {
-        chat.lastMessage = message;
+        // Aktualisiere die letzte Nachricht und Zeit
+        chat.lastMessage = message.length > 50 ? message.substring(0, 50) + '...' : message;
         chat.lastUpdate = new Date().toISOString();
         
-        // KORRIGIERT: Admin-Chat bekommt höchste Priorität bei Updates
-        if (chat.isAdmin || chat.isPinned) {
-            console.log('Chat: Admin-Chat aktualisiert - wird an die Spitze gesetzt');
-            // Entferne Chat aus aktueller Position
-            const index = chats.indexOf(chat);
+        // WICHTIG: Entferne Chat aus aktueller Position und füge an den Anfang
+        const index = chats.indexOf(chat);
+        if (index > -1) {
             chats.splice(index, 1);
-            // Füge ihn an den Anfang hinzu
-            chats.unshift(chat);
         }
         
-        // Chat-Liste sofort neu rendern
+        // Admin-Chats bleiben Admin-Chats, aber werden auch nach vorne geschoben
+        if (chat.isAdmin || chat.isPinned) {
+            console.log('Chat: Admin-Chat aktualisiert - wird an die Spitze gesetzt');
+        }
+        
+        // Füge den aktualisierten Chat an den Anfang der Liste
+        chats.unshift(chat);
+        
+        // Chat-Liste sofort neu rendern (wird jetzt in "Kürzliche Chats" sein)
         renderChatList();
         
         // Aktiven Chat wieder markieren
@@ -790,46 +858,152 @@ function updateChatListAfterMessage(message) {
             document.querySelector(`[data-chat-id="${currentChatId}"]`)?.classList.add('active');
         }, 100);
         
-        console.log('Chat: Liste aktualisiert nach Nachricht:', message.substring(0, 30));
+        console.log('Chat: Liste aktualisiert - Chat verschoben zu Kürzliche Chats');
     }
 }
 
-// NEU: Automatische Aktualisierung für eingehende Nachrichten (nur für echte API-Chats)
+// NEU: Automatische Aktualisierung für eingehende Nachrichten
 function startPeriodicChatUpdates() {
+    console.log('Chat: ⏰ Starte automatische Aktualisierung (alle 10 Sekunden)');
+    
     // Überprüfe alle 10 Sekunden ob neue Nachrichten da sind
     setInterval(async () => {
-        if (!currentUser || !currentChatId) return;
-        
-        // Nur für echte API-Chats, nicht für Demo-Chats
-        if (typeof currentChatId === 'string' && (currentChatId.startsWith('demo-') || currentChatId === 'admin-chat')) {
+        if (!currentUser) {
+            console.debug('Chat: Kein aktiver Benutzer - überspringe Aktualisierung');
             return;
         }
         
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`Chat: 🔍 [${timestamp}] Starte Prüfung auf neue Nachrichten...`);
+        
         try {
-            console.log('Chat: Prüfe auf neue Nachrichten...');
             const currentUserId = await getCurrentUserId();
-            const response = await fetch(`${API_URL}/chatentry/${currentUserId}/${currentChatId}`);
+            let hasUpdates = false;
             
-            if (response.ok) {
-                const messages = await response.json();
-                const chatMessages = document.getElementById('chatMessages');
-                
-                if (chatMessages && messages.length > 0) {
-                    const currentMessageCount = chatMessages.querySelectorAll('.message').length;
+            // TEIL 1: Prüfe bestehende aktive Chats auf Updates
+            const activeChatsToCheck = chats.filter(chat => {
+                // Überspringe Demo-Chats
+                if (typeof chat.id === 'string' && (chat.id.startsWith('demo-') || chat.id === 'admin-chat')) {
+                    return false;
+                }
+                // Nur Chats mit echten Nachrichten prüfen
+                return chat.lastMessage && 
+                       chat.lastMessage !== 'Neue Unterhaltung starten' && 
+                       chat.lastMessage !== 'Starten Sie eine Unterhaltung';
+            });
+            
+            console.log(`Chat: Prüfe ${activeChatsToCheck.length} aktive Chats auf Updates`);
+            
+            // Prüfe jeden aktiven Chat auf neue Nachrichten
+            for (const chat of activeChatsToCheck) {
+                try {
+                    const response = await fetch(`${API_URL}/chatentry/${currentUserId}/${chat.id}`);
                     
-                    // Wenn neue Nachrichten vorhanden sind
-                    if (messages.length > currentMessageCount) {
-                        console.log('Chat: Neue Nachrichten gefunden, aktualisiere Chat');
-                        renderRealMessages(messages);
+                    if (response.ok) {
+                        const messages = await response.json();
                         
-                        // Auch Chat-Liste aktualisieren
-                        const lastMessage = messages[messages.length - 1];
-                        if (lastMessage && lastMessage.message) {
-                            updateChatListAfterMessage(lastMessage.message);
+                        if (messages.length > 0) {
+                            const lastMsg = messages[messages.length - 1];
+                            const lastMessage = lastMsg.message || 'Nachricht';
+                            const lastUpdate = lastMsg.time || new Date().toISOString();
+                            
+                            // Prüfe ob sich die letzte Nachricht geändert hat
+                            if (chat.lastUpdate !== lastUpdate) {
+                                console.log(`Chat: ✉️ Neue Nachricht in Chat mit ${chat.user2Username}`);
+                                
+                                // Aktualisiere Chat-Objekt
+                                chat.lastMessage = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                                chat.lastUpdate = lastUpdate;
+                                hasUpdates = true;
+                                
+                                // Wenn dies der aktuell geöffnete Chat ist, aktualisiere die Nachrichten
+                                if (currentChatId === chat.id) {
+                                    renderRealMessages(messages);
+                                }
+                            }
                         }
+                    }
+                } catch (error) {
+                    // Ignoriere Fehler für einzelne Chats
+                    console.debug('Chat: Fehler beim Prüfen von Chat:', chat.id, error);
+                }
+            }
+            
+            // TEIL 2: Prüfe auch NEUE Chats (für Admin - wenn jemand zum ersten Mal schreibt)
+            const newChatsToCheck = chats.filter(chat => {
+                // Überspringe Demo-Chats
+                if (typeof chat.id === 'string' && (chat.id.startsWith('demo-') || chat.id === 'admin-chat')) {
+                    return false;
+                }
+                // Nur Chats OHNE Nachrichten prüfen
+                return !chat.lastMessage || 
+                       chat.lastMessage === 'Neue Unterhaltung starten' || 
+                       chat.lastMessage === 'Starten Sie eine Unterhaltung';
+            });
+            
+            // Prüfe nur maximal 20 neue Chats pro Zyklus (Performance-Optimierung)
+            const chatsToSample = newChatsToCheck.slice(0, 20);
+            
+            if (chatsToSample.length > 0) {
+                console.log(`Chat: Prüfe ${chatsToSample.length} neue Chats auf erste Nachrichten`);
+                
+                for (const chat of chatsToSample) {
+                    try {
+                        const response = await fetch(`${API_URL}/chatentry/${currentUserId}/${chat.id}`);
+                        
+                        if (response.ok) {
+                            const messages = await response.json();
+                            
+                            // Wenn es jetzt Nachrichten gibt, aktualisiere den Chat
+                            if (messages.length > 0) {
+                                const lastMsg = messages[messages.length - 1];
+                                const lastMessage = lastMsg.message || 'Nachricht';
+                                const lastUpdate = lastMsg.time || new Date().toISOString();
+                                
+                                console.log(`Chat: 🆕 Neue erste Nachricht von ${chat.user2Username}!`);
+                                
+                                // Aktualisiere Chat-Objekt
+                                chat.lastMessage = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                                chat.lastUpdate = lastUpdate;
+                                hasUpdates = true;
+                                
+                                // Wenn dies der aktuell geöffnete Chat ist, aktualisiere die Nachrichten
+                                if (currentChatId === chat.id) {
+                                    renderRealMessages(messages);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        // Ignoriere Fehler für einzelne Chats
+                        console.debug('Chat: Fehler beim Prüfen von neuem Chat:', chat.id, error);
                     }
                 }
             }
+            
+            // Wenn es Updates gab, rendere die Chat-Liste neu
+            if (hasUpdates) {
+                console.log('Chat: 🔄 Updates gefunden, rendere Liste neu');
+                
+                // WICHTIG: Sortiere Chats neu - Chats mit neuesten Nachrichten nach vorne
+                chats.sort((a, b) => {
+                    // Admin/Pinned Chats zuerst
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    
+                    // Dann nach lastUpdate sortieren (neueste zuerst)
+                    return new Date(b.lastUpdate) - new Date(a.lastUpdate);
+                });
+                
+                renderChatList();
+                
+                // Aktiven Chat wieder markieren
+                if (currentChatId) {
+                    setTimeout(() => {
+                        document.querySelector(`[data-chat-id="${currentChatId}"]`)?.classList.add('active');
+                    }, 100);
+                }
+            }
+            
         } catch (error) {
             // Fehler still ignorieren um Spam zu vermeiden
             console.debug('Chat: Fehler bei automatischer Aktualisierung:', error);
