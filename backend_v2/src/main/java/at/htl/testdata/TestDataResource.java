@@ -27,9 +27,9 @@ public class TestDataResource {
 
     @Inject
     ChatEntryTestData chatEntryTestData;
-    /*
+
     @Inject
-    ReviewTestData reviewTestData;*/
+    ReviewTestData reviewTestData;
 
     @POST
     @Path("/generate-service-types")
@@ -70,12 +70,12 @@ public class TestDataResource {
         chatEntryTestData.generateChatEntryTestData();
         return Response.ok("Chat-Testdaten erfolgreich generiert.").build();
     }
-    /*
+
     @POST
     @Path("/generate-reviews")
     @Transactional
     public Response generateReviewTestData() {
         reviewTestData.generateReviewTestData();
         return Response.ok("Review-Testdaten erfolgreich generiert.").build();
-    }*/
+    }
 }
