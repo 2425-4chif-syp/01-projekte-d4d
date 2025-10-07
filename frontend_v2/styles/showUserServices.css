@@ -6,78 +6,66 @@
 /* Container breiter machen für showUserServices */
 .container {
     max-width: 1600px !important; /* Viel breiter als die Standard 1200px */
-    width: 95% !important; /* Nutze 95% der Bildschirmbreite */
+    width: 95% !important; 
     margin: 0 auto !important;
     padding: 1rem 2rem !important;
 }
 
-/* Überschreibe ALLE Grid-Einstellungen für bessere Breitennutzung */
+/* Zentriere die Hauptbereiche */
+.perfect-matches,
+.main-services-section {
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+/* Überschreibe ALLE Grid-Einstellungen - Standard 3 Spalten */
 .service-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(350px, 420px)) !important;
     grid-gap: 1.5rem !important;
-    margin: 1.5rem auto 0 auto !important;
-    justify-content: center !important;
-    max-width: 100% !important;
+    margin: 1.5rem 0 0 0 !important;
+    justify-content: start !important; /* Cards linksbündig */
+    width: 100% !important;
 }
 
 .main-services-section .service-grid,
 .perfect-matches .service-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(350px, 420px)) !important;
     grid-gap: 1.5rem !important;
-    margin: 1.5rem auto 0 auto !important;
-    justify-content: center !important;
-    max-width: 100% !important;
+    margin: 1.5rem 0 0 0 !important;
+    justify-content: start !important; /* Cards linksbündig */
+    width: 100% !important;
 }
 
 /* Responsive Design für verschiedene Bildschirmgrößen */
 
-/* Sehr breite Bildschirme (>1800px) - 5 Spalten */
+/* Für sehr breite Bildschirme - 4 Spalten */
 @media (min-width: 1800px) {
     .service-grid,
     .main-services-section .service-grid,
     .perfect-matches .service-grid {
-        grid-template-columns: repeat(5, 1fr) !important;
-        gap: 2rem !important;
+        grid-template-columns: repeat(4, minmax(350px, 420px)) !important;
     }
 }
 
-/* Breite Bildschirme (1400px - 1799px) - 4 Spalten */
-@media (min-width: 1400px) and (max-width: 1799px) {
+/* Für kleinere Bildschirme - 2 Spalten */
+@media (max-width: 1400px) {
     .service-grid,
     .main-services-section .service-grid,
     .perfect-matches .service-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 1.8rem !important;
+        grid-template-columns: repeat(2, minmax(350px, 420px)) !important;
     }
 }
 
-/* Mittlere Bildschirme (1000px - 1399px) - 3 Spalten */
-@media (min-width: 1000px) and (max-width: 1399px) {
+/* Für sehr kleine Bildschirme - 1 Spalte */
+@media (max-width: 900px) {
     .service-grid,
     .main-services-section .service-grid,
     .perfect-matches .service-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 1.5rem !important;
-    }
-}
-
-/* Kleinere Bildschirme (700px - 999px) - 2 Spalten */
-@media (min-width: 700px) and (max-width: 999px) {
-    .main-services-section .service-grid,
-    .perfect-matches .service-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.2rem;
-    }
-}
-
-/* Mobile Geräte (<700px) - 1 Spalte */
-@media (max-width: 699px) {
-    .main-services-section .service-grid,
-    .perfect-matches .service-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        grid-template-columns: repeat(1, minmax(350px, 420px)) !important;
     }
 }
 
@@ -136,6 +124,149 @@
 .perfect-matches .service-info p {
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
+}
+
+/* Gruppierung von zusammengehörigen Cards */
+.service-group {
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin: 0 auto 2rem auto !important; /* Zentriere die Gruppe */
+    max-width: fit-content !important; /* Breite passt sich dem Inhalt an */
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.service-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #cbd5e0;
+}
+
+.service-group-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.service-group-title h3 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.service-group-title .group-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.service-group-count {
+    background: #667eea;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.service-group .service-grid {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* Verschiedene Gruppenfarben für normale Services - Helles Grau */
+.service-group.group-user {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-color: #adb5bd;
+}
+
+.service-group.group-user .group-icon {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.service-group.group-user .service-group-count {
+    background: #495057;
+}
+
+/* Perfect Match Gruppenfarben - Exakt gleiche Farbe wie Perfect Match Badge */
+.service-group.group-perfect-match {
+    background: linear-gradient(135deg, #fffef5 0%, #fff9e6 100%);
+    border-color: #ffd700;
+    border-width: 3px;
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15);
+}
+
+.service-group.group-perfect-match .group-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffcc00 100%);
+    color: #000;
+}
+
+.service-group.group-perfect-match .service-group-count {
+    background: #ffd700;
+    color: #000;
+}
+
+.service-group.group-perfect-match .service-group-title h3 {
+    color: #665500;
+}
+
+.service-group.group-type {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    border-color: #68d391;
+}
+
+.service-group.group-type .group-icon {
+    background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+}
+
+.service-group.group-type .service-group-count {
+    background: #38a169;
+}
+
+.service-group.group-rating {
+    background: linear-gradient(135deg, #fffaf0 0%, #fdeaa7 100%);
+    border-color: #f6e05e;
+}
+
+.service-group.group-rating .group-icon {
+    background: linear-gradient(135deg, #f6e05e 0%, #d69e2e 100%);
+}
+
+.service-group.group-rating .service-group-count {
+    background: #d69e2e;
+}
+
+/* Spezielle Styling für Perfect Match Header */
+.service-group.group-perfect-match .service-group-header {
+    border-bottom-color: #ffd700;
+}
+
+.service-group.group-perfect-match .service-group-title::before {
+    content: "";
+    margin-right: 0;
+    font-size: 1.2em;
+}
+
+/* Hover-Effekte für Perfect Matches - Gold */
+.service-group.group-perfect-match:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.25);
+    transition: all 0.3s ease;
+}
+
+/* Normale Services - Grau Hover */
+.service-group.group-user:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.15);
+    transition: all 0.3s ease;
 }
 
 /* Hover-Effekt für bessere Interaktivität */

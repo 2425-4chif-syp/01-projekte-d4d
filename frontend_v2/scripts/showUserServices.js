@@ -263,6 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return getUserServices(username).then(services => [services, perfectMatches]);
             })
             .then(([services, perfectMatches]) => {
+                console.log('Raw services from API:', services?.length || 0);
+                console.log('Perfect matches:', perfectMatches?.length || 0);
+                
                 if (services && services.length > 0) {
                     // Keep all services - we want to display both perfect matches and regular services
                     const allAvailableServices = [...services];
@@ -276,59 +279,171 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Services from backend:', allAvailableServices);
                         
                         // Map services to a format with all required fields
-                        allServices = allAvailableServices.map(service => {
-                            const currentUsername = username; // The username we searched for
-                            
-                            // Determine which user is the "other" user and what type of service this is
-                            let otherUsername = 'Unbekannter Benutzer';
-                            let serviceTypeName = 'Unbekannter Dienstleistungstyp';
-                            let isOffer = false;
-                            
-                            // If current user is the provider, show the client's demand
-                            if (service.marketProvider && service.marketProvider.user && 
-                                service.marketProvider.user.name === currentUsername) {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
-                            }
-                            // If current user is the client, show the provider's offer
-                            else if (service.marketClient && service.marketClient.user && 
-                                     service.marketClient.user.name === currentUsername) {
-                                otherUsername = service.marketProvider && service.marketProvider.user ? 
-                                    service.marketProvider.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketProvider && service.marketProvider.serviceType ? 
-                                    service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketProvider && service.marketProvider.offer === 1;
-                            }
-                            // For services where the current user is not directly involved
-                            // (these are demands from others that match what the user offers)
-                            else {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
+                        console.log('Processing services for user:', username);
+                        console.log('Raw services from backend:', allAvailableServices.length);
+                        
+                        // Schritt 1: Services eindeutig machen basierend auf Service-ID
+                        const uniqueRawServices = [];
+                        const seenServiceIds = new Set();
+                        
+                        allAvailableServices.forEach((service, index) => {
+                            const serviceId = service.id;
+                            if (!serviceId) {
+                                console.warn(`Service at index ${index} has no ID:`, service);
+                                return;
                             }
                             
-                            return {
-                                ...service,
-                                username: otherUsername,
-                                serviceTypeName,
-                                isOffer,
-                                typeId: service.marketProvider?.serviceType?.id || service.marketClient?.serviceType?.id || null,
-                                providerId: service.marketProvider?.user?.id || service.marketClient?.user?.id || null,
-                                rating: null // Will be loaded asynchronously
-                            };
+                            if (seenServiceIds.has(serviceId)) {
+                                console.log(`Skipping duplicate service ID ${serviceId}`);
+                                return;
+                            }
+                            
+                            seenServiceIds.add(serviceId);
+                            uniqueRawServices.push(service);
                         });
+                        
+                        console.log('After ID deduplication:', uniqueRawServices.length);
+                        
+                        // Schritt 2: Services verarbeiten - nur die, wo BEIDE User beteiligt sind
+                        const processedServices = [];
+                        const currentUsername = username; // Der gesuchte User
+                        
+                        uniqueRawServices.forEach((service, index) => {
+                            const providerName = service.marketProvider?.user?.name;
+                            const clientName = service.marketClient?.user?.name;
+                            
+                            // Prüfe ob der gesuchte User an diesem Service beteiligt ist
+                            const isProvider = providerName === currentUsername;
+                            const isClient = clientName === currentUsername;
+                            
+                            if (!isProvider && !isClient) {
+                                // Gesuchter User ist NICHT an diesem Service beteiligt - überspringe
+                                if (index < 3) {
+                                    console.log(`Service ${service.id} doesn't involve ${currentUsername} (Provider: ${providerName}, Client: ${clientName})`);
+                                }
+                                return;
+                            }
+                            
+                            // Logge Details für Debugging
+                            if (index < 3) {
+                                console.log(`Processing service ${service.id}:`, {
+                                    provider: providerName,
+                                    client: clientName,
+                                    providerType: service.marketProvider?.serviceType?.name,
+                                    clientType: service.marketClient?.serviceType?.name,
+                                    providerOffer: service.marketProvider?.offer,
+                                    clientOffer: service.marketClient?.offer,
+                                    currentUserRole: isProvider ? 'Provider' : 'Client'
+                                });
+                            }
+                            
+                            // Bestimme den "anderen" User (den Partner in diesem Service)
+                            let otherUsername;
+                            let serviceTypeName;
+                            let isOffer;
+                            let typeId;
+                            let providerId;
+                            
+                            if (isProvider) {
+                                // Gesuchter User ist Provider -> zeige den Client
+                                otherUsername = clientName || 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketClient?.serviceType?.name || 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketClient?.offer === 1;
+                                typeId = service.marketClient?.serviceType?.id;
+                                providerId = service.marketClient?.user?.id;
+                            } else {
+                                // Gesuchter User ist Client -> zeige den Provider
+                                otherUsername = providerName || 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketProvider?.serviceType?.name || 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketProvider?.offer === 1;
+                                typeId = service.marketProvider?.serviceType?.id;
+                                providerId = service.marketProvider?.user?.id;
+                            }
+                            
+                            // Nur gültige Services hinzufügen
+                            if (otherUsername && otherUsername !== 'Unbekannter Benutzer' && 
+                                serviceTypeName && serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
+                                processedServices.push({
+                                    ...service,
+                                    username: otherUsername,
+                                    serviceTypeName,
+                                    isOffer,
+                                    typeId,
+                                    providerId,
+                                    rating: null
+                                });
+                            } else {
+                                console.log(`Skipping invalid service ${service.id}: ${otherUsername} - ${serviceTypeName}`);
+                            }
+                        });
+                        
+                        console.log('After processing and filtering:', processedServices.length);
+                        
+                        // Schritt 3: Content-basierte Deduplizierung
+                        // Entferne Services mit identischem Content (Username + ServiceType + isOffer)
+                        const finalServices = [];
+                        const contentKeys = new Set();
+                        
+                        processedServices.forEach(service => {
+                            // Erstelle einen eindeutigen Content-Key
+                            const contentKey = `${service.username}|${service.serviceTypeName}|${service.isOffer}`;
+                            
+                            if (contentKeys.has(contentKey)) {
+                                console.log(`Removing duplicate content: ${contentKey} (ID: ${service.id})`);
+                                return;
+                            }
+                            
+                            contentKeys.add(contentKey);
+                            finalServices.push(service);
+                        });
+                        
+                        console.log('After content deduplication:', finalServices.length);
+                        
+                        // Schritt 4: Entferne Services, die bereits in Perfect Matches sind
+                        // Erstelle Set von Perfect Match IDs
+                        const perfectMatchIds = new Set();
+                        if (perfectMatches && perfectMatches.length > 0) {
+                            perfectMatches.forEach(pm => {
+                                if (pm.id) perfectMatchIds.add(pm.id);
+                            });
+                            console.log('Perfect Match IDs to exclude:', Array.from(perfectMatchIds));
+                        }
+                        
+                        // Filtere Services, die NICHT in Perfect Matches sind
+                        const servicesWithoutPerfectMatches = finalServices.filter(service => {
+                            const isPerfectMatch = perfectMatchIds.has(service.id);
+                            if (isPerfectMatch) {
+                                console.log(`Removing service ${service.id} (${service.username} - ${service.serviceTypeName}) because it's a Perfect Match`);
+                            }
+                            return !isPerfectMatch;
+                        });
+                        
+                        console.log('After removing Perfect Matches:', servicesWithoutPerfectMatches.length);
+                        allServices = servicesWithoutPerfectMatches;
+
+                        console.log('Mapped services before deduplication:', allServices.length);
+                        
+                        // Finale Validierung und Benutzer-Statistiken
+                        const userCounts = {};
+                        allServices.forEach(service => {
+                            userCounts[service.username] = (userCounts[service.username] || 0) + 1;
+                        });
+                        
+                        console.log('Final service counts per user:');
+                        Object.keys(userCounts).forEach(username => {
+                            console.log(`- ${username}: ${userCounts[username]} service(s)`);
+                            if (userCounts[username] > 5) {
+                                console.warn(`⚠️ User "${username}" has ${userCounts[username]} services - this might be unusual`);
+                            }
+                        });
+                        
+                        console.log('Final processed services:', allServices.length);
 
                         // Load ratings for all offer services
                         loadRatingsForServices(allServices);
                         
                         createServicesSection();
                         setTimeout(() => filterAndDisplayServices(), 0);
-                        showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
                     }
                 }
                 
@@ -345,41 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function createPerfectMatchesSection(perfectMatches) {
         const matchesContainer = document.getElementById('matchesContainer');
         
-        // Perfect Matches Section
+        // Perfect Matches Section - Vereinfacht für Gruppierung
         const perfectMatchSection = document.createElement('div');
         perfectMatchSection.className = 'main-services-section perfect-matches';
         perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfekte Übereinstimmungen</h3>';
-
-        // Get unique usernames from perfect matches
-        const uniqueUsers = [...new Set(perfectMatches.map(match => {
-            return match.username || (match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer');
-        }))];
-        
-        // Create navigation for perfect match users
-        const usersNav = document.createElement('nav');
-        usersNav.className = 'service-types-nav';
-        
-        const usersList = document.createElement('div');
-        usersList.className = 'service-types-list';
-
-        // "Alle" Button für Perfect Matches
-        const allUsersBtn = document.createElement('button');
-        allUsersBtn.className = 'service-type-btn active';
-        allUsersBtn.dataset.user = 'all';
-        allUsersBtn.innerHTML = '<i class="fas fa-users"></i> Alle Benutzer';
-        usersList.appendChild(allUsersBtn);
-        
-        // Button für jeden Benutzer
-        uniqueUsers.forEach(username => {
-            const button = document.createElement('button');
-            button.className = 'service-type-btn';
-            button.dataset.user = username;
-            button.innerHTML = `<i class="fas fa-user"></i> ${username}`;
-            usersList.appendChild(button);
-        });
-
-        usersNav.appendChild(usersList);
-        perfectMatchSection.appendChild(usersNav);
 
         // Container für Perfect Matches
         const perfectMatchContainer = document.createElement('div');
@@ -389,19 +473,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         matchesContainer.appendChild(perfectMatchSection);
 
-        // Event Listeners für Perfect Match Filter
-        const userButtons = usersNav.querySelectorAll('.service-type-btn');
-        userButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                userButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                currentPerfectMatchUser = button.dataset.user;
-                filterAndDisplayPerfectMatches();
-            });
-        });
-
-        // Initial Display
-        filterAndDisplayPerfectMatches();
+        // Zeige alle Perfect Matches mit Gruppierung an
+        displayFilteredPerfectMatches(perfectMatches);
     }
 
     function filterAndDisplayPerfectMatches() {
@@ -677,24 +750,34 @@ document.addEventListener('DOMContentLoaded', function() {
             cardDiv.classList.add('clickable');
             cardDiv.style.cursor = 'pointer';
             
+            // Extract typeId and providerId from Perfect Match structure
+            const serviceId = service.id || service.serviceId || null;
+            const typeId = service.typeId || 
+                          (service.serviceType && service.serviceType.id) || 
+                          (service.marketProvider && service.marketProvider.serviceType && service.marketProvider.serviceType.id) ||
+                          (service.marketClient && service.marketClient.serviceType && service.marketClient.serviceType.id) || null;
+            const providerId = service.providerId || 
+                              (service.user && service.user.id) ||
+                              (service.marketProvider && service.marketProvider.user && service.marketProvider.user.id) ||
+                              (service.marketClient && service.marketClient.user && service.marketClient.user.id) || null;
+            
+            console.log('Perfect Match Card Data:', { serviceId, typeId, providerId, username, serviceTypeName });
+            
             // Add click handler to open rating modal
             cardDiv.addEventListener('click', function(e) {
-                // Check if we have a serviceId from the service object
-                const serviceId = service.id || service.serviceId || null;
-                const typeId = service.typeId || null;
-                const providerId = service.providerId || null;
                 if (serviceId && typeId && providerId) {
                     openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
                 } else {
-                    console.warn('Service ID, TypeId or ProviderId not found for rating:', service);
+                    console.warn('Service ID, TypeId or ProviderId not found for rating:', { serviceId, typeId, providerId, service });
                     alert('Bewertung nicht möglich: Fehlende Daten');
                 }
             });
             
             // Load rating specific to this TypeOfService + Provider combination
             const ratingContainer = cardDiv.querySelector('.rating-container');
-            if (ratingContainer && service.typeId && service.providerId) {
-                loadRatingByTypeAndProvider(service.typeId, service.providerId, ratingContainer);
+            if (ratingContainer && typeId && providerId) {
+                console.log('Loading rating for Perfect Match:', { typeId, providerId, username });
+                loadRatingByTypeAndProvider(typeId, providerId, ratingContainer);
             }
         }
         
@@ -720,9 +803,47 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        matches.forEach(match => {
-            const card = createPerfectMatchCard(match);
-            perfectMatchContainer.appendChild(card);
+        // Gruppiere Perfect Matches nach Benutzername
+        const groupedMatches = groupPerfectMatchesByUser(matches);
+        
+        // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling
+        Object.keys(groupedMatches).forEach(username => {
+            const userMatches = groupedMatches[username];
+            
+            // Erstelle Gruppen-Container für Perfect Matches
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-perfect-match';
+            
+            // Erstelle Gruppen-Header für Perfect Matches
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-star"></i></span>
+                <h3>${username}</h3>
+            `;
+            
+            const countDiv = document.createElement('div');
+            countDiv.className = 'service-group-count';
+            countDiv.textContent = `${userMatches.length} Perfect ${userMatches.length === 1 ? 'Match' : 'Matches'}`;
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(countDiv);
+            
+            // Erstelle Grid für Perfect Matches dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userMatches.forEach(match => {
+                const card = createPerfectMatchCard(match);
+                gridDiv.appendChild(card);
+            });
+            
+            groupDiv.appendChild(headerDiv);
+            groupDiv.appendChild(gridDiv);
+            perfectMatchContainer.appendChild(groupDiv);
         });
     }
 
@@ -737,15 +858,125 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const gridDiv = document.createElement('div');
-        gridDiv.className = 'service-grid';
+        // Gruppiere Services nach Benutzername
+        const groupedServices = groupServicesByUser(services);
         
-        services.forEach(service => {
-            const card = createServiceCard(service);
-            gridDiv.appendChild(card);
+        // Erstelle für jede Gruppe einen eigenen Bereich
+        Object.keys(groupedServices).forEach(username => {
+            const userServices = groupedServices[username];
+            
+            // Erstelle Gruppen-Container
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-user';
+            
+            // Erstelle Gruppen-Header
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-user"></i></span>
+                <h3>${username}</h3>
+            `;
+            
+            const countDiv = document.createElement('div');
+            countDiv.className = 'service-group-count';
+            countDiv.textContent = `${userServices.length} ${userServices.length === 1 ? 'Service' : 'Services'}`;
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(countDiv);
+            
+            // Erstelle Grid für Services dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userServices.forEach(service => {
+                const card = createServiceCard(service);
+                gridDiv.appendChild(card);
+            });
+            
+            groupDiv.appendChild(headerDiv);
+            groupDiv.appendChild(gridDiv);
+            servicesContainer.appendChild(groupDiv);
+        });
+    }
+    
+    // Hilfsfunktion zum Gruppieren von Services nach Benutzername
+    function groupServicesByUser(services) {
+        const groups = {};
+        const processedIds = new Set(); // Verhindere Duplikate
+        
+        console.log('Grouping services:', services.length, 'total services');
+        
+        services.forEach((service, index) => {
+            const username = service.username || 'Unbekannter Benutzer';
+            const serviceId = service.id || service.serviceId || `temp-${index}`;
+            
+            // Prüfe auf Duplikate
+            if (processedIds.has(serviceId)) {
+                console.warn('Duplicate service found:', serviceId, username);
+                return; // Überspringe Duplikate
+            }
+            
+            processedIds.add(serviceId);
+            
+            if (!groups[username]) {
+                groups[username] = [];
+            }
+            
+            groups[username].push(service);
         });
         
-        servicesContainer.appendChild(gridDiv);
+        // Debugging: Zeige Gruppierung
+        Object.keys(groups).forEach(username => {
+            console.log(`Group "${username}":`, groups[username].length, 'services');
+            if (groups[username].length > 10) {
+                console.warn(`⚠️ Unusual high count for user "${username}":`, groups[username].length);
+            }
+        });
+        
+        return groups;
+    }
+    
+    // Hilfsfunktion zum Gruppieren von Perfect Matches nach Benutzername
+    function groupPerfectMatchesByUser(matches) {
+        const groups = {};
+        const processedIds = new Set();
+        
+        console.log('Grouping perfect matches:', matches.length, 'total matches');
+        
+        matches.forEach((match, index) => {
+            // Extrahiere Username aus verschiedenen möglichen Quellen
+            const username = match.username || 
+                           (match.user && match.user.name) || 
+                           (match.marketProvider && match.marketProvider.user && match.marketProvider.user.name) ||
+                           (match.marketClient && match.marketClient.user && match.marketClient.user.name) ||
+                           'Unbekannter Benutzer';
+            
+            const matchId = match.id || match.serviceId || `perfect-${index}`;
+            
+            // Prüfe auf Duplikate
+            if (processedIds.has(matchId)) {
+                console.warn('Duplicate perfect match found:', matchId, username);
+                return;
+            }
+            
+            processedIds.add(matchId);
+            
+            if (!groups[username]) {
+                groups[username] = [];
+            }
+            
+            groups[username].push(match);
+        });
+        
+        // Debugging für Perfect Matches
+        Object.keys(groups).forEach(username => {
+            console.log(`Perfect Match Group "${username}":`, groups[username].length, 'matches');
+        });
+        
+        return groups;
     }
 
     // Fetch the average rating for a service type (general)
