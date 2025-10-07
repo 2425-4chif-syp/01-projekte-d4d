@@ -70,13 +70,23 @@
                 </div>
                 
                 <div class="star-rating-input">
-                    <label>Bewertung (0-5 Sterne):</label>
+                    <label>Bewertung (0-5 Sterne, halbe Sterne möglich):</label>
                     <div class="stars-container">
-                        <i class="far fa-star" data-rating="1"></i>
-                        <i class="far fa-star" data-rating="2"></i>
-                        <i class="far fa-star" data-rating="3"></i>
-                        <i class="far fa-star" data-rating="4"></i>
-                        <i class="far fa-star" data-rating="5"></i>
+                        <i class="far fa-star" data-rating="1">
+                            <span class="star-half-overlay" data-rating="0.5"></span>
+                        </i>
+                        <i class="far fa-star" data-rating="2">
+                            <span class="star-half-overlay" data-rating="1.5"></span>
+                        </i>
+                        <i class="far fa-star" data-rating="3">
+                            <span class="star-half-overlay" data-rating="2.5"></span>
+                        </i>
+                        <i class="far fa-star" data-rating="4">
+                            <span class="star-half-overlay" data-rating="3.5"></span>
+                        </i>
+                        <i class="far fa-star" data-rating="5">
+                            <span class="star-half-overlay" data-rating="4.5"></span>
+                        </i>
                     </div>
                     <p class="rating-value">Keine Bewertung ausgewählt (0 Sterne)</p>
                 </div>

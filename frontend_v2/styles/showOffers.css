@@ -3018,6 +3018,7 @@ input:focus, select:focus, textarea:focus {
     cursor: pointer;
     color: #ddd;
     transition: color 0.2s ease, transform 0.2s ease;
+    position: relative;
 }
 
 .stars-container i:hover {
@@ -3030,6 +3031,21 @@ input:focus, select:focus, textarea:focus {
 
 .stars-container i.far {
     color: #ddd;
+}
+
+/* Half star support */
+.stars-container i.fa-star-half-alt {
+    color: #ffd700;
+}
+
+.star-half-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
 }
 
 .rating-value {

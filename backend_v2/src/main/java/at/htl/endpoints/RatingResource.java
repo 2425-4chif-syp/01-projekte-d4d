@@ -75,7 +75,7 @@ public class RatingResource {
         // 5. Bewertung erstellen und speichern
         Review review = new Review();
         review.setService(service);
-        review.setRating(ratingRequest.getStars().doubleValue());
+        review.setRating(ratingRequest.getStars());
         review.setComment(ratingRequest.getComment());
         
         reviewRepository.persist(review);

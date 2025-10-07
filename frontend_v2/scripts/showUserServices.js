@@ -1104,20 +1104,45 @@ let currentRatingData = {
 // Initialize rating modal functionality
 function initializeRatingModal() {
     const stars = document.querySelectorAll('.stars-container i');
+    const halfOverlays = document.querySelectorAll('.star-half-overlay');
     const commentTextarea = document.getElementById('ratingComment');
     const charCount = document.querySelector('.char-count');
     
-    // Star rating selection
+    // Full star rating selection
     stars.forEach(star => {
-        star.addEventListener('click', function() {
-            const rating = parseInt(this.getAttribute('data-rating'));
+        star.addEventListener('click', function(e) {
+            // Check if clicked on half overlay
+            const isHalfClick = e.target.classList.contains('star-half-overlay');
+            if (!isHalfClick) {
+                const rating = parseFloat(this.getAttribute('data-rating'));
+                currentRatingData.selectedStars = rating;
+                updateStarDisplay(rating);
+                updateRatingValue(rating);
+            }
+        });
+        
+        star.addEventListener('mouseenter', function(e) {
+            const isHalfHover = e.target.classList.contains('star-half-overlay');
+            if (!isHalfHover) {
+                const rating = parseFloat(this.getAttribute('data-rating'));
+                updateStarDisplay(rating, true);
+            }
+        });
+    });
+    
+    // Half star rating selection
+    halfOverlays.forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const rating = parseFloat(this.getAttribute('data-rating'));
             currentRatingData.selectedStars = rating;
             updateStarDisplay(rating);
             updateRatingValue(rating);
         });
         
-        star.addEventListener('mouseenter', function() {
-            const rating = parseInt(this.getAttribute('data-rating'));
+        overlay.addEventListener('mouseenter', function(e) {
+            e.stopPropagation();
+            const rating = parseFloat(this.getAttribute('data-rating'));
             updateStarDisplay(rating, true);
         });
     });
@@ -1139,12 +1164,21 @@ function initializeRatingModal() {
 function updateStarDisplay(rating, isHover = false) {
     const stars = document.querySelectorAll('.stars-container i');
     stars.forEach((star, index) => {
-        if (index < rating) {
-            star.classList.remove('far');
-            star.classList.add('fas');
+        const starValue = index + 1;
+        const halfValue = index + 0.5;
+        
+        // Reset classes
+        star.classList.remove('fas', 'far', 'fa-star-half-alt');
+        
+        if (rating >= starValue) {
+            // Full star
+            star.classList.add('fas', 'fa-star');
+        } else if (rating >= halfValue) {
+            // Half star
+            star.classList.add('fas', 'fa-star-half-alt');
         } else {
-            star.classList.remove('fas');
-            star.classList.add('far');
+            // Empty star
+            star.classList.add('far', 'fa-star');
         }
     });
 }
@@ -1153,8 +1187,10 @@ function updateRatingValue(rating) {
     const ratingValue = document.querySelector('.rating-value');
     if (rating === 0) {
         ratingValue.textContent = 'Keine Bewertung ausgewählt (0 Sterne)';
-    } else {
+    } else if (rating % 1 === 0) {
         ratingValue.textContent = `${rating} ${rating === 1 ? 'Stern' : 'Sterne'}`;
+    } else {
+        ratingValue.textContent = `${rating} Sterne`;
     }
 }
 
