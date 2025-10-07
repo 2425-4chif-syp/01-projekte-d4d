@@ -1308,7 +1308,7 @@ input:focus, select:focus, textarea:focus {
 /* Service Grid */
 .service-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
 }
@@ -2557,24 +2557,24 @@ input:focus, select:focus, textarea:focus {
     transform: none;
 }
 
-/* showUserServices - EXAKT GLEICH wie showOffers aber mit 3 Spalten */
+/* showUserServices - bessere Breitennutzung mit 3-4 Spalten */
 .main-services-section .service-grid,
 .perfect-matches .service-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     grid-gap: 1.2rem;
 }
 
-/* Für sehr breite Bildschirme (>1400px) - 4 Spalten */
-@media (min-width: 1400px) {
+/* Für sehr breite Bildschirme (>1600px) - maximal 4 Spalten */
+@media (min-width: 1600px) {
     .main-services-section .service-grid,
     .perfect-matches .service-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
-/* Für mittlere Bildschirme (800px - 1200px) - 3 Spalten */
-@media (min-width: 800px) and (max-width: 1200px) {
+/* Für mittlere Bildschirme (1200px - 1600px) - 3 Spalten */
+@media (min-width: 1200px) and (max-width: 1599px) {
     .main-services-section .service-grid,
     .perfect-matches .service-grid {
         grid-template-columns: repeat(3, 1fr);
