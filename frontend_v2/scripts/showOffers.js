@@ -198,7 +198,9 @@ function displayFilteredServices(services, toggleFilter = null) {
             m.description || "",
             m.startDate,
             m.endDate,
-            m.offer === 1
+            m.offer === 1,
+            m.serviceType && m.serviceType.id ? m.serviceType.id : null,
+            m.user && m.user.id ? m.user.id : null
         );
         servicesGrid.appendChild(listItem);
     });
@@ -670,7 +672,7 @@ function createSimpleList(data) {
     console.log('Simple list created with', serviceList.children.length, 'items');
 }
 
-function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer) {
+function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer, typeId, providerId) {
     const listItem = document.createElement("li");
     listItem.className = "service-item";
 
@@ -743,12 +745,12 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
         </div>
     `;
 
-    // If it's an offer, fetch and display the average rating
-    if (isOffer && name && name !== 'Unbekannter Benutzer') {
+    // If it's an offer, fetch and display the average rating by type and provider
+    if (isOffer && typeId && providerId) {
         const ratingContainer = listItem.querySelector('.rating-container');
         
-        // Load rating for this user using the new API
-        loadUserRating(name, ratingContainer);
+        // Load rating for this specific type and provider
+        loadRatingByTypeAndProvider(typeId, providerId, ratingContainer);
     }
 
     return listItem;
@@ -849,7 +851,7 @@ async function loadUserRating(username, container) {
     }
     
     try {
-        const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
+        const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
         if (response.ok) {
             const stats = await response.json();
             
@@ -863,6 +865,33 @@ async function loadUserRating(username, container) {
             }
         } else {
             container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Bewertung:', error);
+        container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+    }
+}
+
+async function loadRatingByTypeAndProvider(typeId, providerId, container) {
+    if (!typeId || !providerId || !container) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/reviews/type/${typeId}/provider/${providerId}`);
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Generate rating HTML
+            if (data.averageRating && data.averageRating > 0) {
+                const starsHTML = generateStarHTML(data.averageRating);
+                // Add review count
+                container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${data.totalReviews} ${data.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
+            }
+        } else {
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
         }
     } catch (error) {
         console.error('Fehler beim Laden der Bewertung:', error);

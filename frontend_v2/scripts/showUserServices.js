@@ -317,6 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 username: otherUsername,
                                 serviceTypeName,
                                 isOffer,
+                                typeId: service.marketProvider?.serviceType?.id || service.marketClient?.serviceType?.id || null,
+                                providerId: service.marketProvider?.user?.id || service.marketClient?.user?.id || null,
                                 rating: null // Will be loaded asynchronously
                             };
                         });
@@ -679,18 +681,20 @@ document.addEventListener('DOMContentLoaded', function() {
             cardDiv.addEventListener('click', function(e) {
                 // Check if we have a serviceId from the service object
                 const serviceId = service.id || service.serviceId || null;
-                if (serviceId) {
-                    openRatingModal(serviceId, username, serviceTypeName);
+                const typeId = service.typeId || null;
+                const providerId = service.providerId || null;
+                if (serviceId && typeId && providerId) {
+                    openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
                 } else {
-                    console.warn('Service ID not found for rating:', service);
-                    alert('Bewertung nicht möglich: Service-ID fehlt');
+                    console.warn('Service ID, TypeId or ProviderId not found for rating:', service);
+                    alert('Bewertung nicht möglich: Fehlende Daten');
                 }
             });
             
-            // Load rating using the same approach as showOffers.js
+            // Load rating specific to this TypeOfService + Provider combination
             const ratingContainer = cardDiv.querySelector('.rating-container');
-            if (ratingContainer) {
-                loadUserRating(username, ratingContainer);
+            if (ratingContainer && service.typeId && service.providerId) {
+                loadRatingByTypeAndProvider(service.typeId, service.providerId, ratingContainer);
             }
         }
         
@@ -762,7 +766,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function getUserServiceRating(username, serviceTypeName) {
         try {
             // Use the new ratings endpoint
-            const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
             if (response.ok) {
                 const stats = await response.json();
                 // Return the full stats object
@@ -806,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch(`${API_URL}/ratings/user/by-name/${encodeURIComponent(username)}`);
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
             if (response.ok) {
                 const stats = await response.json();
                 
@@ -827,7 +831,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider, serviceId, id }) {
+    // Load rating for specific TypeOfService + Provider combination
+    async function loadRatingByTypeAndProvider(typeId, providerId, container) {
+        if (!typeId || !providerId || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/reviews/type/${typeId}/provider/${providerId}`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Generate rating HTML
+                if (data.averageRating && data.averageRating > 0) {
+                    const starsHTML = generateStarHTML(data.averageRating);
+                    // Add review count
+                    container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${data.totalReviews} ${data.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+                } else {
+                    container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
+                }
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Bewertung:', error);
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+        }
+    }
+
+    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider, serviceId, id, typeId, providerId }) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
         
@@ -843,6 +875,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get service ID from various sources
         const finalServiceId = serviceId || id || null;
+        
+        // Get typeId and providerId from various sources
+        const finalTypeId = typeId || (marketProvider?.serviceType?.id) || (marketClient?.serviceType?.id) || null;
+        const finalProviderId = providerId || (marketProvider?.user?.id) || (marketClient?.user?.id) || null;
         
         // Create the card without the rating first
         const cardHTML = `
@@ -870,18 +906,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add click handler to open rating modal
             cardDiv.addEventListener('click', function(e) {
-                if (finalServiceId) {
-                    openRatingModal(finalServiceId, displayUsername, displayServiceType);
+                if (finalServiceId && finalTypeId && finalProviderId) {
+                    openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
                 } else {
-                    console.warn('Service ID not found for rating');
-                    alert('Bewertung nicht möglich: Service-ID fehlt');
+                    console.warn('Service ID, TypeId or ProviderId not found for rating');
+                    alert('Bewertung nicht möglich: Fehlende Daten');
                 }
             });
             
-            // Load rating using the same approach as showOffers.js
+            // Load rating specific to this TypeOfService + Provider combination
             const ratingContainer = cardDiv.querySelector('.rating-container');
-            if (ratingContainer) {
-                loadUserRating(displayUsername, ratingContainer);
+            if (ratingContainer && finalTypeId && finalProviderId) {
+                loadRatingByTypeAndProvider(finalTypeId, finalProviderId, ratingContainer);
             }
         }
         
@@ -1098,6 +1134,8 @@ let currentRatingData = {
     serviceId: null,
     providerName: null,
     serviceType: null,
+    typeId: null,
+    providerId: null,
     selectedStars: 0
 };
 
@@ -1195,11 +1233,13 @@ function updateRatingValue(rating) {
 }
 
 // Open rating modal for a service
-window.openRatingModal = function(serviceId, providerName, serviceType) {
+window.openRatingModal = function(serviceId, providerName, serviceType, typeId, providerId) {
     currentRatingData = {
         serviceId: serviceId,
         providerName: providerName,
         serviceType: serviceType,
+        typeId: typeId,
+        providerId: providerId,
         selectedStars: 0
     };
     
@@ -1232,6 +1272,8 @@ window.closeRatingModal = function() {
         serviceId: null,
         providerName: null,
         serviceType: null,
+        typeId: null,
+        providerId: null,
         selectedStars: 0
     };
 };
@@ -1266,7 +1308,7 @@ window.submitRating = async function() {
     };
     
     try {
-        const response = await fetch(`${API_URL}/ratings`, {
+        const response = await fetch(`${API_URL}/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1292,11 +1334,20 @@ window.submitRating = async function() {
         
         showModalMessage('Bewertung erfolgreich gespeichert!', 'success');
         
-        // Close modal after 1.5 seconds
+        // Close modal and reload ratings after 1.5 seconds
         setTimeout(() => {
             closeRatingModal();
-            // Reload page to show updated ratings
-            window.location.reload();
+            // Reload only the ratings instead of full page reload
+            if (currentRatingData.typeId && currentRatingData.providerId) {
+                // Find all rating containers for this type+provider combo and reload them
+                const ratingContainers = document.querySelectorAll('.rating-container');
+                ratingContainers.forEach(container => {
+                    loadRatingByTypeAndProvider(currentRatingData.typeId, currentRatingData.providerId, container);
+                });
+            } else {
+                // Fallback to page reload if IDs are not available
+                window.location.reload();
+            }
         }, 1500);
         
     } catch (error) {
