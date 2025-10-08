@@ -12,8 +12,8 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./Backend/db/db-postgres/db:/var/lib/postgresql/data
-      - ./Backend/db/db-postgres/import:/import
+      - ./backend_v2/db/db-postgres/db:/var/lib/postgresql/data
+      - ./backend_v2/db/db-postgres/import:/import
     networks:
       - d4d-v2-net
 
