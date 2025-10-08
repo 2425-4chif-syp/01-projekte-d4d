@@ -57,41 +57,34 @@ public class ReviewTestData {
         entityManager.createNativeQuery("DELETE FROM d4d_review").executeUpdate();
 
         List<Service> allServices = serviceRepository.listAll();
-        
-        if (allServices.isEmpty()) {
-            return;
-        }
+        if (allServices.isEmpty()) return;
 
         Collections.shuffle(allServices);
-        
-        // 75% of all services get a review
-        int reviewCount = (int) Math.ceil(allServices.size() * 0.75);
+
+        // 40 % der Services bekommen Bewertungen
+        int reviewCount = (int) Math.ceil(allServices.size() * 0.4);
         List<Service> servicesToReview = allServices.subList(0, Math.min(reviewCount, allServices.size()));
 
         Random random = new Random();
 
         for (Service service : servicesToReview) {
-            double rating = generateRating(random);
+            double rating = generateHalfStepRating(random);
             String comment = generateComment(rating, random);
-            
             Review review = new Review(service, rating, comment);
             reviewRepository.persist(review);
         }
     }
 
-    private double generateRating(Random random) {
-        // Generate ratings with tendency towards positive (more realistic distribution)
+    private double generateHalfStepRating(Random random) {
+        double[] possibleRatings = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
         double value = random.nextDouble();
-        
+
         if (value < 0.5) {
-            // 50% chance for 4.0-5.0 (very good)
-            return 4.0 + random.nextDouble();
+            return possibleRatings[6 + random.nextInt(3)];
         } else if (value < 0.8) {
-            // 30% chance for 3.0-3.9 (good)
-            return 3.0 + random.nextDouble();
+            return possibleRatings[4 + random.nextInt(2)];
         } else {
-            // 20% chance for 1.0-2.9 (average to poor)
-            return 1.0 + random.nextDouble() * 2.0;
+            return possibleRatings[random.nextInt(4)];
         }
     }
 

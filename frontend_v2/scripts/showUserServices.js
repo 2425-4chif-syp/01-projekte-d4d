@@ -750,8 +750,8 @@ document.addEventListener('DOMContentLoaded', function() {
             cardDiv.classList.add('clickable');
             cardDiv.style.cursor = 'pointer';
             
-            // Extract typeId and providerId from Perfect Match structure
-            const serviceId = service.id || service.serviceId || null;
+            // Extract IDs - prioritize serviceId from enriched Perfect Match data
+            const serviceId = service.serviceId || service.id || null;
             const typeId = service.typeId || 
                           (service.serviceType && service.serviceType.id) || 
                           (service.marketProvider && service.marketProvider.serviceType && service.marketProvider.serviceType.id) ||
@@ -762,6 +762,11 @@ document.addEventListener('DOMContentLoaded', function() {
                               (service.marketClient && service.marketClient.user && service.marketClient.user.id) || null;
             
             console.log('Perfect Match Card Data:', { serviceId, typeId, providerId, username, serviceTypeName });
+            
+            // Warnung wenn keine Service-ID vorhanden ist
+            if (!serviceId) {
+                console.warn('⚠️ Keine Service-ID für Perfect Match gefunden:', { service, username, serviceTypeName });
+            }
             
             // Add click handler to open rating modal
             cardDiv.addEventListener('click', function(e) {
@@ -1104,12 +1109,15 @@ document.addEventListener('DOMContentLoaded', function() {
             (marketProvider && marketProvider.serviceType && marketProvider.serviceType.name ? 
                 marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
         
-        // Get service ID from various sources
-        const finalServiceId = serviceId || id || null;
+        // Get service ID from various sources - for normal services use 'id', for enriched matches use 'serviceId'
+        const finalServiceId = id || serviceId || null;
         
         // Get typeId and providerId from various sources
         const finalTypeId = typeId || (marketProvider?.serviceType?.id) || (marketClient?.serviceType?.id) || null;
         const finalProviderId = providerId || (marketProvider?.user?.id) || (marketClient?.user?.id) || null;
+        
+        // Debug logging
+        console.log('Service Card IDs:', { finalServiceId, finalTypeId, finalProviderId, username: displayUsername, serviceType: displayServiceType });
         
         // Create the card without the rating first
         const cardHTML = `
