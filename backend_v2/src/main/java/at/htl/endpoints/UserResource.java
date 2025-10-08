@@ -29,7 +29,9 @@ public class UserResource {
 
     @POST
     @Transactional
-    public Response setActiveUser(String username) {
+    public Response setActiveUser(Map<String, String> body) {
+        String username = body.get("username");
+        
         if (username == null || username.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Benutzername darf nicht leer sein")
@@ -39,9 +41,9 @@ public class UserResource {
         User user = userRepository.find("name", username).firstResult();
 
         if (user == null) {
-            user = new User();
-            user.setName(username);
-            userRepository.persist(user);
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Benutzer '" + username + "' existiert nicht")
+                    .build();
         }
         
         userRepository.setActiveUser(user);
