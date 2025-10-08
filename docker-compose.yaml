@@ -2,26 +2,20 @@ version: '3.8'
 
 services:
   db:
-    container_name: postgres
     image: postgres:17.0-alpine
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
       POSTGRES_DB: db
     ports:
-      - 5432:5432
-    volumes:
-      - ./Backend/db/db-postgres/db:/var/lib/postgresql/data
-      - ./Backend/db/db-postgres/import:/import
+      - "5432:5432"
     networks:
       - d4d-v2-net
 
   backend:
-    build:
-      context: ./backend_v2
-      dockerfile: Dockerfile
-    image: d4d-backend-v2:latest
+    image: ghcr.io/2425-4chif-syp/01-projekte-d4d/d4d-backend:latest
     container_name: d4d-backend-v2
     depends_on:
       - db
@@ -34,15 +28,12 @@ services:
       - d4d-v2-net
 
   frontend:
-    build:
-      context: ./frontend_v2
-      dockerfile: Dockerfile
-    image: d4d-frontend-v2:latest
+    image: ghcr.io/2425-4chif-syp/01-projekte-d4d/d4d-frontend:latest
     container_name: d4d-frontend-v2
-    networks:
-      - d4d-v2-net
     depends_on:
       - backend
+    networks:
+      - d4d-v2-net
 
   nginx:
     image: nginx:latest

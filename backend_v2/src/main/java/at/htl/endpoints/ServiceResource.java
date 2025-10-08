@@ -11,7 +11,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Path("service")
 @Produces(MediaType.APPLICATION_JSON)
@@ -54,12 +56,45 @@ public class ServiceResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        List<Market> services = serviceRepository.getPerfectMatchesByUser(user);
+        List<Market> perfectMatchMarkets = serviceRepository.getPerfectMatchesByUser(user);
 
-        if (services == null || services.isEmpty()) {
+        if (perfectMatchMarkets == null || perfectMatchMarkets.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(services).build();
+
+        List<Service> allServices = serviceRepository.listAll();
+        List<java.util.Map<String, Object>> enrichedMatches = new java.util.ArrayList<>();
+        
+        for (Market market : perfectMatchMarkets) {
+            Service matchingService = null;
+            for (Service service : allServices) {
+                if (service.getMarketProvider() != null && 
+                    service.getMarketProvider().getId().equals(market.getId())) {
+                    matchingService = service;
+                    break;
+                }
+            }
+            
+            // Erstelle enriched object mit allen benötigten Daten
+            Map<String, Object> enrichedMatch = new HashMap<>();
+            enrichedMatch.put("id", market.getId());
+            enrichedMatch.put("serviceType", market.getServiceType());
+            enrichedMatch.put("user", market.getUser());
+            enrichedMatch.put("offer", market.getOffer());
+            enrichedMatch.put("serviceTypeName", market.getServiceType().getName());
+            enrichedMatch.put("username", market.getUser().getName());
+            enrichedMatch.put("typeId", market.getServiceType().getId());
+            enrichedMatch.put("providerId", market.getUser().getId());
+            
+            // Füge Service-ID hinzu, falls Service gefunden wurde
+            if (matchingService != null) {
+                enrichedMatch.put("serviceId", matchingService.getId());
+            }
+            
+            enrichedMatches.add(enrichedMatch);
+        }
+        
+        return Response.ok(enrichedMatches).build();
     }
 
     @GET

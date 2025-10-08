@@ -263,6 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return getUserServices(username).then(services => [services, perfectMatches]);
             })
             .then(([services, perfectMatches]) => {
+                console.log('Raw services from API:', services?.length || 0);
+                console.log('Perfect matches:', perfectMatches?.length || 0);
+                
                 if (services && services.length > 0) {
                     // Keep all services - we want to display both perfect matches and regular services
                     const allAvailableServices = [...services];
@@ -276,57 +279,171 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Services from backend:', allAvailableServices);
                         
                         // Map services to a format with all required fields
-                        allServices = allAvailableServices.map(service => {
-                            const currentUsername = username; // The username we searched for
-                            
-                            // Determine which user is the "other" user and what type of service this is
-                            let otherUsername = 'Unbekannter Benutzer';
-                            let serviceTypeName = 'Unbekannter Dienstleistungstyp';
-                            let isOffer = false;
-                            
-                            // If current user is the provider, show the client's demand
-                            if (service.marketProvider && service.marketProvider.user && 
-                                service.marketProvider.user.name === currentUsername) {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
-                            }
-                            // If current user is the client, show the provider's offer
-                            else if (service.marketClient && service.marketClient.user && 
-                                     service.marketClient.user.name === currentUsername) {
-                                otherUsername = service.marketProvider && service.marketProvider.user ? 
-                                    service.marketProvider.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketProvider && service.marketProvider.serviceType ? 
-                                    service.marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketProvider && service.marketProvider.offer === 1;
-                            }
-                            // For services where the current user is not directly involved
-                            // (these are demands from others that match what the user offers)
-                            else {
-                                otherUsername = service.marketClient && service.marketClient.user ? 
-                                    service.marketClient.user.name : 'Unbekannter Benutzer';
-                                serviceTypeName = service.marketClient && service.marketClient.serviceType ? 
-                                    service.marketClient.serviceType.name : 'Unbekannter Dienstleistungstyp';
-                                isOffer = service.marketClient && service.marketClient.offer === 1;
+                        console.log('Processing services for user:', username);
+                        console.log('Raw services from backend:', allAvailableServices.length);
+                        
+                        // Schritt 1: Services eindeutig machen basierend auf Service-ID
+                        const uniqueRawServices = [];
+                        const seenServiceIds = new Set();
+                        
+                        allAvailableServices.forEach((service, index) => {
+                            const serviceId = service.id;
+                            if (!serviceId) {
+                                console.warn(`Service at index ${index} has no ID:`, service);
+                                return;
                             }
                             
-                            return {
-                                ...service,
-                                username: otherUsername,
-                                serviceTypeName,
-                                isOffer,
-                                rating: null // Will be loaded asynchronously
-                            };
+                            if (seenServiceIds.has(serviceId)) {
+                                console.log(`Skipping duplicate service ID ${serviceId}`);
+                                return;
+                            }
+                            
+                            seenServiceIds.add(serviceId);
+                            uniqueRawServices.push(service);
                         });
+                        
+                        console.log('After ID deduplication:', uniqueRawServices.length);
+                        
+                        // Schritt 2: Services verarbeiten - nur die, wo BEIDE User beteiligt sind
+                        const processedServices = [];
+                        const currentUsername = username; // Der gesuchte User
+                        
+                        uniqueRawServices.forEach((service, index) => {
+                            const providerName = service.marketProvider?.user?.name;
+                            const clientName = service.marketClient?.user?.name;
+                            
+                            // Prüfe ob der gesuchte User an diesem Service beteiligt ist
+                            const isProvider = providerName === currentUsername;
+                            const isClient = clientName === currentUsername;
+                            
+                            if (!isProvider && !isClient) {
+                                // Gesuchter User ist NICHT an diesem Service beteiligt - überspringe
+                                if (index < 3) {
+                                    console.log(`Service ${service.id} doesn't involve ${currentUsername} (Provider: ${providerName}, Client: ${clientName})`);
+                                }
+                                return;
+                            }
+                            
+                            // Logge Details für Debugging
+                            if (index < 3) {
+                                console.log(`Processing service ${service.id}:`, {
+                                    provider: providerName,
+                                    client: clientName,
+                                    providerType: service.marketProvider?.serviceType?.name,
+                                    clientType: service.marketClient?.serviceType?.name,
+                                    providerOffer: service.marketProvider?.offer,
+                                    clientOffer: service.marketClient?.offer,
+                                    currentUserRole: isProvider ? 'Provider' : 'Client'
+                                });
+                            }
+                            
+                            // Bestimme den "anderen" User (den Partner in diesem Service)
+                            let otherUsername;
+                            let serviceTypeName;
+                            let isOffer;
+                            let typeId;
+                            let providerId;
+                            
+                            if (isProvider) {
+                                // Gesuchter User ist Provider -> zeige den Client
+                                otherUsername = clientName || 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketClient?.serviceType?.name || 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketClient?.offer === 1;
+                                typeId = service.marketClient?.serviceType?.id;
+                                providerId = service.marketClient?.user?.id;
+                            } else {
+                                // Gesuchter User ist Client -> zeige den Provider
+                                otherUsername = providerName || 'Unbekannter Benutzer';
+                                serviceTypeName = service.marketProvider?.serviceType?.name || 'Unbekannter Dienstleistungstyp';
+                                isOffer = service.marketProvider?.offer === 1;
+                                typeId = service.marketProvider?.serviceType?.id;
+                                providerId = service.marketProvider?.user?.id;
+                            }
+                            
+                            // Nur gültige Services hinzufügen
+                            if (otherUsername && otherUsername !== 'Unbekannter Benutzer' && 
+                                serviceTypeName && serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
+                                processedServices.push({
+                                    ...service,
+                                    username: otherUsername,
+                                    serviceTypeName,
+                                    isOffer,
+                                    typeId,
+                                    providerId,
+                                    rating: null
+                                });
+                            } else {
+                                console.log(`Skipping invalid service ${service.id}: ${otherUsername} - ${serviceTypeName}`);
+                            }
+                        });
+                        
+                        console.log('After processing and filtering:', processedServices.length);
+                        
+                        // Schritt 3: Content-basierte Deduplizierung
+                        // Entferne Services mit identischem Content (Username + ServiceType + isOffer)
+                        const finalServices = [];
+                        const contentKeys = new Set();
+                        
+                        processedServices.forEach(service => {
+                            // Erstelle einen eindeutigen Content-Key
+                            const contentKey = `${service.username}|${service.serviceTypeName}|${service.isOffer}`;
+                            
+                            if (contentKeys.has(contentKey)) {
+                                console.log(`Removing duplicate content: ${contentKey} (ID: ${service.id})`);
+                                return;
+                            }
+                            
+                            contentKeys.add(contentKey);
+                            finalServices.push(service);
+                        });
+                        
+                        console.log('After content deduplication:', finalServices.length);
+                        
+                        // Schritt 4: Entferne Services, die bereits in Perfect Matches sind
+                        // Erstelle Set von Perfect Match IDs
+                        const perfectMatchIds = new Set();
+                        if (perfectMatches && perfectMatches.length > 0) {
+                            perfectMatches.forEach(pm => {
+                                if (pm.id) perfectMatchIds.add(pm.id);
+                            });
+                            console.log('Perfect Match IDs to exclude:', Array.from(perfectMatchIds));
+                        }
+                        
+                        // Filtere Services, die NICHT in Perfect Matches sind
+                        const servicesWithoutPerfectMatches = finalServices.filter(service => {
+                            const isPerfectMatch = perfectMatchIds.has(service.id);
+                            if (isPerfectMatch) {
+                                console.log(`Removing service ${service.id} (${service.username} - ${service.serviceTypeName}) because it's a Perfect Match`);
+                            }
+                            return !isPerfectMatch;
+                        });
+                        
+                        console.log('After removing Perfect Matches:', servicesWithoutPerfectMatches.length);
+                        allServices = servicesWithoutPerfectMatches;
+
+                        console.log('Mapped services before deduplication:', allServices.length);
+                        
+                        // Finale Validierung und Benutzer-Statistiken
+                        const userCounts = {};
+                        allServices.forEach(service => {
+                            userCounts[service.username] = (userCounts[service.username] || 0) + 1;
+                        });
+                        
+                        console.log('Final service counts per user:');
+                        Object.keys(userCounts).forEach(username => {
+                            console.log(`- ${username}: ${userCounts[username]} service(s)`);
+                            if (userCounts[username] > 5) {
+                                console.warn(`⚠️ User "${username}" has ${userCounts[username]} services - this might be unusual`);
+                            }
+                        });
+                        
+                        console.log('Final processed services:', allServices.length);
 
                         // Load ratings for all offer services
                         loadRatingsForServices(allServices);
                         
                         createServicesSection();
                         setTimeout(() => filterAndDisplayServices(), 0);
-                        showMessage(`Gefundene Dienstleistungen für ${username}`, 'success');
                     }
                 }
                 
@@ -343,41 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function createPerfectMatchesSection(perfectMatches) {
         const matchesContainer = document.getElementById('matchesContainer');
         
-        // Perfect Matches Section
+        // Perfect Matches Section - Vereinfacht für Gruppierung
         const perfectMatchSection = document.createElement('div');
         perfectMatchSection.className = 'main-services-section perfect-matches';
-        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfekte Übereinstimmungen</h3>';
-
-        // Get unique usernames from perfect matches
-        const uniqueUsers = [...new Set(perfectMatches.map(match => {
-            return match.username || (match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer');
-        }))];
-        
-        // Create navigation for perfect match users
-        const usersNav = document.createElement('nav');
-        usersNav.className = 'service-types-nav';
-        
-        const usersList = document.createElement('div');
-        usersList.className = 'service-types-list';
-
-        // "Alle" Button für Perfect Matches
-        const allUsersBtn = document.createElement('button');
-        allUsersBtn.className = 'service-type-btn active';
-        allUsersBtn.dataset.user = 'all';
-        allUsersBtn.innerHTML = '<i class="fas fa-users"></i> Alle Benutzer';
-        usersList.appendChild(allUsersBtn);
-        
-        // Button für jeden Benutzer
-        uniqueUsers.forEach(username => {
-            const button = document.createElement('button');
-            button.className = 'service-type-btn';
-            button.dataset.user = username;
-            button.innerHTML = `<i class="fas fa-user"></i> ${username}`;
-            usersList.appendChild(button);
-        });
-
-        usersNav.appendChild(usersList);
-        perfectMatchSection.appendChild(usersNav);
+        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
 
         // Container für Perfect Matches
         const perfectMatchContainer = document.createElement('div');
@@ -387,22 +473,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         matchesContainer.appendChild(perfectMatchSection);
 
-        // Event Listeners für Perfect Match Filter
-        const userButtons = usersNav.querySelectorAll('.service-type-btn');
-        userButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                userButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                currentPerfectMatchUser = button.dataset.user;
-                filterAndDisplayPerfectMatches();
-            });
-        });
-
-        // Initial Display
-        filterAndDisplayPerfectMatches();
+        // Zeige alle Perfect Matches mit Gruppierung an
+        displayFilteredPerfectMatches(perfectMatches);
     }
 
-    function filterAndDisplayPerfectMatches() {
+    async function filterAndDisplayPerfectMatches() {
         const filteredMatches = allPerfectMatches.filter(match => {
             // Access user.name directly from the match object
             const username = match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer';
@@ -669,22 +744,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         cardDiv.innerHTML = cardHTML;
         
-        // If it's an offer, fetch and display the average rating
+        // If it's an offer, make it clickable and add rating functionality
         if (offer === 1 && serviceTypeName !== 'Unbekannter Dienstleistungstyp' && username !== 'Unbekannter Benutzer') {
-            const ratingContainer = cardDiv.querySelector('.rating-container');
+            // Make card clickable
+            cardDiv.classList.add('clickable');
+            cardDiv.style.cursor = 'pointer';
             
-            getUserServiceRating(username, serviceTypeName)
-                .then(rating => {
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = generateStarHTML(rating);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fehler beim Anzeigen der Bewertung:', error);
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
-                    }
-                });
+            // Extract IDs - prioritize serviceId from enriched Perfect Match data
+            const serviceId = service.serviceId || service.id || null;
+            const typeId = service.typeId || 
+                          (service.serviceType && service.serviceType.id) || 
+                          (service.marketProvider && service.marketProvider.serviceType && service.marketProvider.serviceType.id) ||
+                          (service.marketClient && service.marketClient.serviceType && service.marketClient.serviceType.id) || null;
+            const providerId = service.providerId || 
+                              (service.user && service.user.id) ||
+                              (service.marketProvider && service.marketProvider.user && service.marketProvider.user.id) ||
+                              (service.marketClient && service.marketClient.user && service.marketClient.user.id) || null;
+            
+            console.log('Perfect Match Card Data:', { serviceId, typeId, providerId, username, serviceTypeName });
+            
+            // Warnung wenn keine Service-ID vorhanden ist
+            if (!serviceId) {
+                console.warn('⚠️ Keine Service-ID für Perfect Match gefunden:', { service, username, serviceTypeName });
+            }
+            
+            // Add click handler to open rating modal
+            cardDiv.addEventListener('click', function(e) {
+                if (serviceId && typeId && providerId) {
+                    openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
+                } else {
+                    console.warn('Service ID, TypeId or ProviderId not found for rating:', { serviceId, typeId, providerId, service });
+                    alert('Bewertung nicht möglich: Fehlende Daten');
+                }
+            });
+            
+            // Load rating specific to this TypeOfService + Provider combination
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            if (ratingContainer && typeId && providerId) {
+                console.log('Loading rating for Perfect Match:', { typeId, providerId, username });
+                loadRatingByTypeAndProvider(typeId, providerId, ratingContainer);
+            }
         }
         
         return cardDiv;
@@ -709,9 +808,49 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        matches.forEach(match => {
-            const card = createPerfectMatchCard(match);
-            perfectMatchContainer.appendChild(card);
+        // Gruppiere Perfect Matches nach Benutzername
+        const groupedMatches = groupPerfectMatchesByUser(matches);
+        
+        // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling
+        Object.keys(groupedMatches).forEach(username => {
+            const userMatches = groupedMatches[username];
+            
+            // Erstelle Gruppen-Container für Perfect Matches
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-perfect-match';
+            
+            // Erstelle Gruppen-Header für Perfect Matches
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-star"></i></span>
+                <h3>${username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
+            `;
+            
+            headerDiv.appendChild(titleDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(username, userRatingContainer);
+            }
+            
+            // Erstelle Grid für Perfect Matches dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userMatches.forEach(match => {
+                const card = createPerfectMatchCard(match);
+                gridDiv.appendChild(card);
+            });
+            
+            groupDiv.appendChild(headerDiv);
+            groupDiv.appendChild(gridDiv);
+            perfectMatchContainer.appendChild(groupDiv);
         });
     }
 
@@ -726,15 +865,132 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const gridDiv = document.createElement('div');
-        gridDiv.className = 'service-grid';
+        // Gruppiere Services nach Benutzername
+        const groupedServices = groupServicesByUser(services);
         
-        services.forEach(service => {
-            const card = createServiceCard(service);
-            gridDiv.appendChild(card);
+        // Erstelle für jede Gruppe einen eigenen Bereich
+        Object.keys(groupedServices).forEach(username => {
+            const userServices = groupedServices[username];
+            
+            // Erstelle Gruppen-Container
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-user';
+            
+            // Erstelle Gruppen-Header
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-user"></i></span>
+                <h3>${username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
+            `;
+            
+            const countDiv = document.createElement('div');
+            countDiv.className = 'service-group-count';
+            countDiv.textContent = `${userServices.length} ${userServices.length === 1 ? 'Service' : 'Services'}`;
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(countDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(username, userRatingContainer);
+            }
+            
+            // Erstelle Grid für Services dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userServices.forEach(service => {
+                const card = createServiceCard(service);
+                gridDiv.appendChild(card);
+            });
+            
+            groupDiv.appendChild(headerDiv);
+            groupDiv.appendChild(gridDiv);
+            servicesContainer.appendChild(groupDiv);
+        });
+    }
+    
+    // Hilfsfunktion zum Gruppieren von Services nach Benutzername
+    function groupServicesByUser(services) {
+        const groups = {};
+        const processedIds = new Set(); // Verhindere Duplikate
+        
+        console.log('Grouping services:', services.length, 'total services');
+        
+        services.forEach((service, index) => {
+            const username = service.username || 'Unbekannter Benutzer';
+            const serviceId = service.id || service.serviceId || `temp-${index}`;
+            
+            // Prüfe auf Duplikate
+            if (processedIds.has(serviceId)) {
+                console.warn('Duplicate service found:', serviceId, username);
+                return; // Überspringe Duplikate
+            }
+            
+            processedIds.add(serviceId);
+            
+            if (!groups[username]) {
+                groups[username] = [];
+            }
+            
+            groups[username].push(service);
         });
         
-        servicesContainer.appendChild(gridDiv);
+        // Debugging: Zeige Gruppierung
+        Object.keys(groups).forEach(username => {
+            console.log(`Group "${username}":`, groups[username].length, 'services');
+            if (groups[username].length > 10) {
+                console.warn(`⚠️ Unusual high count for user "${username}":`, groups[username].length);
+            }
+        });
+        
+        return groups;
+    }
+    
+    // Hilfsfunktion zum Gruppieren von Perfect Matches nach Benutzername
+    function groupPerfectMatchesByUser(matches) {
+        const groups = {};
+        const processedIds = new Set();
+        
+        console.log('Grouping perfect matches:', matches.length, 'total matches');
+        
+        matches.forEach((match, index) => {
+            // Extrahiere Username aus verschiedenen möglichen Quellen
+            const username = match.username || 
+                           (match.user && match.user.name) || 
+                           (match.marketProvider && match.marketProvider.user && match.marketProvider.user.name) ||
+                           (match.marketClient && match.marketClient.user && match.marketClient.user.name) ||
+                           'Unbekannter Benutzer';
+            
+            const matchId = match.id || match.serviceId || `perfect-${index}`;
+            
+            // Prüfe auf Duplikate
+            if (processedIds.has(matchId)) {
+                console.warn('Duplicate perfect match found:', matchId, username);
+                return;
+            }
+            
+            processedIds.add(matchId);
+            
+            if (!groups[username]) {
+                groups[username] = [];
+            }
+            
+            groups[username].push(match);
+        });
+        
+        // Debugging für Perfect Matches
+        Object.keys(groups).forEach(username => {
+            console.log(`Perfect Match Group "${username}":`, groups[username].length, 'matches');
+        });
+        
+        return groups;
     }
 
     // Fetch the average rating for a service type (general)
@@ -754,14 +1010,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch the average rating for a specific user and service type
     async function getUserServiceRating(username, serviceTypeName) {
         try {
-            const response = await fetch(`${API_URL}/review/average-rating/${encodeURIComponent(username)}/${encodeURIComponent(serviceTypeName)}`);
+            // Use the new ratings endpoint
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
             if (response.ok) {
-                return await response.json();
+                const stats = await response.json();
+                // Return the full stats object
+                return stats;
             }
-            return 0;
+            return { averageRating: 0, totalReviews: 0 };
         } catch (error) {
-            console.error('Fehler beim Abrufen der benutzerspezifischen Bewertung:', error);
-            return 0;
+            console.error('Fehler beim Abrufen der Bewertung:', error);
+            return { averageRating: 0, totalReviews: 0 };
         }
     }
 
@@ -769,35 +1028,109 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateStarHTML(rating) {
         // Check if rating is null, undefined, or 0 (no rating)
         if (rating === null || rating === undefined || rating === 0) {
-            return `<div class="service-rating"><i class="fas fa-question-circle" style="color: #dc3545; margin-right: 5px;"></i>Noch nicht bewertet</div>`;
+            return '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
         }
         
         let starsHTML = "";
         
         for (let i = 1; i <= 5; i++) {
-            const decimal = rating - Math.floor(rating);
-            
             if (i <= Math.floor(rating)) {
                 // Full star
-                starsHTML += `<i class="fas fa-star selected"></i>`;
-            } else if (i === Math.ceil(rating) && decimal !== 0) {
-                // Half or full star based on decimal value
-                if (decimal >= 0.8) {
-                    starsHTML += `<i class="fas fa-star selected"></i>`;
-                } else if (decimal >= 0.4) {
-                    starsHTML += `<i class="fas fa-star-half-alt selected"></i>`;
-                } else {
-                    starsHTML += `<i class="fas fa-star"></i>`;
-                }
+                starsHTML += '<i class="fas fa-star selected"></i>';
+            } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
+                // Half star
+                starsHTML += '<i class="fas fa-star-half-alt selected"></i>';
             } else {
                 // Empty star
-                starsHTML += `<i class="fas fa-star"></i>`;
+                starsHTML += '<i class="fas fa-star"></i>';
             }
         }
         return `<div class="service-rating">${starsHTML} (${rating.toFixed(1)})</div>`;
     }
 
-    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider }) {
+    // Load user rating from API
+    async function loadUserRating(username, container) {
+        if (!username || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+            if (response.ok) {
+                const stats = await response.json();
+                
+                // Generate rating HTML
+                if (stats.averageRating && stats.averageRating > 0) {
+                    const starsHTML = generateStarHTML(stats.averageRating);
+                    // Add review count
+                    container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${stats.totalReviews} ${stats.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+                } else {
+                    container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+                }
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung</span></div>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Bewertung:', error);
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+        }
+    }
+
+    // Load user rating for group header (compact version)
+    async function loadUserRatingForGroup(username, container) {
+        if (!username || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+            if (response.ok) {
+                const stats = await response.json();
+                
+                // Generate compact rating HTML for group header
+                if (stats.averageRating && stats.averageRating > 0) {
+                    container.innerHTML = `<span class="group-rating-stars">⭐ ${stats.averageRating.toFixed(1)}</span> <span class="group-rating-count">(${stats.totalReviews})</span>`;
+                } else {
+                    container.innerHTML = '<span style="color: #999; font-size: 0.9em;">Keine Bewertung</span>';
+                }
+            } else {
+                container.innerHTML = '<span style="color: #999; font-size: 0.9em;">Keine Bewertung</span>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der User-Bewertung:', error);
+            container.innerHTML = '<span style="color: #999; font-size: 0.9em;">—</span>';
+        }
+    }
+
+    // Load rating for specific TypeOfService + Provider combination
+    async function loadRatingByTypeAndProvider(typeId, providerId, container) {
+        if (!typeId || !providerId || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/reviews/type/${typeId}/provider/${providerId}`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Generate rating HTML
+                if (data.averageRating && data.averageRating > 0) {
+                    const starsHTML = generateStarHTML(data.averageRating);
+                    // Add review count
+                    container.innerHTML = `${starsHTML.replace('</div>', '')} <span style="color: #666; font-size: 0.9em;">(${data.totalReviews} ${data.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</span></div>`;
+                } else {
+                    container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
+                }
+            } else {
+                container.innerHTML = '<div class="service-rating"><span style="color: #999;">Noch keine Bewertung für diese Dienstleistung</span></div>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Bewertung:', error);
+            container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+        }
+    }
+
+    function createServiceCard({ username, serviceTypeName, isOffer, marketClient, marketProvider, serviceId, id, typeId, providerId }) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'service-item';
         
@@ -810,6 +1143,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const displayServiceType = serviceTypeName || 
             (marketProvider && marketProvider.serviceType && marketProvider.serviceType.name ? 
                 marketProvider.serviceType.name : 'Unbekannter Dienstleistungstyp');
+        
+        // Get service ID from various sources - for normal services use 'id', for enriched matches use 'serviceId'
+        const finalServiceId = id || serviceId || null;
+        
+        // Get typeId and providerId from various sources
+        const finalTypeId = typeId || (marketProvider?.serviceType?.id) || (marketClient?.serviceType?.id) || null;
+        const finalProviderId = providerId || (marketProvider?.user?.id) || (marketClient?.user?.id) || null;
+        
+        // Debug logging
+        console.log('Service Card IDs:', { finalServiceId, finalTypeId, finalProviderId, username: displayUsername, serviceType: displayServiceType });
         
         // Create the card without the rating first
         const cardHTML = `
@@ -829,22 +1172,27 @@ document.addEventListener('DOMContentLoaded', function() {
         
         cardDiv.innerHTML = cardHTML;
         
-        // If it's an offer, fetch and display the average rating
+        // If it's an offer, make it clickable and fetch rating
         if (isOffer && displayServiceType !== 'Unbekannter Dienstleistungstyp' && displayUsername !== 'Unbekannter Benutzer') {
-            const ratingContainer = cardDiv.querySelector('.rating-container');
+            // Make card clickable
+            cardDiv.classList.add('clickable');
+            cardDiv.style.cursor = 'pointer';
             
-            getUserServiceRating(displayUsername, displayServiceType)
-                .then(rating => {
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = generateStarHTML(rating);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fehler beim Anzeigen der Bewertung:', error);
-                    if (ratingContainer) {
-                        ratingContainer.innerHTML = '<p class="error">Bewertung nicht verfügbar</p>';
-                    }
-                });
+            // Add click handler to open rating modal
+            cardDiv.addEventListener('click', function(e) {
+                if (finalServiceId && finalTypeId && finalProviderId) {
+                    openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
+                } else {
+                    console.warn('Service ID, TypeId or ProviderId not found for rating');
+                    alert('Bewertung nicht möglich: Fehlende Daten');
+                }
+            });
+            
+            // Load rating specific to this TypeOfService + Provider combination
+            const ratingContainer = cardDiv.querySelector('.rating-container');
+            if (ratingContainer && finalTypeId && finalProviderId) {
+                loadRatingByTypeAndProvider(finalTypeId, finalProviderId, ratingContainer);
+            }
         }
         
         return cardDiv;
@@ -869,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Main Services Section
         const mainServicesSection = document.createElement('div');
         mainServicesSection.className = 'main-services-section';
-        mainServicesSection.innerHTML = '<h3><i class="fas fa-clipboard-list"></i> Dienstleistungen</h3>';
+        mainServicesSection.innerHTML = '<h3><i class="fas fa-clipboard-list"></i> Matches</h3>';
 
         // Get unique service types from actual services
         const usedServiceTypes = [...new Set(allServices.map(service => service.serviceTypeName))];
@@ -980,7 +1328,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load ratings for all services
     async function loadRatingsForServices(services) {
+        // Sammle eindeutige Usernames
+        const uniqueUsernames = [...new Set(services.map(s => s.username).filter(u => u && u !== 'Unbekannter Benutzer'))];
+        
+        // Lade User-Bewertungen (durchschnitt über alle Services des Users)
+        const userRatings = {};
+        for (let username of uniqueUsernames) {
+            try {
+                const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+                if (response.ok) {
+                    const stats = await response.json();
+                    userRatings[username] = stats.averageRating || 0;
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der User-Bewertung für', username, error);
+                userRatings[username] = 0;
+            }
+        }
+        
+        // Setze User-Bewertungen für alle Services
         for (let service of services) {
+            service.userRating = userRatings[service.username] || 0;
+            
+            // Behalte auch die service-spezifische Bewertung bei (für Cards)
             if (service.isOffer && service.username !== 'Unbekannter Benutzer' && service.serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
                 try {
                     const rating = await getUserServiceRating(service.username, service.serviceTypeName);
@@ -1010,14 +1380,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!offerMatch) return false;
             
-            // Filter by rating (only applies to offers)
+            // Filter by rating (use userRating for filtering)
             let ratingMatch = true;
-            if (currentRatingFilter !== 'all' && service.isOffer) {
+            if (currentRatingFilter !== 'all') {
                 if (currentRatingFilter === 'unrated') {
-                    ratingMatch = service.rating === null || service.rating === 0;
+                    ratingMatch = !service.userRating || service.userRating === 0;
                 } else {
                     const minRating = parseFloat(currentRatingFilter.replace('+', ''));
-                    ratingMatch = service.rating !== null && service.rating >= minRating;
+                    ratingMatch = service.userRating && service.userRating >= minRating;
                 }
             }
             
@@ -1029,12 +1399,13 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredServices.sort((a, b) => {
                 switch (currentSortOption) {
                     case 'rating-desc':
-                        const ratingA = a.rating || 0;
-                        const ratingB = b.rating || 0;
+                        // Use userRating for sorting, not service-specific rating
+                        const ratingA = a.userRating || 0;
+                        const ratingB = b.userRating || 0;
                         return ratingB - ratingA;
                     case 'rating-asc':
-                        const ratingA2 = a.rating || 0;
-                        const ratingB2 = b.rating || 0;
+                        const ratingA2 = a.userRating || 0;
+                        const ratingB2 = b.userRating || 0;
                         return ratingA2 - ratingB2;
                     case 'name-asc':
                         return (a.username || '').localeCompare(b.username || '');
@@ -1054,3 +1425,257 @@ document.addEventListener('DOMContentLoaded', function() {
         searchUserServices(navUsernameInput.value.trim());
     }
 });
+// ==================== RATING MODAL FUNCTIONALITY ====================
+
+let currentRatingData = {
+    serviceId: null,
+    providerName: null,
+    serviceType: null,
+    typeId: null,
+    providerId: null,
+    selectedStars: 0
+};
+
+// Initialize rating modal functionality
+function initializeRatingModal() {
+    const stars = document.querySelectorAll('.stars-container i');
+    const halfOverlays = document.querySelectorAll('.star-half-overlay');
+    const commentTextarea = document.getElementById('ratingComment');
+    const charCount = document.querySelector('.char-count');
+    
+    // Full star rating selection
+    stars.forEach(star => {
+        star.addEventListener('click', function(e) {
+            // Check if clicked on half overlay
+            const isHalfClick = e.target.classList.contains('star-half-overlay');
+            if (!isHalfClick) {
+                const rating = parseFloat(this.getAttribute('data-rating'));
+                currentRatingData.selectedStars = rating;
+                updateStarDisplay(rating);
+                updateRatingValue(rating);
+            }
+        });
+        
+        star.addEventListener('mouseenter', function(e) {
+            const isHalfHover = e.target.classList.contains('star-half-overlay');
+            if (!isHalfHover) {
+                const rating = parseFloat(this.getAttribute('data-rating'));
+                updateStarDisplay(rating, true);
+            }
+        });
+    });
+    
+    // Half star rating selection
+    halfOverlays.forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const rating = parseFloat(this.getAttribute('data-rating'));
+            currentRatingData.selectedStars = rating;
+            updateStarDisplay(rating);
+            updateRatingValue(rating);
+        });
+        
+        overlay.addEventListener('mouseenter', function(e) {
+            e.stopPropagation();
+            const rating = parseFloat(this.getAttribute('data-rating'));
+            updateStarDisplay(rating, true);
+        });
+    });
+    
+    // Reset stars on mouse leave
+    document.querySelector('.stars-container').addEventListener('mouseleave', function() {
+        updateStarDisplay(currentRatingData.selectedStars);
+    });
+    
+    // Character count for comment
+    if (commentTextarea) {
+        commentTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = `${length} / 1000 Zeichen`;
+        });
+    }
+}
+
+function updateStarDisplay(rating, isHover = false) {
+    const stars = document.querySelectorAll('.stars-container i');
+    stars.forEach((star, index) => {
+        const starValue = index + 1;
+        const halfValue = index + 0.5;
+        
+        // Reset classes
+        star.classList.remove('fas', 'far', 'fa-star-half-alt');
+        
+        if (rating >= starValue) {
+            // Full star
+            star.classList.add('fas', 'fa-star');
+        } else if (rating >= halfValue) {
+            // Half star
+            star.classList.add('fas', 'fa-star-half-alt');
+        } else {
+            // Empty star
+            star.classList.add('far', 'fa-star');
+        }
+    });
+}
+
+function updateRatingValue(rating) {
+    const ratingValue = document.querySelector('.rating-value');
+    if (rating === 0) {
+        ratingValue.textContent = 'Keine Bewertung ausgewählt (0 Sterne)';
+    } else if (rating % 1 === 0) {
+        ratingValue.textContent = `${rating} ${rating === 1 ? 'Stern' : 'Sterne'}`;
+    } else {
+        ratingValue.textContent = `${rating} Sterne`;
+    }
+}
+
+// Open rating modal for a service
+window.openRatingModal = function(serviceId, providerName, serviceType, typeId, providerId) {
+    currentRatingData = {
+        serviceId: serviceId,
+        providerName: providerName,
+        serviceType: serviceType,
+        typeId: typeId,
+        providerId: providerId,
+        selectedStars: 0
+    };
+    
+    // Update modal display
+    document.getElementById('ratingProviderName').textContent = providerName;
+    document.getElementById('ratingServiceType').textContent = serviceType;
+    document.getElementById('ratingComment').value = '';
+    document.querySelector('.char-count').textContent = '0 / 1000 Zeichen';
+    document.querySelector('.modal-message').style.display = 'none';
+    document.querySelector('.modal-message').className = 'modal-message';
+    
+    // Reset stars
+    updateStarDisplay(0);
+    updateRatingValue(0);
+    
+    // Show modal
+    document.getElementById('ratingModal').classList.add('active');
+    
+    // Initialize if not already done
+    if (!window.ratingModalInitialized) {
+        initializeRatingModal();
+        window.ratingModalInitialized = true;
+    }
+};
+
+// Close rating modal
+window.closeRatingModal = function() {
+    document.getElementById('ratingModal').classList.remove('active');
+    currentRatingData = {
+        serviceId: null,
+        providerName: null,
+        serviceType: null,
+        typeId: null,
+        providerId: null,
+        selectedStars: 0
+    };
+};
+
+// Submit rating
+window.submitRating = async function() {
+    const modalMessage = document.querySelector('.modal-message');
+    const commentInput = document.getElementById('ratingComment');
+    
+    // Validation
+    if (currentRatingData.selectedStars === 0) {
+        showModalMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
+        return;
+    }
+    
+    if (!currentRatingData.serviceId) {
+        showModalMessage('Fehler: Service-ID nicht gefunden', 'error');
+        return;
+    }
+    
+    const comment = commentInput.value.trim();
+    if (comment.length > 1000) {
+        showModalMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
+        return;
+    }
+    
+    // Prepare request
+    const ratingData = {
+        serviceId: currentRatingData.serviceId,
+        stars: currentRatingData.selectedStars,
+        comment: comment || null
+    };
+    
+    try {
+        const response = await fetch(`${API_URL}/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ratingData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            if (response.status === 409) {
+                showModalMessage('Du hast diesen Service bereits bewertet', 'error');
+            } else if (response.status === 404) {
+                showModalMessage('Service nicht gefunden', 'error');
+            } else if (response.status === 400) {
+                showModalMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+            } else {
+                showModalMessage('Fehler beim Speichern der Bewertung', 'error');
+            }
+            return;
+        }
+        
+        const result = await response.json();
+        
+        showModalMessage('Bewertung erfolgreich gespeichert!', 'success');
+        
+        // Close modal and reload ratings after 1.5 seconds
+        setTimeout(() => {
+            closeRatingModal();
+            // Reload only the ratings instead of full page reload
+            if (currentRatingData.typeId && currentRatingData.providerId) {
+                // Find all rating containers for this type+provider combo and reload them
+                const ratingContainers = document.querySelectorAll('.rating-container');
+                ratingContainers.forEach(container => {
+                    loadRatingByTypeAndProvider(currentRatingData.typeId, currentRatingData.providerId, container);
+                });
+            } else {
+                // Fallback to page reload if IDs are not available
+                window.location.reload();
+            }
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Fehler beim Absenden der Bewertung:', error);
+        showModalMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+    }
+};
+
+function showModalMessage(message, type) {
+    const modalMessage = document.querySelector('.modal-message');
+    modalMessage.textContent = message;
+    modalMessage.className = `modal-message ${type}`;
+    modalMessage.style.display = 'block';
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('ratingModal');
+    if (e.target === modal) {
+        closeRatingModal();
+    }
+});
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('ratingModal');
+        if (modal && modal.classList.contains('active')) {
+            closeRatingModal();
+        }
+    }
+});
+
+console.log('Rating modal functionality loaded');
