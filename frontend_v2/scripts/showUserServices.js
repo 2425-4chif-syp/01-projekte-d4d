@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Perfect Matches Section - Vereinfacht für Gruppierung
         const perfectMatchSection = document.createElement('div');
         perfectMatchSection.className = 'main-services-section perfect-matches';
-        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfekte Übereinstimmungen</h3>';
+        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
 
         // Container für Perfect Matches
         const perfectMatchContainer = document.createElement('div');
@@ -1182,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Main Services Section
         const mainServicesSection = document.createElement('div');
         mainServicesSection.className = 'main-services-section';
-        mainServicesSection.innerHTML = '<h3><i class="fas fa-clipboard-list"></i> Dienstleistungen</h3>';
+        mainServicesSection.innerHTML = '<h3><i class="fas fa-clipboard-list"></i> Matches</h3>';
 
         // Get unique service types from actual services
         const usedServiceTypes = [...new Set(allServices.map(service => service.serviceTypeName))];

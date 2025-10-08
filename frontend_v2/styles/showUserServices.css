@@ -11,6 +11,25 @@
     padding: 1rem 2rem !important;
 }
 
+.content-section {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 1rem 0 !important;
+}
+
+.service-types-nav{
+    margin: 1rem 0 !important;
+    padding: 0.5rem 1rem !important;
+    width: 90% !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+}
+
 /* Zentriere die Hauptbereiche */
 .perfect-matches,
 .main-services-section {

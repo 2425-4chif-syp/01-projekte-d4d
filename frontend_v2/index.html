@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>D4D - Dienstleistung 4 Dienstleistung</title>
-    <link rel="stylesheet" href="styles/showOffers.css">
+    <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -14,6 +14,13 @@
                 <i class="fas fa-handshake"></i>
                 <span>D4D</span>
             </button>
+        </div>
+        <div class="username-input-container">
+            <input type="text" id="navUsername" placeholder="Benutzername eingeben..." class="username-input">
+        </div>
+        <div class="active-user-container">
+            <span class="active-user-label">Aktiver Benutzer:</span>
+            <span id="activeUserDisplay" class="active-user-name">Nicht angemeldet</span>
         </div>
         <div class="nav-buttons">
             <button id="marketButton" onclick="window.location.href='showOffers.html'">
@@ -41,52 +48,79 @@
 
     <main class="container">
         <!-- Hero Section -->
-        <section class="landing-hero">
-            <div class="landing-hero-content">
-                <h1>Nachhilfe leicht gemacht</h1>
-                <p>Tausche Wissen, verbessere deine Noten</p>
-                <div class="landing-buttons">
-                    <button onclick="window.location.href='makeOffer.html'">
-                        <i class="fas fa-plus"></i>
-                        Jetzt Nachhilfe anbieten
+        <section class="hero-section">
+            <h1>Nachhilfe leicht gemacht</h1>
+            <p class="subtitle">Tausche Wissen, verbessere deine Noten.</p>
+        </section>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <p>Bei D4D findest du schnell den passenden Lernpartner: Biete Nachhilfe in deinen Stärken an und erhalte Unterstützung in Fächern, die dir schwerfallen.</p>
+        </div>
+
+        <!-- Two Column Section -->
+        <div class="two-column-section">
+            <!-- How it Works -->
+            <div class="how-it-works">
+                <h2>So funktioniert D4D</h2>
+                <ul class="how-it-works-list">
+                    <li class="how-it-works-item">
+                        <h3>Profil verwalten</h3>
+                        <p>Bearbeite jederzeit deine Angebote und deine Gesuche</p>
+                    </li>
+                    <li class="how-it-works-item">
+                        <h3>Marktplatz durchsuchen</h3>
+                        <p>Stöbere durch alle Nachhilfe-Angebote und finde, was zu dir passt</p>
+                    </li>
+                    <li class="how-it-works-item">
+                        <h3>Matches erhalten</h3>
+                        <p>Unser System schlägt dir automatisch passende Lernpartner vor</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Start Now -->
+            <div class="start-now">
+                <h2>Starte jetzt</h2>
+                <div class="start-buttons">
+                    <button onclick="window.location.href='adminLogin.html'">
+                        Profil verwalten
                     </button>
-                    <button class="secondary-button" onclick="window.location.href='showUserServices.html'">
-                        <i class="fas fa-search"></i>
-                        Nachhilfe finden
+                    <button onclick="window.location.href='showOffers.html'">
+                        Zum Marktplatz
                     </button>
+                    <button onclick="window.location.href='showUserServices.html'">
+                        Matches anzeigen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <section class="benefits-section">
+            <div class="benefits-title">
+                <h2>Unsere Vorteile</h2>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-icon">⭐</div>
+                    <h3>Wissen tauschen</h3>
+                    <p>Fair und einfach: Helfen und Hilfe bekommen.</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">👥</div>
+                    <h3>Gemeinschaft</h3>
+                    <p>Werde Teil einer starken Schüler-Community</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">✅</div>
+                    <h3>Qualität sichern</h3>
+                    <p>Bewertungen sorgen für Vertrauen</p>
                 </div>
             </div>
         </section>
-
-        <!-- Features Section -->
-        <div class="landing-section-title">
-            <h2><i class="fas fa-star"></i> Unsere Vorteile</h2>
-            <p>Entdecke, was D4D besonders macht</p>
-        </div>
-
-        <div class="landing-features">
-            <div class="landing-feature">
-                <div class="landing-feature-icon">
-                    <i class="fas fa-exchange-alt"></i>
-                </div>
-                <h3>Wissen tauschen</h3>
-                <p>Hilf anderen in deinen Stärken und erhalte Unterstützung in deinen Schwächen - ein faires System für alle.</p>
-            </div>
-            <div class="landing-feature">
-                <div class="landing-feature-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <h3>Gemeinschaft</h3>
-                <p>Werde Teil einer hilfsbereiten Community von Schülern, die sich gegenseitig beim Lernen unterstützen.</p>
-            </div>
-            <div class="landing-feature">
-                <div class="landing-feature-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-                <h3>Qualität sichern</h3>
-                <p>Bewerte die erhaltene Hilfe und finde durch unser Bewertungssystem die besten Lernpartner für dich.</p>
-            </div>
-        </div>
     </main>
+
+    <script type="module" src="scripts/navbar-compat.js"></script>
 </body>
 </html>
