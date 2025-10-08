@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
         displayFilteredPerfectMatches(perfectMatches);
     }
 
-    function filterAndDisplayPerfectMatches() {
+    async function filterAndDisplayPerfectMatches() {
         const filteredMatches = allPerfectMatches.filter(match => {
             // Access user.name directly from the match object
             const username = match.user && match.user.name ? match.user.name : 'Unbekannter Benutzer';
@@ -828,14 +828,16 @@ document.addEventListener('DOMContentLoaded', function() {
             titleDiv.innerHTML = `
                 <span class="group-icon"><i class="fas fa-star"></i></span>
                 <h3>${username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
             `;
             
-            const countDiv = document.createElement('div');
-            countDiv.className = 'service-group-count';
-            countDiv.textContent = `${userMatches.length} Perfect ${userMatches.length === 1 ? 'Match' : 'Matches'}`;
-            
             headerDiv.appendChild(titleDiv);
-            headerDiv.appendChild(countDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(username, userRatingContainer);
+            }
             
             // Erstelle Grid für Perfect Matches dieser Gruppe
             const gridDiv = document.createElement('div');
@@ -883,6 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
             titleDiv.innerHTML = `
                 <span class="group-icon"><i class="fas fa-user"></i></span>
                 <h3>${username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
             `;
             
             const countDiv = document.createElement('div');
@@ -891,6 +894,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             headerDiv.appendChild(titleDiv);
             headerDiv.appendChild(countDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(username, userRatingContainer);
+            }
             
             // Erstelle Grid für Services dieser Gruppe
             const gridDiv = document.createElement('div');
@@ -1064,6 +1073,32 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Fehler beim Laden der Bewertung:', error);
             container.innerHTML = '<div class="service-rating"><span style="color: #999;">Bewertung nicht verfügbar</span></div>';
+        }
+    }
+
+    // Load user rating for group header (compact version)
+    async function loadUserRatingForGroup(username, container) {
+        if (!username || !container) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+            if (response.ok) {
+                const stats = await response.json();
+                
+                // Generate compact rating HTML for group header
+                if (stats.averageRating && stats.averageRating > 0) {
+                    container.innerHTML = `<span class="group-rating-stars">⭐ ${stats.averageRating.toFixed(1)}</span> <span class="group-rating-count">(${stats.totalReviews})</span>`;
+                } else {
+                    container.innerHTML = '<span style="color: #999; font-size: 0.9em;">Keine Bewertung</span>';
+                }
+            } else {
+                container.innerHTML = '<span style="color: #999; font-size: 0.9em;">Keine Bewertung</span>';
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der User-Bewertung:', error);
+            container.innerHTML = '<span style="color: #999; font-size: 0.9em;">—</span>';
         }
     }
 
@@ -1293,7 +1328,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load ratings for all services
     async function loadRatingsForServices(services) {
+        // Sammle eindeutige Usernames
+        const uniqueUsernames = [...new Set(services.map(s => s.username).filter(u => u && u !== 'Unbekannter Benutzer'))];
+        
+        // Lade User-Bewertungen (durchschnitt über alle Services des Users)
+        const userRatings = {};
+        for (let username of uniqueUsernames) {
+            try {
+                const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+                if (response.ok) {
+                    const stats = await response.json();
+                    userRatings[username] = stats.averageRating || 0;
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der User-Bewertung für', username, error);
+                userRatings[username] = 0;
+            }
+        }
+        
+        // Setze User-Bewertungen für alle Services
         for (let service of services) {
+            service.userRating = userRatings[service.username] || 0;
+            
+            // Behalte auch die service-spezifische Bewertung bei (für Cards)
             if (service.isOffer && service.username !== 'Unbekannter Benutzer' && service.serviceTypeName !== 'Unbekannter Dienstleistungstyp') {
                 try {
                     const rating = await getUserServiceRating(service.username, service.serviceTypeName);
@@ -1323,14 +1380,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!offerMatch) return false;
             
-            // Filter by rating (only applies to offers)
+            // Filter by rating (use userRating for filtering)
             let ratingMatch = true;
-            if (currentRatingFilter !== 'all' && service.isOffer) {
+            if (currentRatingFilter !== 'all') {
                 if (currentRatingFilter === 'unrated') {
-                    ratingMatch = service.rating === null || service.rating === 0;
+                    ratingMatch = !service.userRating || service.userRating === 0;
                 } else {
                     const minRating = parseFloat(currentRatingFilter.replace('+', ''));
-                    ratingMatch = service.rating !== null && service.rating >= minRating;
+                    ratingMatch = service.userRating && service.userRating >= minRating;
                 }
             }
             
@@ -1342,12 +1399,13 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredServices.sort((a, b) => {
                 switch (currentSortOption) {
                     case 'rating-desc':
-                        const ratingA = a.rating || 0;
-                        const ratingB = b.rating || 0;
+                        // Use userRating for sorting, not service-specific rating
+                        const ratingA = a.userRating || 0;
+                        const ratingB = b.userRating || 0;
                         return ratingB - ratingA;
                     case 'rating-asc':
-                        const ratingA2 = a.rating || 0;
-                        const ratingB2 = b.rating || 0;
+                        const ratingA2 = a.userRating || 0;
+                        const ratingB2 = b.userRating || 0;
                         return ratingA2 - ratingB2;
                     case 'name-asc':
                         return (a.username || '').localeCompare(b.username || '');

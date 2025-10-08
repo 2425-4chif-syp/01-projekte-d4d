@@ -169,6 +169,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .service-group-title h3 {
@@ -176,6 +177,41 @@
     color: #2d3748;
     font-size: 1.25rem;
     font-weight: 600;
+}
+
+/* User-Bewertung im Group Header */
+.group-user-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.group-rating-stars {
+    font-weight: 600;
+    color: #f59e0b;
+    font-size: 1rem;
+}
+
+.group-rating-count {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+/* Perfect Match spezifische Bewertung */
+.service-group.group-perfect-match .group-user-rating {
+    background: rgba(255, 247, 230, 0.9);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.service-group.group-perfect-match .group-rating-stars {
+    color: #d97706;
 }
 
 .service-group-title .group-icon {
