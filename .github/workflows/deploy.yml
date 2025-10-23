@@ -33,7 +33,7 @@ jobs:
           file: ./backend_v2/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/d4d-backend:latest
+          tags: ghcr.io/${{ github.repository }}/d4d-backend:latest
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
@@ -42,7 +42,7 @@ jobs:
           file: ./frontend_v2/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/d4d-frontend:latest
+          tags: ghcr.io/${{ github.repository }}/d4d-frontend:latest
 
       - name: Deploy to VM10
         uses: appleboy/ssh-action@v0.1.10
@@ -55,23 +55,26 @@ jobs:
             REPO_URL="https://github.com/2425-4chif-syp/01-projekte-d4d.git"
             APP_DIR="$HOME/d4d"
 
+            echo "🧭 Navigating to deployment directory..."
             if [ ! -d "$APP_DIR/.git" ]; then
+              echo "📦 Cloning repository for the first time..."
               rm -rf "$APP_DIR"
               git clone "$REPO_URL" "$APP_DIR"
             fi
 
             cd "$APP_DIR"
+            echo "🔄 Updating repository..."
             git fetch --all
             git checkout main || git checkout -b main
             git reset --hard origin/main
 
-            echo "🔄 Pulling latest images..."
+            echo "📥 Pulling latest Docker images..."
             docker compose pull || true
 
-            echo "🧹 Stopping old containers..."
+            echo "🧹 Removing old containers..."
             docker compose down -v || true
 
-            echo "🚀 Starting new containers..."
+            echo "🚀 Starting updated containers..."
             docker compose up -d --build
 
             echo "✅ Deployment completed successfully!"
