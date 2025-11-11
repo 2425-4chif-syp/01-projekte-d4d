@@ -98,22 +98,22 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 24px;
-    background: white;
-    border: 2px solid white;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
-    color: #3066be;
-    font-size: 1rem;
+    color: white;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .login-button:hover {
-    background: transparent;
-    color: white;
+    background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* Profile Dropdown */
