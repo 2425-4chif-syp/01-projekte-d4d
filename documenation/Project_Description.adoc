@@ -88,7 +88,7 @@ entity "Service" as Service {
 }
 
 entity "Market" as Market {
-+Offer: boolean
+
 }
 
 entity "ChatEntry" as ChatEntry {
@@ -98,6 +98,7 @@ entity "ChatEntry" as ChatEntry {
 entity "Review" as Review {
 
 }
+
 entity "Session_service_type" as Session_service_type {
 
 }
@@ -107,9 +108,7 @@ entity "Session" as Session {
 }
 
 User <-- ChatEntry
-User <-- Review
-User <-- Review
-Review --> TypeOfService
+Review --> Service
 ChatEntry --> User
 TypeOfService <-- Market
 Service --> Market
@@ -134,44 +133,42 @@ Session --> User
 left to right direction
 
 entity "User" as User {
-+user_ID: number
-name: varchar2
-username: varchar2
-email: varchar2
-password: varchar2
-description: varchar2
-payPal_Email: varchar2
-strengths: varchar2
-weaknesses: varchar2
-city: varchar2
+u_id: Integer
+--
+u_name: String
 }
 
 entity "TypeOfService" as TypeOfService {
-+serviceType_ID: number
-serviceType: varchar2
+st_id: Integer
+--
+st_name: String
+st_deleted_at: TimeStamp
 }
 
 entity "Service" as Service {
-+service_ID: number
--marketProvider_ID: number
--marketClient_ID: number
-exchangeService: number
-description: varchar2
+s_id: Integer
+--
+s_m_provider_id: Integer
+s_m_client_id: Integer
+exchangeService: Integer
+description: String
 }
 
 entity "Market" as Market {
-+market_ID: number
--serviceType_ID: number
--user_ID: number
-offer: number
+m_id: Integer
+--
+m_st_id: Integer
+m_u_id: Integer
+m_offer: Integer
 }
 
 entity "ChatEntry" as ChatEntry {
-+chat_ID: number
--sender_ID: number
--receiver_ID: number
-message: varchar2
-time: date
+ce_id: Integer
+--
+ce_u_sender_id: Integer
+ce_u_receiver_id: Integer
+ce_message: String
+ce_time: Date
 }
 
 entity "Review" as Review {
@@ -197,9 +194,7 @@ sess_is_anonymous: boolean
 }
 
 User <-- ChatEntry
-User <-- Review
-User <-- Review
-Review --> TypeOfService
+Review --> Service
 ChatEntry --> User
 TypeOfService <-- Market
 Service --> Market
