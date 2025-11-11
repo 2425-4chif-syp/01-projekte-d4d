@@ -1,9 +1,8 @@
 import { API_URL } from './config.js';
+import { sessionManager } from './session-manager.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const responseMessage = document.querySelector('.response-message');
-    const marketButton = document.getElementById('marketButton');
-    const offerButton = document.getElementById('offerButton');
     
     let allPerfectMatches = [];
     let allServices = [];
@@ -14,28 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentRatingFilter = 'all';
     let currentSortOption = 'none';
 
+    // Initialize session first (for guest mode)
+    await sessionManager.init();
+    
     getActiveUser();
 
-    const navUsernameInput = document.getElementById("navUsername");
-    if (navUsernameInput) {
-        navUsernameInput.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                const username = this.value.trim();
-                if (username) {
-                    setActiveUser(username);
-                    // Dispatch event for compatibility
-                    window.dispatchEvent(new CustomEvent('userChanged', {
-                        detail: { username: username }
-                    }));
-                } else {
-                    showMessage("Bitte gib einen Benutzernamen ein.", "error");
-                }
-            }
-        });
-    }
-
     function getActiveUser() {
-        fetch(`${API_URL}/user`)
+        fetch(`${API_URL}/user`, {
+            credentials: 'include'
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Fehler beim Abrufen des aktiven Benutzers");
@@ -45,46 +31,190 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(responseText => {
                 try {
                     const responseJson = JSON.parse(responseText);
-                    const username = responseJson.username || "Nicht angemeldet";
-                    
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username;
-                        activeUserDisplay.classList.add("user-active");
-                    }
+                    const username = responseJson.username || "Gast-Modus";
                     
                     // Lade direkt die Services des aktiven Benutzers, wenn einer angemeldet ist
-                    if (username && username !== "Nicht angemeldet") {
+                    if (username && username !== "Gast-Modus") {
                         searchUserServices(username);
                     } else {
-                        showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
+                        // Guest mode: Load session matches
+                        loadGuestMatches();
                     }
                 } catch (e) {
                     // Falls die Antwort kein gültiges JSON ist, verwende den Text direkt
-                    const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
+                    const username = responseText && responseText.trim() !== "" ? responseText : "Gast-Modus";
                     
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username !== "" ? username : "Nicht angemeldet";
-                        if (username !== "") {
-                            activeUserDisplay.classList.add("user-active");
-                            searchUserServices(username);
-                        } else {
-                            activeUserDisplay.classList.remove("user-active");
-                            showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
-                        }
+                    if (username !== "" && username !== "Gast-Modus") {
+                        searchUserServices(username);
+                    } else {
+                        // Guest mode: Load session matches
+                        loadGuestMatches();
                     }
                 }
             })
             .catch(error => {
                 console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
-                const activeUserDisplay = document.getElementById("activeUserDisplay");
-                if (activeUserDisplay) {
-                    activeUserDisplay.textContent = "Nicht angemeldet";
-                    activeUserDisplay.classList.remove("user-active");
-                }
-                showMessage("Fehler beim Laden des aktiven Benutzers. Bitte versuche es später erneut.", "error");
+                // Guest mode: Load session matches
+                loadGuestMatches();
             });
+    }
+
+    // Function to load guest matches based on session
+    async function loadGuestMatches() {
+        if (!sessionManager || !sessionManager.sessionId) {
+            console.warn('No session ID available for guest');
+            showMessage("Wähle zuerst Services aus, um Matches zu sehen.", "info");
+            return;
+        }
+
+        const matchesContainer = document.getElementById('matchesContainer');
+        matchesContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Lade deine Matches...</div>';
+
+        try {
+            const response = await fetch(`${API_URL}/session/${sessionManager.sessionId}/matches`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Matches gefunden. Wähle zuerst einige Fächer aus!</div>';
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const matches = await response.json();
+            console.log('Guest matches loaded:', matches);
+
+            if (!matches || matches.length === 0) {
+                matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Matches gefunden. Wähle zuerst einige Fächer aus!</div>';
+                return;
+            }
+
+            // Process matches to display
+            allServices = matches.map((match, index) => ({
+                id: `guest-match-${index}`,
+                username: match.user?.name || 'Unbekannter Benutzer',
+                serviceTypeName: match.serviceType?.name || 'Unbekannter Service',
+                isOffer: match.offer === 1 || match.offer === true,
+                typeId: match.serviceType?.id,
+                providerId: match.user?.id,
+                rating: null,
+                isPerfectMatch: match.isPerfectMatch || false
+            }));
+
+            console.log('Processed guest matches:', allServices);
+
+            // Separiere Perfect Matches von normalen Matches
+            const perfectMatches = allServices.filter(s => s.isPerfectMatch);
+            const regularMatches = allServices.filter(s => !s.isPerfectMatch);
+            
+            console.log('Guest Perfect Matches:', perfectMatches.length);
+            console.log('Guest Regular Matches:', regularMatches.length);
+
+            // Load ratings
+            await loadRatingsForServices(allServices);
+
+            // Zeige Perfect Matches Section wenn vorhanden
+            if (perfectMatches.length > 0) {
+                // Erstelle Perfect Match Section mit gleicher Struktur wie für eingeloggte User
+                const matchesContainer = document.getElementById('matchesContainer');
+                const perfectMatchSection = document.createElement('div');
+                perfectMatchSection.className = 'main-services-section perfect-matches';
+                perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
+
+                const perfectMatchContainer = document.createElement('div');
+                perfectMatchContainer.id = 'perfectMatchContainer';
+                perfectMatchContainer.className = 'services-display';
+                
+                perfectMatchSection.appendChild(perfectMatchContainer);
+                matchesContainer.appendChild(perfectMatchSection);
+                
+                // Verwende die gleiche Funktion wie für eingeloggte User
+                displayFilteredPerfectMatches(perfectMatches);
+            }
+
+            // Setze nur reguläre Matches für die normale Anzeige
+            allServices = regularMatches;
+
+            // Create and display services section
+            createServicesSection();
+            filterAndDisplayServices();
+
+        } catch (error) {
+            console.error('Error loading guest matches:', error);
+            matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Fehler beim Laden der Matches.</div>';
+        }
+    }
+
+    // Guest Perfect Matches Section
+    function createGuestPerfectMatchesSection(perfectMatches) {
+        const matchesContainer = document.getElementById('matchesContainer');
+        
+        const perfectMatchSection = document.createElement('div');
+        perfectMatchSection.className = 'main-services-section perfect-matches';
+        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
+
+        const perfectMatchContainer = document.createElement('div');
+        perfectMatchContainer.id = 'perfectMatchContainer';
+        perfectMatchContainer.className = 'services-display';
+        
+        // Gruppiere nach User
+        const matchesByUser = {};
+        perfectMatches.forEach(match => {
+            const userId = match.providerId || match.user?.id;
+            const username = match.username;
+            const key = `${userId}-${username}`;
+            
+            if (!matchesByUser[key]) {
+                matchesByUser[key] = {
+                    username: username,
+                    userId: userId,
+                    matches: []
+                };
+            }
+            matchesByUser[key].matches.push(match);
+        });
+        
+        // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling (wie bei eingeloggten Usern)
+        Object.values(matchesByUser).forEach(userGroup => {
+            // Erstelle Gruppen-Container für Perfect Matches
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-perfect-match';
+            
+            // Erstelle Gruppen-Header für Perfect Matches
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-star"></i></span>
+                <h3>${userGroup.username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
+            `;
+            
+            headerDiv.appendChild(titleDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && userGroup.username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(userGroup.username, userRatingContainer);
+            }
+            
+            // Erstelle Grid für Perfect Matches dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userGroup.matches.forEach(match => {
+                const card = createPerfectMatchCard(match);
+                gridDiv.appendChild(card);
+            });
+            
+        });
+        
+        perfectMatchSection.appendChild(perfectMatchContainer);
+        matchesContainer.appendChild(perfectMatchSection);
     }
 
     // Funktion, um einen Benutzer als aktiv zu markieren
@@ -94,22 +224,14 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 "Content-Type": "application/json"
             },
+            credentials: 'include',
             body: JSON.stringify({ username: username })
         })
         .then(response => {
             if (response.ok) {
                 return response.text().then(msg => {
-                    
-                    // Aktualisiere die Anzeige des aktiven Benutzers
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username;
-                        activeUserDisplay.classList.add("user-active");
-                    }
-                    
                     // Suche nach den Services des aktiven Benutzers
                     searchUserServices(username);
-                    
                     return msg;
                 });
             } else {
@@ -122,15 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage(error.message, "error");
         });
     }
-
-    // Add event listeners for navigation buttons
-    marketButton.addEventListener('click', function() {
-        window.location.href = 'showOffers.html';
-    });
-    
-    offerButton.addEventListener('click', function() {
-        window.location.href = 'makeOffer.html';
-    });
 
     // Add filter functionality
     const perfectMatchFilter = document.getElementById('perfectMatchFilter');
@@ -1418,11 +1531,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         displayFilteredServices(filteredServices);
-    }
-
-    // Initial load
-    if (navUsernameInput && navUsernameInput.value.trim()) {
-        searchUserServices(navUsernameInput.value.trim());
     }
 });
 // ==================== RATING MODAL FUNCTIONALITY ====================

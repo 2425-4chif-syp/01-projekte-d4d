@@ -1,0 +1,328 @@
+/* Navbar Styles - Dynamische Navbar mit Admin-Erkennung */
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    gap: 30px;
+}
+
+/* Logo */
+.logo {
+    flex-shrink: 0;
+}
+
+.logo-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.logo-button:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.logo-button i {
+    font-size: 1.8rem;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.nav-buttons button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-buttons button.active {
+    background: white;
+    color: #1e3a8a;
+    border-color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    font-weight: 700;
+}
+
+.nav-buttons button i {
+    font-size: 1.1rem;
+}
+
+/* Profile Section */
+.profile-section {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* Login Button (Guest) */
+.login-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: white;
+    border: 2px solid white;
+    border-radius: 8px;
+    color: #3066be;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    background: transparent;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+    position: relative;
+}
+
+.profile-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    justify-content: space-between;
+}
+
+.profile-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.profile-button .profile-name {
+    font-weight: 600;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-button i:first-child {
+    font-size: 1.2rem;
+}
+
+.profile-button .fa-chevron-down {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+}
+
+.profile-dropdown.open .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Profile Menu (Dropdown) */
+.profile-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.profile-dropdown.open .profile-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.profile-menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    border-radius: 6px;
+}
+
+.profile-menu button:hover {
+    background: #f5f5f5;
+    color: #3066be;
+}
+
+.profile-menu button i {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+.profile-menu button:hover i {
+    color: #3066be;
+}
+
+.logout-btn {
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 80px;
+    right: -400px;
+    padding: 16px 24px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transition: right 0.3s ease;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.notification.show {
+    right: 20px;
+}
+
+.notification i {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.notification-success {
+    border-left: 4px solid #28a745;
+}
+
+.notification-success i {
+    color: #28a745;
+}
+
+.notification-error {
+    border-left: 4px solid #dc3545;
+}
+
+.notification-error i {
+    color: #dc3545;
+}
+
+.notification-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.notification-info i {
+    color: #17a2b8;
+}
+
+.notification span {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .nav-buttons {
+        gap: 6px;
+    }
+    
+    .nav-buttons button {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .navbar {
+        padding: 10px 20px;
+        gap: 15px;
+    }
+    
+    .nav-buttons button span {
+        display: none;
+    }
+    
+    .nav-buttons button {
+        padding: 10px;
+    }
+    
+    .nav-buttons button i {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-wrap: wrap;
+        padding: 8px 15px;
+    }
+    
+    .nav-buttons {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 8px;
+    }
+    
+    .profile-section {
+        order: 2;
+    }
+}

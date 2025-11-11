@@ -1,4 +1,5 @@
 import { API_URL } from './config.js';
+import { sessionManager } from './session-manager.js';
 
 console.log('showOffers.js loaded successfully');
 console.log('API_URL:', API_URL);
@@ -8,11 +9,14 @@ let selectedTags = new Set();
 let currentServices = []; // Speichert alle aktuell geladenen Services
 
 // Event-Listener für Service Toggle
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded event fired');
     
+    // Initialize session first (for guest mode)
+    await sessionManager.init();
+    
     // Initialize user system
-    getActiveUser();
+    await getActiveUser();
     
     // Event-Listener für Navigation Username Input
     const navUsernameInput = document.getElementById("navUsername");
@@ -601,23 +605,33 @@ function loadServiceTypes() {
 
 function loadAllOffers() {
     console.log('loadAllOffers() called');
-    const url = `${API_URL}/market`;
-    console.log('Fetching offers from:', url);
     showLoading();
-    fetch(url)
-        .then(response => {
-            console.log('Market response:', response);
-            if (!response.ok) {
-                throw new Error("Fehler beim Abrufen der Daten");
-            }
-            return response.json();
-        })
-        .then(marketDtos => {
+    
+    // Parallele Requests: Market-Daten + Session-Matches (für Gäste)
+    const marketPromise = fetch(`${API_URL}/market`).then(r => r.json());
+    
+    const currentUser = getCurrentUsername();
+    const isGuest = !currentUser || currentUser === 'Nicht angemeldet' || currentUser === 'Gast-Modus';
+    
+    let sessionMatchesPromise = Promise.resolve([]);
+    if (isGuest && sessionManager && sessionManager.sessionId) {
+        // Nur Session-Matches laden wenn im Gast-Modus (nicht angemeldet)
+        sessionMatchesPromise = fetch(`${API_URL}/session/${sessionManager.sessionId}/matches`)
+            .then(r => r.ok ? r.json() : [])
+            .catch(() => []);
+    }
+    
+    Promise.all([marketPromise, sessionMatchesPromise])
+        .then(([marketDtos, sessionMatches]) => {
             console.log('Market data loaded:', marketDtos.length, 'items');
-            clearLoading();
-            currentServices = marketDtos; // Speichere alle Services
+            console.log('Session matches loaded:', sessionMatches.length, 'items');
             
-            if (marketDtos.length === 0) {
+            clearLoading();
+            
+            // Kombiniere Market-Daten und Session-Matches
+            currentServices = [...marketDtos];
+            
+            if (marketDtos.length === 0 && sessionMatches.length === 0) {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
                 messageContainer.innerHTML = `
@@ -627,7 +641,7 @@ function loadAllOffers() {
                 return;
             }
             
-            // Zeige initial alle Services mit dem aktuellen Toggle-Filter (ohne aktiven Benutzer)
+            // Zeige initial alle Services mit dem aktuellen Toggle-Filter
             const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
             console.log('Initial toggle value:', toggleValue);
             displayFilteredServices(marketDtos, toggleValue);
