@@ -39,6 +39,33 @@
                         </div>
                         
                         <div class="search-row">
+                            <!-- Bewertungs-Filter -->
+                            <div class="search-box">
+                                <select id="ratingFilter" class="filter-select rating-filter">
+                                    <option value="all">Alle Bewertungen</option>
+                                    <option value="4+">⭐ 4+ Sterne</option>
+                                    <option value="3+">⭐ 3+ Sterne</option>
+                                    <option value="2+">⭐ 2+ Sterne</option>
+                                    <option value="1+">⭐ 1+ Sterne</option>
+                                    <option value="unrated">Noch nicht bewertet</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="search-row">
+                            <!-- Sortier-Filter -->
+                            <div class="search-box">
+                                <select id="sortFilter" class="filter-select sort-filter">
+                                    <option value="none">Sortieren nach...</option>
+                                    <option value="rating-desc">⭐ Bewertung (hoch → niedrig)</option>
+                                    <option value="rating-asc">⭐ Bewertung (niedrig → hoch)</option>
+                                    <option value="name-asc">👤 Name (A → Z)</option>
+                                    <option value="name-desc">👤 Name (Z → A)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="search-row">
                             <!-- Erweiterte Suche -->
                             <div class="search-box">
                                 <i class="fas fa-search search-icon"></i>
