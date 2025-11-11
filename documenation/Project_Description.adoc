@@ -98,15 +98,26 @@ entity "ChatEntry" as ChatEntry {
 entity "Review" as Review {
 
 }
+entity "Session_service_type" as Session_service_type {
+
+}
+
+entity "Session" as Session {
+
+}
 
 User <-- ChatEntry
-Review --> Service
+User <-- Review
+User <-- Review
+Review --> TypeOfService
 ChatEntry --> User
 TypeOfService <-- Market
 Service --> Market
 Service --> Market
 Service <--> Service
 Market --> User
+Session_service_type --> Session
+Session --> User
 @enduml
 ----
 
@@ -123,42 +134,44 @@ Market --> User
 left to right direction
 
 entity "User" as User {
-u_id: Integer
---
-u_name: String
++user_ID: number
+name: varchar2
+username: varchar2
+email: varchar2
+password: varchar2
+description: varchar2
+payPal_Email: varchar2
+strengths: varchar2
+weaknesses: varchar2
+city: varchar2
 }
 
 entity "TypeOfService" as TypeOfService {
-st_id: Integer
---
-st_name: String
-st_deleted_at: TimeStamp
++serviceType_ID: number
+serviceType: varchar2
 }
 
 entity "Service" as Service {
-s_id: Integer
---
-s_m_provider_id: Integer
-s_m_client_id: Integer
-exchangeService: Integer
-description: String
++service_ID: number
+-marketProvider_ID: number
+-marketClient_ID: number
+exchangeService: number
+description: varchar2
 }
 
 entity "Market" as Market {
-m_id: Integer
---
-m_st_id: Integer
-m_u_id: Integer
-m_offer: Integer
++market_ID: number
+-serviceType_ID: number
+-user_ID: number
+offer: number
 }
 
 entity "ChatEntry" as ChatEntry {
-ce_id: Integer
---
-ce_u_sender_id: Integer
-ce_u_receiver_id: Integer
-ce_message: String
-ce_time: Date
++chat_ID: number
+-sender_ID: number
+-receiver_ID: number
+message: varchar2
+time: date
 }
 
 entity "Review" as Review {
@@ -169,14 +182,32 @@ r_rating: Decimal
 r_comment: String
 }
 
+entity "Session_service_type" as Session_service_type {
+sst_id: Integer
+sst_sess_id: Integer
+sst_is_offer: Integer
+}
+
+entity "Session" as Session {
+sess_id: Integer
+sess_created_at: TimeStamp
+sess_expires_at: TimeStamp
+sess_u_id: Integer
+sess_is_anonymous: boolean
+}
+
 User <-- ChatEntry
-Review --> Service
+User <-- Review
+User <-- Review
+Review --> TypeOfService
 ChatEntry --> User
 TypeOfService <-- Market
 Service --> Market
 Service --> Market
 Service <--> Service
 Market --> User
+Session_service_type --> Session
+Session --> User
 @enduml
 ----
 
