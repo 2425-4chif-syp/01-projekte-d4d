@@ -10,34 +10,6 @@
     --scrollbar-thumb-hover: #3627FF;
 }
 
-/* Navigation username input styles */
-.username-input-container {
-    display: flex;
-    align-items: center;
-    margin: 0 1rem;
-}
-
-.username-input {
-    padding: 8px 12px;
-    border-radius: var(--border-radius, 6px);
-    border: 1px solid #e2e8f0;
-    background-color: white;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    width: 200px;
-    color: var(--text-color, #333);
-}
-
-.username-input:focus {
-    outline: none;
-    border-color: var(--primary-color, #3182ce);
-    box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
-}
-
-.username-input::placeholder {
-    color: var(--secondary-color, #718096);
-}
-
 /* Active User Display styles */
 .active-user-container {
     display: flex;
@@ -1886,28 +1858,6 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 0.25rem;
     display: block;
     font-weight: 500;
-}
-
-.logo-button {
-    background: none;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-color);
-    padding: 0;
-    cursor: pointer;
-}
-
-.logo-button:hover {
-    background: none;
-    transform: scale(1.05);
-}
-
-.logo-button i {
-    font-size: 1.8rem;
 }
 
 /* Verbesserte Datumsfelder Styling */
