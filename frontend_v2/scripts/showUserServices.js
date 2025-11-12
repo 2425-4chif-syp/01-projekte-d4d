@@ -900,14 +900,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.warn('⚠️ Keine Service-ID für Perfect Match gefunden:', { service, username, serviceTypeName });
             }
             
-            // Add click handler to open rating modal
+            // Add click handler: check if current user can review this service first
             cardDiv.addEventListener('click', function(e) {
-                if (serviceId && typeId && providerId) {
-                    openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
-                } else {
-                    console.warn('Service ID, TypeId or ProviderId not found for rating:', { serviceId, typeId, providerId, service });
+                if (!serviceId) {
+                    console.warn('Service ID not found for rating:', { serviceId, typeId, providerId, service });
                     alert('Bewertung nicht möglich: Fehlende Daten');
+                    return;
                 }
+
+                fetch(`${API_URL}/reviews/can-review/${serviceId}`, {
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data && data.canReview) {
+                        openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
+                    } else {
+                        // Show immediate feedback that the service was already reviewed
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'info');
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Prüfen, ob bewertet werden kann:', err);
+                    showMessage('Fehler beim Prüfen der Bewertungserlaubnis', 'error');
+                });
             });
             
             // Load rating specific to this TypeOfService + Provider combination
@@ -1310,14 +1326,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             cardDiv.classList.add('clickable');
             cardDiv.style.cursor = 'pointer';
             
-            // Add click handler to open rating modal
+            // Add click handler: check permission before opening rating modal
             cardDiv.addEventListener('click', function(e) {
-                if (finalServiceId && finalTypeId && finalProviderId) {
-                    openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
-                } else {
-                    console.warn('Service ID, TypeId or ProviderId not found for rating');
+                if (!finalServiceId) {
+                    console.warn('Service ID not found for rating');
                     alert('Bewertung nicht möglich: Fehlende Daten');
+                    return;
                 }
+
+                fetch(`${API_URL}/reviews/can-review/${finalServiceId}`, {
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data && data.canReview) {
+                        openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
+                    } else {
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'info');
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Prüfen, ob bewertet werden kann:', err);
+                    showMessage('Fehler beim Prüfen der Bewertungserlaubnis', 'error');
+                });
             });
             
             // Load rating specific to this TypeOfService + Provider combination
@@ -1331,16 +1362,101 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Function to show messages
-    function showMessage(message, type) {
-        responseMessage.textContent = message;
-        responseMessage.className = `response-message ${type}`;
-        responseMessage.style.display = 'block';
-        
-        if (type === 'info') {
-            setTimeout(() => {
-                responseMessage.style.display = 'none';
-            }, 3000);
+    function showMessage(message, type = 'info') {
+        // Remove existing alert if present
+        const existing = document.getElementById('centeredAlertOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'centeredAlertOverlay';
+        overlay.className = 'centered-alert-overlay';
+
+        const box = document.createElement('div');
+        box.className = `centered-alert-box centered-alert-${type}`;
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.setAttribute('aria-live', 'polite');
+
+        // Icon + Title
+        const header = document.createElement('div');
+        header.className = 'centered-alert-header';
+
+        const icon = document.createElement('div');
+        icon.className = 'centered-alert-icon';
+        icon.innerHTML = getAlertIcon(type);
+
+        const title = document.createElement('div');
+        title.className = 'centered-alert-title';
+        title.textContent = getAlertTitle(type);
+
+        header.appendChild(icon);
+        header.appendChild(title);
+
+        const msg = document.createElement('div');
+        msg.className = 'centered-alert-message';
+        msg.textContent = message;
+
+        const btn = document.createElement('button');
+        btn.className = 'alert-ok-btn';
+        btn.textContent = 'OK, weiter';
+        btn.addEventListener('click', () => {
+            removeOverlay();
+        });
+
+        // Prevent closing by clicking overlay; only OK closes
+        overlay.addEventListener('click', (e) => {
+            // don't close when clicking backdrop
+            e.stopPropagation();
+        });
+
+        // Prevent accidental keyboard closes; only Enter on button closes
+        const onKeyDown = (e) => {
+            if (e.key === 'Tab') {
+                // keep focus on button
+                e.preventDefault();
+                btn.focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                removeOverlay();
+            }
+        };
+
+        function removeOverlay() {
+            document.removeEventListener('keydown', onKeyDown);
+            overlay.remove();
         }
+
+        box.appendChild(header);
+        box.appendChild(msg);
+        box.appendChild(btn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // ensure keyboard events handled
+        document.addEventListener('keydown', onKeyDown);
+
+        // focus the button for keyboard users
+        btn.focus();
+    }
+
+    function getAlertTitle(type) {
+        switch (type) {
+            case 'success': return 'Erfolg';
+            case 'error': return 'Fehler';
+            default: return 'Hinweis';
+        }
+    }
+
+    function getAlertIcon(type) {
+        // simple inline SVG icons
+        if (type === 'success') {
+            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+        if (type === 'error') {
+            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+        // info / default
+        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#2563EB" stroke-width="1.6"/><path d="M12 8h.01" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/><path d="M11.5 11.5h1v4h-1z" stroke="#2563EB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
 
     function createServicesSection() {
