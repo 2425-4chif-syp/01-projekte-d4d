@@ -10,8 +10,10 @@ import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 @ApplicationScoped
 public class ReviewTestData {
@@ -61,11 +63,68 @@ public class ReviewTestData {
 
         Collections.shuffle(allServices);
 
-        // 40 % der Services bekommen Bewertungen
-        int reviewCount = (int) Math.ceil(allServices.size() * 0.4);
-        List<Service> servicesToReview = allServices.subList(0, Math.min(reviewCount, allServices.size()));
-
+        // Wähle eine Dienstleistungsart aus (erste in der gemischten Liste) und
+        // bestimme 2-3 Provider-User dieser Art, die bewusst keine Bewertungen
+        // bekommen sollen (für Tests).
         Random random = new Random();
+        Set<Long> excludedProviderIds = new HashSet<>();
+        if (!allServices.isEmpty()) {
+            Long targetTypeId = null;
+            // Versuche, eine gültige ServiceType-ID zu finden
+            for (Service s : allServices) {
+                if (s.getMarketProvider() != null && s.getMarketProvider().getServiceType() != null
+                        && s.getMarketProvider().getServiceType().getId() != null) {
+                    targetTypeId = s.getMarketProvider().getServiceType().getId();
+                    break;
+                }
+            }
+
+            if (targetTypeId != null) {
+                // Sammle distinct Provider-User IDs für diese Dienstleistungsart
+                List<Long> providerIds = new ArrayList<>();
+                for (Service s : allServices) {
+                    if (s.getMarketProvider() == null || s.getMarketProvider().getServiceType() == null
+                            || s.getMarketProvider().getServiceType().getId() == null
+                            || s.getMarketProvider().getUser() == null
+                            || s.getMarketProvider().getUser().getId() == null) continue;
+
+                    if (s.getMarketProvider().getServiceType().getId().equals(targetTypeId)) {
+                        Long pid = s.getMarketProvider().getUser().getId();
+                        if (!providerIds.contains(pid)) providerIds.add(pid);
+                    }
+                }
+
+                // Wähle 2 oder 3 Provider zufällig, sofern verfügbar
+                int excludeCount = Math.min(providerIds.size(), 2 + random.nextInt(2)); // 2 or 3
+                Collections.shuffle(providerIds, random);
+                for (int i = 0; i < excludeCount; i++) {
+                    excludedProviderIds.add(providerIds.get(i));
+                }
+            }
+        }
+
+        // 40 % der (verbleibenden) Services bekommen Bewertungen
+        int reviewCount = (int) Math.ceil(allServices.size() * 0.4);
+        List<Service> eligibleServices = new ArrayList<>();
+        for (Service s : allServices) {
+            if (s == null) continue;
+            // Falls Service einem Provider gehört, der ausgeschlossen ist und die
+            // Dienstleistungsart übereinstimmt, überspringe ihn
+            try {
+                if (s.getMarketProvider() != null && s.getMarketProvider().getUser() != null
+                        && s.getMarketProvider().getUser().getId() != null
+                        && s.getMarketProvider().getServiceType() != null
+                        && s.getMarketProvider().getServiceType().getId() != null
+                        && excludedProviderIds.contains(s.getMarketProvider().getUser().getId())) {
+                    // überspringen
+                    continue;
+                }
+            } catch (Exception ignored) {
+            }
+            eligibleServices.add(s);
+        }
+
+        List<Service> servicesToReview = eligibleServices.subList(0, Math.min(reviewCount, eligibleServices.size()));
 
         for (Service service : servicesToReview) {
             double rating = generateHalfStepRating(random);

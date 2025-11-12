@@ -9,8 +9,10 @@ import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @ApplicationScoped
 public class ServiceRepository implements PanacheRepository<Service> {
@@ -139,5 +141,103 @@ public class ServiceRepository implements PanacheRepository<Service> {
             }
         }
         return user1MatchesUser2 && user2MatchesUser1;
+    }
+    
+    /**
+     * Findet Matches mit Perfect Match Flag
+     * @param offerIds Liste der angebotenen Service-IDs
+     * @param demandIds Liste der gesuchten Service-IDs
+     * @return Liste von Maps mit Match-Details und isPerfectMatch Flag
+     */
+    public List<Map<String, Object>> findMatchesWithPerfectMatchFlag(List<Long> offerIds, List<Long> demandIds) {
+        return findMatchesWithPerfectMatchFlag(offerIds, demandIds, null);
+    }
+    
+    /**
+     * Findet Matches mit Perfect Match Flag und optionalem User-Ausschluss
+     * @param offerIds Liste der angebotenen Service-IDs
+     * @param demandIds Liste der gesuchten Service-IDs
+     * @param excludeUserId Optional: User-ID die ausgeschlossen werden soll
+     * @return Liste von Maps mit Match-Details und isPerfectMatch Flag
+     */
+    public List<Map<String, Object>> findMatchesWithPerfectMatchFlag(List<Long> offerIds, List<Long> demandIds, Long excludeUserId) {
+        List<Market> allMarkets = marketRepository.listAll();
+        List<Map<String, Object>> matches = new ArrayList<>();
+        Set<String> addedMatches = new HashSet<>();
+        
+        // Gruppiere Markets nach User
+        Map<Long, List<Market>> marketsByUser = new HashMap<>();
+        for (Market market : allMarkets) {
+            Long userId = market.getUser().getId();
+            
+            // Überspringe ausgeschlossenen User
+            if (excludeUserId != null && userId.equals(excludeUserId)) {
+                continue;
+            }
+            
+            marketsByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(market);
+        }
+        
+        // Finde Matches und Perfect Matches
+        for (Map.Entry<Long, List<Market>> entry : marketsByUser.entrySet()) {
+            Long userId = entry.getKey();
+            List<Market> userMarkets = entry.getValue();
+            
+            // Zähle Angebote und Nachfragen separat für echten Perfect Match
+            int offerMatchCount = 0; // User bietet an was gesucht wird
+            int demandMatchCount = 0; // User sucht was angeboten wird
+            List<Map<String, Object>> userMatchDetails = new ArrayList<>();
+            
+            for (Market market : userMarkets) {
+                Long serviceTypeId = market.getServiceType().getId();
+                boolean isUserOffer = market.getOffer() == 1;
+                
+                // Check if this market matches needs
+                boolean isMatch = false;
+                if (isUserOffer && demandIds.contains(serviceTypeId)) {
+                    // User bietet an, was gesucht wird
+                    isMatch = true;
+                    offerMatchCount++;
+                } else if (!isUserOffer && offerIds.contains(serviceTypeId)) {
+                    // User sucht, was angeboten wird
+                    isMatch = true;
+                    demandMatchCount++;
+                }
+                
+                if (isMatch) {
+                    String matchKey = userId + "-" + serviceTypeId + "-" + market.getOffer();
+                    if (!addedMatches.contains(matchKey)) {
+                        Map<String, Object> matchDetail = new HashMap<>();
+                        matchDetail.put("serviceType", Map.of(
+                            "id", market.getServiceType().getId(),
+                            "name", market.getServiceType().getName()
+                        ));
+                        matchDetail.put("offer", market.getOffer());
+                        matchDetail.put("user", Map.of(
+                            "id", market.getUser().getId(),
+                            "name", market.getUser().getName()
+                        ));
+                        matchDetail.put("isPerfectMatch", false); // Wird später aktualisiert
+                        
+                        userMatchDetails.add(matchDetail);
+                        addedMatches.add(matchKey);
+                    }
+                }
+            }
+            
+            // Perfect Match nur wenn SOWOHL Angebot ALS AUCH Nachfrage vorhanden
+            // (gegenseitiger Austausch: User bietet was an UND sucht was)
+            boolean isPerfectMatch = offerMatchCount >= 1 && demandMatchCount >= 1;
+            
+            if (isPerfectMatch) {
+                for (Map<String, Object> detail : userMatchDetails) {
+                    detail.put("isPerfectMatch", true);
+                }
+            }
+            
+            matches.addAll(userMatchDetails);
+        }
+        
+        return matches;
     }
 }

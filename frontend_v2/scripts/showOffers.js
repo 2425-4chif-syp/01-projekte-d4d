@@ -1,4 +1,5 @@
 import { API_URL } from './config.js';
+import { sessionManager } from './session-manager.js';
 
 console.log('showOffers.js loaded successfully');
 console.log('API_URL:', API_URL);
@@ -6,13 +7,18 @@ console.log('API_URL:', API_URL);
 // Tag-Verwaltung
 let selectedTags = new Set();
 let currentServices = []; // Speichert alle aktuell geladenen Services
+let currentRatingFilter = 'all';
+let currentSortOption = 'none';
 
 // Event-Listener für Service Toggle
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded event fired');
     
+    // Initialize session first (for guest mode)
+    await sessionManager.init();
+    
     // Initialize user system
-    getActiveUser();
+    await getActiveUser();
     
     // Event-Listener für Navigation Username Input
     const navUsernameInput = document.getElementById("navUsername");
@@ -43,7 +49,50 @@ document.addEventListener('DOMContentLoaded', function() {
         const toggleInputs = document.querySelectorAll('input[name="serviceToggle"]');
         console.log('Toggle inputs found:', toggleInputs.length); // Debug
         toggleInputs.forEach(input => {
-            input.addEventListener('change', handleServiceToggle);
+            input.addEventListener('change', () => {
+                handleServiceToggle();
+                
+                // Zeige/verstecke Bewertungs-Filter basierend auf dem Toggle
+                const ratingFilter = document.getElementById('ratingFilter');
+                const sortFilter = document.getElementById('sortFilter');
+                const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+                
+                if (toggleValue === 'demands') {
+                    // Bei "Gesuchte Dienste" deaktiviere Bewertungs-Filter
+                    if (ratingFilter) {
+                        ratingFilter.disabled = true;
+                        ratingFilter.value = 'all';
+                        currentRatingFilter = 'all';
+                    }
+                    // Deaktiviere auch Rating-basierte Sortierung
+                    if (sortFilter) {
+                        const selectedSort = sortFilter.value;
+                        if (selectedSort.startsWith('rating-')) {
+                            sortFilter.value = 'none';
+                            currentSortOption = 'none';
+                        }
+                        // Deaktiviere Rating-Optionen
+                        Array.from(sortFilter.options).forEach(option => {
+                            if (option.value.startsWith('rating-')) {
+                                option.disabled = true;
+                            }
+                        });
+                    }
+                } else {
+                    // Bei "Angebotene Dienste" aktiviere Bewertungs-Filter
+                    if (ratingFilter) {
+                        ratingFilter.disabled = false;
+                    }
+                    // Aktiviere Rating-basierte Sortierung
+                    if (sortFilter) {
+                        Array.from(sortFilter.options).forEach(option => {
+                            if (option.value.startsWith('rating-')) {
+                                option.disabled = false;
+                            }
+                        });
+                    }
+                }
+            });
             console.log('Event listener added to:', input.value); // Debug
         });
         
@@ -91,6 +140,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const filterService = document.getElementById("filterService");
         if (filterService) {
             filterService.addEventListener('change', applyFilters);
+        }
+        
+        // Event-Listener für Bewertungs-Filter
+        const ratingFilter = document.getElementById('ratingFilter');
+        if (ratingFilter) {
+            ratingFilter.addEventListener('change', (e) => {
+                currentRatingFilter = e.target.value;
+                applyFilters();
+            });
+            // Initial: Deaktiviere bei "Gesuchte Dienste"
+            const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+            if (toggleValue === 'demands') {
+                ratingFilter.disabled = true;
+            }
+        }
+        
+        // Event-Listener für Sortier-Filter
+        const sortFilter = document.getElementById('sortFilter');
+        if (sortFilter) {
+            sortFilter.addEventListener('change', (e) => {
+                currentSortOption = e.target.value;
+                applyFilters();
+            });
+            // Initial: Deaktiviere Rating-Optionen bei "Gesuchte Dienste"
+            const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
+            if (toggleValue === 'demands') {
+                Array.from(sortFilter.options).forEach(option => {
+                    if (option.value.startsWith('rating-')) {
+                        option.disabled = true;
+                    }
+                });
+            }
         }
         
         // Event-Listener für beliebte Tags
@@ -415,8 +496,34 @@ function applyFilters() {
             }
             return response.json();
         })
-        .then(users => {
+        .then(async users => {
             const currentUser = getCurrentUsername();
+            
+            // Lade Bewertungen für alle User
+            const userRatings = {};
+            const uniqueUsernames = [...new Set(users.map(u => u.user?.name).filter(Boolean))];
+            
+            for (let username of uniqueUsernames) {
+                try {
+                    const response = await fetch(`${API_URL}/reviews/user/by-name/${encodeURIComponent(username)}`);
+                    if (response.ok) {
+                        const stats = await response.json();
+                        userRatings[username] = stats.averageRating || 0;
+                    } else {
+                        userRatings[username] = 0;
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der User-Bewertung für', username, error);
+                    userRatings[username] = 0;
+                }
+            }
+            
+            // Füge Bewertungen zu den Services hinzu
+            users.forEach(user => {
+                const username = user.user?.name;
+                user.userRating = username ? (userRatings[username] || 0) : 0;
+            });
+            
             const filteredUsers = users.filter(user => {
                 // Filtere den aktuell eingeloggten Benutzer heraus
                 if (currentUser) {
@@ -478,8 +585,42 @@ function applyFilters() {
                     // Zeige nur offene Märkte (kein Enddatum oder Enddatum in der Zukunft)
                     matchesActive = !user.endDate || new Date(user.endDate) >= new Date();
                 }
-                return matchesToggle && matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive;
+                
+                // Bewertungs-Filter
+                let matchesRating = true;
+                if (currentRatingFilter !== 'all') {
+                    if (currentRatingFilter === 'unrated') {
+                        matchesRating = !user.userRating || user.userRating === 0;
+                    } else {
+                        const minRating = parseFloat(currentRatingFilter.replace('+', ''));
+                        matchesRating = user.userRating && user.userRating >= minRating;
+                    }
+                }
+                
+                return matchesToggle && matchesName && matchesTags && matchesServiceType && matchesDateRange && matchesActive && matchesRating;
             });
+            
+            // Sortiere die gefilterten Services
+            if (currentSortOption !== 'none') {
+                filteredUsers.sort((a, b) => {
+                    switch (currentSortOption) {
+                        case 'rating-desc':
+                            return (b.userRating || 0) - (a.userRating || 0);
+                        case 'rating-asc':
+                            return (a.userRating || 0) - (b.userRating || 0);
+                        case 'name-asc':
+                            const nameA = a.user?.name || '';
+                            const nameB = b.user?.name || '';
+                            return nameA.localeCompare(nameB);
+                        case 'name-desc':
+                            const nameA2 = a.user?.name || '';
+                            const nameB2 = b.user?.name || '';
+                            return nameB2.localeCompare(nameA2);
+                        default:
+                            return 0;
+                    }
+                });
+            }
 
             currentServices = filteredUsers; // Speichere gefilterte Services
             clearLoading();
@@ -601,23 +742,33 @@ function loadServiceTypes() {
 
 function loadAllOffers() {
     console.log('loadAllOffers() called');
-    const url = `${API_URL}/market`;
-    console.log('Fetching offers from:', url);
     showLoading();
-    fetch(url)
-        .then(response => {
-            console.log('Market response:', response);
-            if (!response.ok) {
-                throw new Error("Fehler beim Abrufen der Daten");
-            }
-            return response.json();
-        })
-        .then(marketDtos => {
+    
+    // Parallele Requests: Market-Daten + Session-Matches (für Gäste)
+    const marketPromise = fetch(`${API_URL}/market`).then(r => r.json());
+    
+    const currentUser = getCurrentUsername();
+    const isGuest = !currentUser || currentUser === 'Nicht angemeldet' || currentUser === 'Gast-Modus';
+    
+    let sessionMatchesPromise = Promise.resolve([]);
+    if (isGuest && sessionManager && sessionManager.sessionId) {
+        // Nur Session-Matches laden wenn im Gast-Modus (nicht angemeldet)
+        sessionMatchesPromise = fetch(`${API_URL}/session/${sessionManager.sessionId}/matches`)
+            .then(r => r.ok ? r.json() : [])
+            .catch(() => []);
+    }
+    
+    Promise.all([marketPromise, sessionMatchesPromise])
+        .then(([marketDtos, sessionMatches]) => {
             console.log('Market data loaded:', marketDtos.length, 'items');
-            clearLoading();
-            currentServices = marketDtos; // Speichere alle Services
+            console.log('Session matches loaded:', sessionMatches.length, 'items');
             
-            if (marketDtos.length === 0) {
+            clearLoading();
+            
+            // Kombiniere Market-Daten und Session-Matches
+            currentServices = [...marketDtos];
+            
+            if (marketDtos.length === 0 && sessionMatches.length === 0) {
                 const messageContainer = document.createElement("div");
                 messageContainer.className = "no-results";
                 messageContainer.innerHTML = `
@@ -627,7 +778,7 @@ function loadAllOffers() {
                 return;
             }
             
-            // Zeige initial alle Services mit dem aktuellen Toggle-Filter (ohne aktiven Benutzer)
+            // Zeige initial alle Services mit dem aktuellen Toggle-Filter
             const toggleValue = document.querySelector('input[name="serviceToggle"]:checked')?.value;
             console.log('Initial toggle value:', toggleValue);
             displayFilteredServices(marketDtos, toggleValue);

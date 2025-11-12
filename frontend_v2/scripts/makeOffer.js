@@ -1,4 +1,5 @@
 import { API_URL } from './config.js';
+import { sessionManager } from './session-manager.js';
 
 document.getElementById('marketButton').addEventListener('click', function() {
     window.location.href = 'showOffers.html';
@@ -11,6 +12,7 @@ let serviceIdToNameMap = {};
 let servicesEnabled = false;
 
 document.addEventListener("DOMContentLoaded", function() {
+    sessionManager.init(); // Initialize session for anonymous users
     getActiveUser();
 
     const navUsernameInput = document.getElementById("navUsername");
@@ -50,9 +52,10 @@ function getActiveUser() {
                 if (username && username !== "Nicht angemeldet") {
                     loadUserMarkets(username);
                 } else {
-                    servicesEnabled = false;
-                    disableServiceItems();
-                    showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
+                    // Anonymous user mode: enable services and load session data if exists
+                    servicesEnabled = true;
+                    enableServiceItems(true);
+                    loadSessionData();
                 }
             } catch (e) {
                 const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
@@ -65,9 +68,10 @@ function getActiveUser() {
                         loadUserMarkets(username);
                     } else {
                         activeUserDisplay.classList.remove("user-active");
-                        servicesEnabled = false;
-                        disableServiceItems();
-                        showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
+                        // Anonymous user mode: enable services and load session data
+                        servicesEnabled = true;
+                        enableServiceItems(true);
+                        loadSessionData();
                     }
                 }
             }
@@ -80,9 +84,9 @@ function getActiveUser() {
                 activeUserDisplay.classList.remove("user-active");
             }
             
-            servicesEnabled = false;
-            disableServiceItems();
-            showMessage("Fehler beim Laden des aktiven Benutzers. Bitte versuche es später erneut.");
+            servicesEnabled = true;
+            enableServiceItems(true);
+            loadSessionData();
         });
 }
 
@@ -241,6 +245,28 @@ function loadUserMarkets(username) {
         });
 }
 
+// Load saved session data for anonymous users
+async function loadSessionData() {
+    if (sessionManager.sessionId) {
+        try {
+            const sessionData = await sessionManager.getSession();
+            if (sessionData && sessionData.serviceTypes) {
+                // Restore selections from session
+                sessionData.serviceTypes.forEach(st => {
+                    const serviceTypeId = st.serviceType.id;
+                    if (st.isOffer) {
+                        selectItemByServiceId(serviceTypeId, 'offer');
+                    } else {
+                        selectItemByServiceId(serviceTypeId, 'demand');
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Fehler beim Laden der Session-Daten:", error);
+        }
+    }
+}
+
 function selectItemByServiceId(serviceTypeId, type) {
     const selector = type === 'offer' ? '#offeredServicesList' : '#demandedServicesList';
     const listItems = document.querySelectorAll(`${selector} .service-item`);
@@ -304,51 +330,89 @@ function showMessage(message) {
     }, 3000);
 }
 
-document.getElementById("submitButton").onclick = function () {
+document.getElementById("submitButton").onclick = async function () {
     const username = document.getElementById("activeUserDisplay").textContent;
-    if (username === "Nicht angemeldet") {
-        showMessage("Bitte melde dich an, um Dienstleistungen anzubieten oder nachzufragen.");
-        return;
-    }
+    const isLoggedIn = username !== "Nicht angemeldet";
     
     if (selectedOffers.length === 0 && selectedDemands.length === 0) {
         showMessage("Bitte wähle mindestens eine Dienstleistung aus.");
         return;
     }
     
-    const offerNames = selectedOffers.map(id => serviceTypeMap[id]);
-    const demandNames = selectedDemands.map(id => serviceTypeMap[id]);
+    const submitButton = document.getElementById("submitButton");
+    submitButton.disabled = true;
+    submitButton.classList.add('button-loading');
     
-    const requestData = {
-        username: username,
-        offers: offerNames,
-        demands: demandNames
-    };
-    
-    console.log("Sending data:", requestData);
-    
-    fetch(`${API_URL}/market`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    })
-    .then(response => {
-        if (response.ok) {
-            return response.text().then(msg => {
-                showMessage("Angebote und Nachfragen erfolgreich erstellt!");
-                return msg;
+    try {
+        if (!isLoggedIn) {
+            // Anonymous user: save to session
+            const services = [];
+            
+            selectedOffers.forEach(id => {
+                services.push({
+                    serviceTypeId: parseInt(id),
+                    isOffer: true
+                });
             });
+            
+            selectedDemands.forEach(id => {
+                services.push({
+                    serviceTypeId: parseInt(id),
+                    isOffer: false
+                });
+            });
+            
+            await sessionManager.saveServices(services);
+            
+            submitButton.classList.remove('button-loading');
+            submitButton.classList.add('button-success');
+            showMessage("✓ Auswahl gespeichert! Melde dich an, um deine Angebote zu veröffentlichen.");
+            
+            setTimeout(() => {
+                submitButton.classList.remove('button-success');
+                submitButton.disabled = false;
+            }, 2000);
+            
         } else {
-            return response.text().then(errorMsg => {
-                throw new Error(errorMsg || "Fehler beim Erstellen der Angebote und Nachfragen");
+            // Logged in user: save directly to database
+            const offerNames = selectedOffers.map(id => serviceTypeMap[id]);
+            const demandNames = selectedDemands.map(id => serviceTypeMap[id]);
+            
+            const requestData = {
+                username: username,
+                offers: offerNames,
+                demands: demandNames
+            };
+            
+            console.log("Sending data:", requestData);
+            
+            const response = await fetch(`${API_URL}/market`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
             });
+            
+            if (response.ok) {
+                submitButton.classList.remove('button-loading');
+                submitButton.classList.add('button-success');
+                showMessage("✓ Angebote und Nachfragen erfolgreich erstellt!");
+                
+                setTimeout(() => {
+                    submitButton.classList.remove('button-success');
+                    submitButton.disabled = false;
+                }, 2000);
+            } else {
+                const errorMsg = await response.text();
+                throw new Error(errorMsg || "Fehler beim Erstellen der Angebote und Nachfragen");
+            }
         }
-    })
-    .catch(error => {
+    } catch (error) {
+        submitButton.classList.remove('button-loading');
+        submitButton.disabled = false;
         showMessage(error.message);
-    });
+    }
 };
 
 function resetServiceSelection() {

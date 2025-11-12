@@ -1,9 +1,115 @@
 import { API_URL } from './config.js';
+import { sessionManager } from './session-manager.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+// Global toast notification functions
+function showMessage(message, type = 'info', duration = 5000) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'toast-icon';
+    icon.innerHTML = getToastIcon(type);
+
+    // Content
+    const content = document.createElement('div');
+    content.className = 'toast-content';
+    content.textContent = message;
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.setAttribute('aria-label', 'Toast schließen');
+
+    // Progress bar for auto-dismiss
+    const progressBar = document.createElement('div');
+    progressBar.className = 'toast-progress';
+    progressBar.style.width = '100%';
+
+    // Assemble toast
+    toast.appendChild(icon);
+    toast.appendChild(content);
+    toast.appendChild(closeBtn);
+    toast.appendChild(progressBar);
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show toast with animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+
+    // Start progress bar animation
+    setTimeout(() => {
+        progressBar.style.width = '0%';
+        progressBar.style.transition = `width ${duration}ms linear`;
+    }, 100);
+
+    // Auto remove after duration
+    const autoRemoveTimeout = setTimeout(() => {
+        removeToast(toast);
+    }, duration);
+
+    // Manual close
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(autoRemoveTimeout);
+        removeToast(toast);
+    });
+
+    // Remove function
+    function removeToast(toastElement) {
+        toastElement.classList.add('hide');
+        setTimeout(() => {
+            if (toastElement.parentNode) {
+                toastElement.parentNode.removeChild(toastElement);
+            }
+            // Remove container if empty
+            if (toastContainer.children.length === 0) {
+                toastContainer.remove();
+            }
+        }, 400);
+    }
+}
+
+function getToastIcon(type) {
+    switch (type) {
+        case 'success':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        case 'error':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/></svg>';
+        case 'warning':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        case 'info':
+        default:
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
     const responseMessage = document.querySelector('.response-message');
-    const marketButton = document.getElementById('marketButton');
-    const offerButton = document.getElementById('offerButton');
+    
+    // Restore scroll position after rating submission reload
+    const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+    if (savedScrollPosition) {
+        setTimeout(() => {
+            window.scrollTo({
+                top: parseInt(savedScrollPosition),
+                behavior: 'smooth'
+            });
+            sessionStorage.removeItem('scrollPosition');
+        }, 1500); // Wait for content to load
+    }
     
     let allPerfectMatches = [];
     let allServices = [];
@@ -14,28 +120,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentRatingFilter = 'all';
     let currentSortOption = 'none';
 
+    // Initialize session first (for guest mode)
+    await sessionManager.init();
+    
     getActiveUser();
 
-    const navUsernameInput = document.getElementById("navUsername");
-    if (navUsernameInput) {
-        navUsernameInput.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                const username = this.value.trim();
-                if (username) {
-                    setActiveUser(username);
-                    // Dispatch event for compatibility
-                    window.dispatchEvent(new CustomEvent('userChanged', {
-                        detail: { username: username }
-                    }));
-                } else {
-                    showMessage("Bitte gib einen Benutzernamen ein.", "error");
-                }
-            }
-        });
-    }
-
     function getActiveUser() {
-        fetch(`${API_URL}/user`)
+        fetch(`${API_URL}/user`, {
+            credentials: 'include'
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Fehler beim Abrufen des aktiven Benutzers");
@@ -45,46 +138,209 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(responseText => {
                 try {
                     const responseJson = JSON.parse(responseText);
-                    const username = responseJson.username || "Nicht angemeldet";
-                    
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username;
-                        activeUserDisplay.classList.add("user-active");
-                    }
+                    const username = responseJson.username || "Gast-Modus";
                     
                     // Lade direkt die Services des aktiven Benutzers, wenn einer angemeldet ist
-                    if (username && username !== "Nicht angemeldet") {
+                    if (username && username !== "Gast-Modus") {
                         searchUserServices(username);
                     } else {
-                        showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
+                        // Guest mode: Load session matches
+                        loadGuestMatches();
                     }
                 } catch (e) {
                     // Falls die Antwort kein gültiges JSON ist, verwende den Text direkt
-                    const username = responseText && responseText.trim() !== "" ? responseText : "Nicht angemeldet";
+                    const username = responseText && responseText.trim() !== "" ? responseText : "Gast-Modus";
                     
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username !== "" ? username : "Nicht angemeldet";
-                        if (username !== "") {
-                            activeUserDisplay.classList.add("user-active");
-                            searchUserServices(username);
-                        } else {
-                            activeUserDisplay.classList.remove("user-active");
-                            showMessage("Bitte melde dich an, um Dienstleistungen anzuzeigen.", "info");
-                        }
+                    if (username !== "" && username !== "Gast-Modus") {
+                        searchUserServices(username);
+                    } else {
+                        // Guest mode: Load session matches
+                        loadGuestMatches();
                     }
                 }
             })
             .catch(error => {
                 console.error("Fehler beim Abrufen des aktiven Benutzers:", error);
-                const activeUserDisplay = document.getElementById("activeUserDisplay");
-                if (activeUserDisplay) {
-                    activeUserDisplay.textContent = "Nicht angemeldet";
-                    activeUserDisplay.classList.remove("user-active");
-                }
-                showMessage("Fehler beim Laden des aktiven Benutzers. Bitte versuche es später erneut.", "error");
+                // Guest mode: Load session matches
+                loadGuestMatches();
             });
+    }
+
+    // Function to load guest matches based on session
+    async function loadGuestMatches() {
+        if (!sessionManager || !sessionManager.sessionId) {
+            console.warn('No session ID available for guest');
+            showMessage("Wähle zuerst Services aus, um Matches zu sehen.", "info");
+            return;
+        }
+
+        const matchesContainer = document.getElementById('matchesContainer');
+        matchesContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Lade deine Matches...</div>';
+
+        try {
+            const response = await fetch(`${API_URL}/session/${sessionManager.sessionId}/matches`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Matches gefunden. Wähle zuerst einige Fächer aus!</div>';
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const matches = await response.json();
+            console.log('Guest matches loaded:', matches);
+
+            if (!matches || matches.length === 0) {
+                matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Matches gefunden. Wähle zuerst einige Fächer aus!</div>';
+                return;
+            }
+
+            // Process matches to display
+            allServices = matches.map((match, index) => ({
+                id: `guest-match-${index}`,
+                username: match.user?.name || 'Unbekannter Benutzer',
+                serviceTypeName: match.serviceType?.name || 'Unbekannter Service',
+                isOffer: match.offer === 1 || match.offer === true,
+                typeId: match.serviceType?.id,
+                providerId: match.user?.id,
+                rating: null,
+                isPerfectMatch: match.isPerfectMatch || false,
+                offer: match.offer // Backend gibt 0 oder 1
+            }));
+
+            console.log('Processed guest matches:', allServices);
+            console.log('Match details:', allServices.map(s => ({ 
+                username: s.username, 
+                service: s.serviceTypeName, 
+                offer: s.offer,
+                isOffer: s.isOffer,
+                isPerfectMatch: s.isPerfectMatch 
+            })));
+
+            // Separiere Perfect Matches von normalen Matches
+            let perfectMatches = allServices.filter(s => s.isPerfectMatch);
+            const regularMatches = allServices.filter(s => !s.isPerfectMatch);
+            
+            console.log('Guest Perfect Matches RAW:', perfectMatches.map(s => ({
+                username: s.username,
+                service: s.serviceTypeName,
+                offer: s.offer,
+                isOffer: s.isOffer
+            })));
+            
+            // Perfect Matches werden unverändert angezeigt - das Backend hat bereits
+            // die richtige Logik: offer=1 bedeutet "User bietet an", offer=0 bedeutet "User sucht"
+            // Wir müssen sie NICHT umgruppieren, nur direkt anzeigen
+            
+            console.log('Guest Perfect Matches:', perfectMatches.length);
+            console.log('Guest Regular Matches:', regularMatches.length);
+
+            // Load ratings
+            await loadRatingsForServices(allServices);
+
+            // Zeige Perfect Matches Section wenn vorhanden
+            if (perfectMatches.length > 0) {
+                // Erstelle Perfect Match Section mit gleicher Struktur wie für eingeloggte User
+                const matchesContainer = document.getElementById('matchesContainer');
+                const perfectMatchSection = document.createElement('div');
+                perfectMatchSection.className = 'main-services-section perfect-matches';
+                perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
+
+                const perfectMatchContainer = document.createElement('div');
+                perfectMatchContainer.id = 'perfectMatchContainer';
+                perfectMatchContainer.className = 'services-display';
+                
+                perfectMatchSection.appendChild(perfectMatchContainer);
+                matchesContainer.appendChild(perfectMatchSection);
+                
+                // Verwende die gleiche Funktion wie für eingeloggte User
+                displayFilteredPerfectMatches(perfectMatches);
+            }
+
+            // Setze nur reguläre Matches für die normale Anzeige
+            allServices = regularMatches;
+
+            // Create and display services section
+            createServicesSection();
+            filterAndDisplayServices();
+
+        } catch (error) {
+            console.error('Error loading guest matches:', error);
+            matchesContainer.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Fehler beim Laden der Matches.</div>';
+        }
+    }
+
+    // Guest Perfect Matches Section
+    function createGuestPerfectMatchesSection(perfectMatches) {
+        const matchesContainer = document.getElementById('matchesContainer');
+        
+        const perfectMatchSection = document.createElement('div');
+        perfectMatchSection.className = 'main-services-section perfect-matches';
+        perfectMatchSection.innerHTML = '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
+
+        const perfectMatchContainer = document.createElement('div');
+        perfectMatchContainer.id = 'perfectMatchContainer';
+        perfectMatchContainer.className = 'services-display';
+        
+        // Gruppiere nach User
+        const matchesByUser = {};
+        perfectMatches.forEach(match => {
+            const userId = match.providerId || match.user?.id;
+            const username = match.username;
+            const key = `${userId}-${username}`;
+            
+            if (!matchesByUser[key]) {
+                matchesByUser[key] = {
+                    username: username,
+                    userId: userId,
+                    matches: []
+                };
+            }
+            matchesByUser[key].matches.push(match);
+        });
+        
+        // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling (wie bei eingeloggten Usern)
+        Object.values(matchesByUser).forEach(userGroup => {
+            // Erstelle Gruppen-Container für Perfect Matches
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'service-group group-perfect-match';
+            
+            // Erstelle Gruppen-Header für Perfect Matches
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'service-group-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'service-group-title';
+            titleDiv.innerHTML = `
+                <span class="group-icon"><i class="fas fa-star"></i></span>
+                <h3>${userGroup.username}</h3>
+                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
+            `;
+            
+            headerDiv.appendChild(titleDiv);
+            
+            // Lade User-Bewertung für den Group Header
+            const userRatingContainer = titleDiv.querySelector('.group-user-rating');
+            if (userRatingContainer && userGroup.username !== 'Unbekannter Benutzer') {
+                loadUserRatingForGroup(userGroup.username, userRatingContainer);
+            }
+            
+            // Erstelle Grid für Perfect Matches dieser Gruppe
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'service-grid';
+            
+            userGroup.matches.forEach(match => {
+                const card = createPerfectMatchCard(match);
+                gridDiv.appendChild(card);
+            });
+            
+        });
+        
+        perfectMatchSection.appendChild(perfectMatchContainer);
+        matchesContainer.appendChild(perfectMatchSection);
     }
 
     // Funktion, um einen Benutzer als aktiv zu markieren
@@ -94,22 +350,14 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 "Content-Type": "application/json"
             },
+            credentials: 'include',
             body: JSON.stringify({ username: username })
         })
         .then(response => {
             if (response.ok) {
                 return response.text().then(msg => {
-                    
-                    // Aktualisiere die Anzeige des aktiven Benutzers
-                    const activeUserDisplay = document.getElementById("activeUserDisplay");
-                    if (activeUserDisplay) {
-                        activeUserDisplay.textContent = username;
-                        activeUserDisplay.classList.add("user-active");
-                    }
-                    
                     // Suche nach den Services des aktiven Benutzers
                     searchUserServices(username);
-                    
                     return msg;
                 });
             } else {
@@ -122,15 +370,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage(error.message, "error");
         });
     }
-
-    // Add event listeners for navigation buttons
-    marketButton.addEventListener('click', function() {
-        window.location.href = 'showOffers.html';
-    });
-    
-    offerButton.addEventListener('click', function() {
-        window.location.href = 'makeOffer.html';
-    });
 
     // Add filter functionality
     const perfectMatchFilter = document.getElementById('perfectMatchFilter');
@@ -768,14 +1007,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('⚠️ Keine Service-ID für Perfect Match gefunden:', { service, username, serviceTypeName });
             }
             
-            // Add click handler to open rating modal
+            // Add click handler: check if current user can review this service first
             cardDiv.addEventListener('click', function(e) {
-                if (serviceId && typeId && providerId) {
-                    openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
-                } else {
-                    console.warn('Service ID, TypeId or ProviderId not found for rating:', { serviceId, typeId, providerId, service });
+                if (!serviceId) {
+                    console.warn('Service ID not found for rating:', { serviceId, typeId, providerId, service });
                     alert('Bewertung nicht möglich: Fehlende Daten');
+                    return;
                 }
+
+                fetch(`${API_URL}/reviews/can-review/${serviceId}`, {
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data && data.canReview) {
+                        openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
+                    } else {
+                        // Show immediate feedback that the service was already reviewed
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'warning');
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Prüfen, ob bewertet werden kann:', err);
+                    showMessage('Fehler beim Prüfen der Bewertungserlaubnis', 'error');
+                });
             });
             
             // Load rating specific to this TypeOfService + Provider combination
@@ -1178,14 +1433,29 @@ document.addEventListener('DOMContentLoaded', function() {
             cardDiv.classList.add('clickable');
             cardDiv.style.cursor = 'pointer';
             
-            // Add click handler to open rating modal
+            // Add click handler: check permission before opening rating modal
             cardDiv.addEventListener('click', function(e) {
-                if (finalServiceId && finalTypeId && finalProviderId) {
-                    openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
-                } else {
-                    console.warn('Service ID, TypeId or ProviderId not found for rating');
+                if (!finalServiceId) {
+                    console.warn('Service ID not found for rating');
                     alert('Bewertung nicht möglich: Fehlende Daten');
+                    return;
                 }
+
+                fetch(`${API_URL}/reviews/can-review/${finalServiceId}`, {
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data && data.canReview) {
+                        openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
+                    } else {
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'warning');
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Prüfen, ob bewertet werden kann:', err);
+                    showMessage('Fehler beim Prüfen der Bewertungserlaubnis', 'error');
+                });
             });
             
             // Load rating specific to this TypeOfService + Provider combination
@@ -1196,19 +1466,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return cardDiv;
-    }
-
-    // Function to show messages
-    function showMessage(message, type) {
-        responseMessage.textContent = message;
-        responseMessage.className = `response-message ${type}`;
-        responseMessage.style.display = 'block';
-        
-        if (type === 'info') {
-            setTimeout(() => {
-                responseMessage.style.display = 'none';
-            }, 3000);
-        }
     }
 
     function createServicesSection() {
@@ -1419,11 +1676,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         displayFilteredServices(filteredServices);
     }
-
-    // Initial load
-    if (navUsernameInput && navUsernameInput.value.trim()) {
-        searchUserServices(navUsernameInput.value.trim());
-    }
 });
 // ==================== RATING MODAL FUNCTIONALITY ====================
 
@@ -1531,13 +1783,17 @@ function updateRatingValue(rating) {
 
 // Open rating modal for a service
 window.openRatingModal = function(serviceId, providerName, serviceType, typeId, providerId) {
+    // Store current scroll position
+    const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    
     currentRatingData = {
         serviceId: serviceId,
         providerName: providerName,
         serviceType: serviceType,
         typeId: typeId,
         providerId: providerId,
-        selectedStars: 0
+        selectedStars: 0,
+        scrollPosition: scrollPosition
     };
     
     // Update modal display
@@ -1582,18 +1838,19 @@ window.submitRating = async function() {
     
     // Validation
     if (currentRatingData.selectedStars === 0) {
-        showModalMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
+        showMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
         return;
     }
     
     if (!currentRatingData.serviceId) {
-        showModalMessage('Fehler: Service-ID nicht gefunden', 'error');
+        showMessage('Fehler: Service-ID nicht gefunden', 'error');
+        closeRatingModal();
         return;
     }
     
     const comment = commentInput.value.trim();
     if (comment.length > 1000) {
-        showModalMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
+        showMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
         return;
     }
     
@@ -1616,49 +1873,43 @@ window.submitRating = async function() {
         if (!response.ok) {
             const errorText = await response.text();
             if (response.status === 409) {
-                showModalMessage('Du hast diesen Service bereits bewertet', 'error');
+                showMessage('Du hast diesen Service bereits bewertet', 'warning');
+                closeRatingModal();
             } else if (response.status === 404) {
-                showModalMessage('Service nicht gefunden', 'error');
+                showMessage('Service nicht gefunden', 'error');
+                closeRatingModal();
             } else if (response.status === 400) {
-                showModalMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+                showMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+                closeRatingModal();
             } else {
-                showModalMessage('Fehler beim Speichern der Bewertung', 'error');
+                showMessage('Fehler beim Speichern der Bewertung', 'error');
+                closeRatingModal();
             }
             return;
         }
         
         const result = await response.json();
         
-        showModalMessage('Bewertung erfolgreich gespeichert!', 'success');
+        showMessage('Bewertung erfolgreich gespeichert!', 'success');
+        closeRatingModal();
         
-        // Close modal and reload ratings after 1.5 seconds
+        // Store the scroll position in sessionStorage before reload
+        const targetScrollPosition = currentRatingData.scrollPosition || 0;
+        sessionStorage.setItem('scrollPosition', targetScrollPosition.toString());
+        
+        // Reload the page after a short delay to show updated ratings
         setTimeout(() => {
-            closeRatingModal();
-            // Reload only the ratings instead of full page reload
-            if (currentRatingData.typeId && currentRatingData.providerId) {
-                // Find all rating containers for this type+provider combo and reload them
-                const ratingContainers = document.querySelectorAll('.rating-container');
-                ratingContainers.forEach(container => {
-                    loadRatingByTypeAndProvider(currentRatingData.typeId, currentRatingData.providerId, container);
-                });
-            } else {
-                // Fallback to page reload if IDs are not available
-                window.location.reload();
-            }
-        }, 1500);
+            window.location.reload();
+        }, 1000);
         
     } catch (error) {
         console.error('Fehler beim Absenden der Bewertung:', error);
-        showModalMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+        showMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+        closeRatingModal();
     }
 };
 
-function showModalMessage(message, type) {
-    const modalMessage = document.querySelector('.modal-message');
-    modalMessage.textContent = message;
-    modalMessage.className = `modal-message ${type}`;
-    modalMessage.style.display = 'block';
-}
+// Modal message functionality replaced by toast notifications
 
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {

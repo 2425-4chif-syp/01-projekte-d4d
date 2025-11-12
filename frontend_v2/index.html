@@ -4,96 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>D4D - Dienstleistung 4 Dienstleistung</title>
+    <link rel="stylesheet" href="styles/navbar.css">
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-        <nav class="navbar">
-        <div class="logo">
-            <button onclick="window.location.href='index.html'" class="logo-button">
-                <i class="fas fa-handshake"></i>
-                <span>D4D</span>
-            </button>
-        </div>
-        <div class="username-input-container">
-            <input type="text" id="navUsername" placeholder="Benutzername eingeben..." class="username-input">
-        </div>
-        <div class="active-user-container">
-            <span class="active-user-label">Aktiver Benutzer:</span>
-            <span id="activeUserDisplay" class="active-user-name">Nicht angemeldet</span>
-        </div>
-        <div class="nav-buttons">
-            <button id="marketButton" onclick="window.location.href='showOffers.html'">
-                <i class="fas fa-store"></i>
-                Zum Markt
-            </button>
-            <button id="createOfferButton" onclick="window.location.href='makeOffer.html'">
-                <i class="fas fa-plus"></i>
-                Dienstleistung anbieten
-            </button>
-            <button id="serviceButton" onclick="window.location.href='showUserServices.html'">
-                <i class="fas fa-search"></i>
-                Matches
-            </button>
-            <button onclick="window.location.href='chats_page.html'">
-                <i class="fas fa-comments"></i>
-                Chat
-            </button>
-            <button id="adminButton" onclick="window.location.href='adminLogin.html'">
-                <i class="fas fa-cog"></i>
-                Verwaltung
-            </button>
-        </div>
-    </nav>
+    <nav class="navbar"></nav>
 
     <main class="container">
         <!-- Hero Section -->
         <section class="hero-section">
             <h1>Nachhilfe leicht gemacht</h1>
-            <p class="subtitle">Tausche Wissen, verbessere deine Noten.</p>
+            <p class="subtitle">Tausche Wissen, verbessere deine Noten – ohne Geld.</p>
+            
+            <div class="hero-cta-container">
+                <div class="hero-cta-card" onclick="window.location.href='requestServices.html'">
+                    <div class="cta-icon">🎓</div>
+                    <h2>Ich suche<br>Nachhilfe</h2>
+                    <p>Drücke um auszuwählen, wo du Hilfe brauchst</p>
+                    <div class="cta-arrow">→</div>
+                </div>
+                
+                <div class="hero-cta-card" onclick="window.location.href='offerServices.html'">
+                    <div class="cta-icon">📚</div>
+                    <h2>Ich gebe<br>Nachhilfe</h2>
+                    <p>Drücke um auszuwählen, wo du anderen helfen könntest</p>
+                    <div class="cta-arrow">→</div>
+                </div>
+            </div>
         </section>
 
         <!-- Info Box -->
         <div class="info-box">
             <p>Bei D4D findest du schnell den passenden Lernpartner: Biete Nachhilfe in deinen Stärken an und erhalte Unterstützung in Fächern, die dir schwerfallen.</p>
-        </div>
-
-        <!-- Two Column Section -->
-        <div class="two-column-section">
-            <!-- How it Works -->
-            <div class="how-it-works">
-                <h2>So funktioniert D4D</h2>
-                <ul class="how-it-works-list">
-                    <li class="how-it-works-item">
-                        <h3>Dienstleistung anbieten</h3>
-                        <p>Bearbeite jederzeit deine Angebote und deine Gesuche</p>
-                    </li>
-                    <li class="how-it-works-item">
-                        <h3>Marktplatz durchsuchen</h3>
-                        <p>Stöbere durch alle Nachhilfe-Angebote und finde, was zu dir passt</p>
-                    </li>
-                    <li class="how-it-works-item">
-                        <h3>Matches erhalten</h3>
-                        <p>Unser System schlägt dir automatisch passende Lernpartner vor</p>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Start Now -->
-            <div class="start-now">
-                <h2>Starte jetzt</h2>
-                <div class="start-buttons">
-                    <button onclick="window.location.href='makeOffer.html'">
-                        Dienstleistung anbieten
-                    </button>
-                    <button onclick="window.location.href='showOffers.html'">
-                        Zum Marktplatz
-                    </button>
-                    <button onclick="window.location.href='showUserServices.html'">
-                        Matches anzeigen
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- Benefits Section -->
@@ -121,6 +64,7 @@
         </section>
     </main>
 
-    <script type="module" src="scripts/navbar-compat.js"></script>
+    <script type="module" src="scripts/index.js"></script>
+    <script type="module" src="scripts/navbar.js"></script>
 </body>
 </html>

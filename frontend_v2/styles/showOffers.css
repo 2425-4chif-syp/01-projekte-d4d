@@ -1,55 +1,13 @@
 :root {
-    --primary-color: #2563eb;
-    --primary-dark: #1d4ed8;
-    --secondary-color: #64748b;
-    --background-color: #f1f5f9;
-    --card-background: #ffffff;
-    --text-color: #1e293b;
-    --border-color: #e5e7eb;
-    --border-radius: 12px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-    --transition: all 0.3s ease;
-    --success-color: #28a745;
-    --error-color: #dc3545;
-    --offer-color: #b15df5;
-    --demand-color: #7eff5e;
-    --perfect-color: #ffd700;
-    --perfect-bg-color: #fff7cc;
-    --hover-bg: #f8fafc;
-    --input-border: #ddd;
+    /* Marktplatz spezifische Variablen (zusätzlich zu common.css) */
+    --offer-color: #3066BE;
+    --demand-color: #0BAFD4;
+    --perfect-color: #0CA139;
+    --perfect-bg-color: #f0fdf4;
+    --input-border: #E4ECFA;
     --scrollbar-track: #f1f1f1;
-    --scrollbar-thumb: #888;
-    --scrollbar-thumb-hover: #666;
-}
-
-/* Navigation username input styles */
-.username-input-container {
-    display: flex;
-    align-items: center;
-    margin: 0 1rem;
-}
-
-.username-input {
-    padding: 8px 12px;
-    border-radius: var(--border-radius, 6px);
-    border: 1px solid #e2e8f0;
-    background-color: white;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    width: 200px;
-    color: var(--text-color, #333);
-}
-
-.username-input:focus {
-    outline: none;
-    border-color: var(--primary-color, #3182ce);
-    box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
-}
-
-.username-input::placeholder {
-    color: var(--secondary-color, #718096);
+    --scrollbar-thumb: #3066BE;
+    --scrollbar-thumb-hover: #3627FF;
 }
 
 /* Active User Display styles */
@@ -134,99 +92,6 @@ body {
     padding: 0;
     color: var(--text-color);
     min-height: 100vh;
-}
-
-/* Navigation */
-.navbar {
-    background-color: var(--card-background);
-    padding: 0rem;
-    height: 60px;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    justify-content: space-between;
-    align-items: stretch;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-color);
-    height: 100%;
-}
-
-.logo-button {
-    height: 100%;
-    background: transparent;
-    color: var(--primary-color);
-    padding: 0 2rem;
-    border-radius: 0;
-}
-
-.logo-button:hover {
-    background-color: var(--primary-dark);
-    transform: none;
-}
-
-.logo i {
-    font-size: 1.8rem;
-}
-
-.nav-buttons {
-    display: flex;
-    align-items: stretch;
-    height: 100%;
-}
-
-.nav-buttons button {
-    white-space: nowrap;
-    min-width: fit-content;
-    height: 100%;
-    padding: 0 1.5rem;
-    border-radius: 0;
-    border-left: 1px solid var(--border-color);
-    margin: 0;
-}
-
-.nav-buttons button:hover {
-    background-color: var(--primary-dark);
-    transform: none;
-}
-
-/* Buttons */
-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--primary-color);
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-button:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-button i {
-    font-size: 1.1rem;
-}
-
-#chatButton {
-    background-color: var(--secondary-color);
-}
-
-#chatButton:hover {
-    background-color: #4b5563;
 }
 
 /* Container and Layout */
@@ -632,27 +497,6 @@ input:focus, select:focus, textarea:focus {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .navbar {
-        padding: 1rem;
-    }
-
-    .nav-buttons {
-        gap: 0.5rem;
-    }
-
-    .nav-buttons button {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
-
-    .nav-buttons button i {
-        margin-right: 0.25rem;
-    }
-
-    .logo span {
-        display: none;
-    }
-
     button {
         padding: 0.5rem 1rem;
     }
@@ -1685,10 +1529,26 @@ input:focus, select:focus, textarea:focus {
     cursor: pointer;
 }
 
+.filter-select:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.filter-select:disabled option {
+    color: #6c757d;
+}
+
 .filter-select:focus {
     border-color: var(--primary-color);
     outline: none;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.filter-select:disabled:focus {
+    border-color: var(--input-border);
+    box-shadow: none;
 }
 
 #servicesContainer {
@@ -1998,28 +1858,6 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 0.25rem;
     display: block;
     font-weight: 500;
-}
-
-.logo-button {
-    background: none;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-color);
-    padding: 0;
-    cursor: pointer;
-}
-
-.logo-button:hover {
-    background: none;
-    transform: scale(1.05);
-}
-
-.logo-button i {
-    font-size: 1.8rem;
 }
 
 /* Verbesserte Datumsfelder Styling */
@@ -3158,4 +2996,181 @@ input:focus, select:focus, textarea:focus {
 .service-item.clickable:hover .card {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
+}
+
+/* ==============================================
+   IMPROVED MARKET CARDS - D4D REDESIGN
+   ============================================== */
+
+/* Überschreibe Perfect Match Card Styles */
+.perfect-match-card {
+    border: 3px solid var(--perfect-color) !important;
+    background-color: var(--perfect-bg-color) !important;
+    box-shadow: 0 6px 20px rgba(12, 161, 57, 0.25) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.perfect-match-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--perfect-color) 0%, #15803d 100%);
+}
+
+.perfect-match-card::after {
+    content: '🎯 Perfect Match';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, var(--perfect-color), #15803d);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(12, 161, 57, 0.3);
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(12, 161, 57, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 4px 16px rgba(12, 161, 57, 0.5);
+    }
+}
+
+.perfect-match-card:hover {
+    box-shadow: 0 8px 30px rgba(12, 161, 57, 0.35) !important;
+    transform: translateY(-6px);
+}
+
+/* Offer Cards */
+.offer-card {
+    border-left: 4px solid var(--offer-color) !important;
+    border-top: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md) !important;
+    background: white;
+}
+
+.offer-card:hover {
+    box-shadow: var(--shadow-lg) !important;
+    transform: translateY(-4px);
+    border-left-color: var(--primary-dark) !important;
+}
+
+/* Demand Cards */
+.demand-card {
+    border-left: 4px solid var(--demand-color) !important;
+    border-top: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md) !important;
+    background: white;
+}
+
+.demand-card:hover {
+    box-shadow: var(--shadow-lg) !important;
+    transform: translateY(-4px);
+    border-left-color: var(--info-color) !important;
+}
+
+/* Card Header Styling */
+.card-header {
+    border-bottom: 2px solid var(--light-color);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+}
+
+.card-header h3 {
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Service Info in Cards */
+.service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-info p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.service-info p strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* Rating Display */
+.service-rating {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--light-color);
+}
+
+.rating-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.rating-container .fa-star,
+.rating-container .fa-star-half-alt {
+    color: #ddd;
+}
+
+.rating-container .fa-star.selected,
+.rating-container .fa-star-half-alt.selected {
+    color: var(--warning-color);
+}
+
+.rating-text {
+    color: var(--text-light);
+    margin-left: 4px;
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-top: 8px;
+}
+
+.badge.perfect-match {
+    background: linear-gradient(135deg, var(--perfect-color), #15803d);
+    color: white;
+}
+
+.badge.offer {
+    background: var(--offer-color);
+    color: white;
+}
+
+.badge.demand {
+    background: var(--demand-color);
+    color: white;
 }

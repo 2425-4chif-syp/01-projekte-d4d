@@ -1,0 +1,289 @@
+/* ==============================================
+   COMMON STYLES - D4D Design System
+   Shared across all pages
+   ============================================== */
+
+/* CSS Variables */
+:root {
+    /* D4D Farbpalette */
+    --primary-color: #3066BE;
+    --primary-dark: #3627FF;
+    --accent-color: #82D9FC;
+    --dark-color: #3C3744;
+    --light-color: #E4ECFA;
+    --success-color: #0CA139;
+    --info-color: #0BAFD4;
+    --warning-color: #FDE917;
+    --error-color: #ef4444;
+    
+    /* Anwendung */
+    --background-color: #f5f7fa;
+    --card-background: #ffffff;
+    --text-color: #3C3744;
+    --text-light: #64748b;
+    --border-color: #E4ECFA;
+    
+    /* Spacing */
+    --spacing-xs: 8px;
+    --spacing-sm: 16px;
+    --spacing-md: 24px;
+    --spacing-lg: 32px;
+    --spacing-xl: 48px;
+    
+    /* Border */
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 16px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(60, 55, 68, 0.1);
+    --shadow-md: 0 4px 12px rgba(48, 102, 190, 0.15);
+    --shadow-lg: 0 6px 20px rgba(48, 102, 190, 0.2);
+    --shadow-xl: 0 8px 32px rgba(48, 102, 190, 0.25);
+    
+    /* Transitions */
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
+}
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* ==============================================
+   BUTTON STATES
+   ============================================== */
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Primary Button */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Disabled State */
+.btn-primary:disabled,
+.btn:disabled {
+    background: var(--light-color);
+    color: var(--text-light);
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+/* Loading State */
+.btn.loading {
+    background: var(--info-color);
+    pointer-events: none;
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Success State */
+.btn.success {
+    background: var(--success-color);
+    color: white;
+    pointer-events: none;
+}
+
+.btn.success::before {
+    content: '✓';
+    margin-right: 6px;
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: transparent;
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--light-color);
+    border-color: var(--primary-color);
+}
+
+/* Danger Button */
+.btn-danger {
+    background: var(--error-color);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+/* ==============================================
+   NOTIFICATIONS
+   ============================================== */
+
+.notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 300px;
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--info-color);
+}
+
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notification-success {
+    border-left-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.notification-error {
+    border-left-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.notification-info {
+    border-left-color: var(--info-color);
+    color: var(--info-color);
+}
+
+.notification-warning {
+    border-left-color: var(--warning-color);
+    color: #d97706;
+}
+
+.notification::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.2;
+}
+
+/* ==============================================
+   RESPONSIVE
+   ============================================== */
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-wrap: wrap;
+        height: auto;
+    }
+
+    .logo-button {
+        padding: 0 1rem;
+    }
+
+    .username-input-container {
+        order: 3;
+        width: 100%;
+        margin: 0.5rem 1rem;
+    }
+
+    .username-input {
+        width: 100%;
+    }
+
+    .active-user-container {
+        order: 4;
+        width: 100%;
+        margin: 0.5rem 1rem;
+        justify-content: center;
+    }
+
+    .nav-buttons {
+        flex-wrap: wrap;
+        width: 100%;
+        height: auto;
+    }
+
+    .nav-buttons button {
+        flex: 1;
+        min-width: 150px;
+        justify-content: center;
+    }
+}
