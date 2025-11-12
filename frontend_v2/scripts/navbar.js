@@ -220,6 +220,11 @@ async function handleLogout() {
             detail: { username: null, state: 'guest' }
         }));
         
+        // Reload page after successful logout to update all content
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+        
     } catch (error) {
         console.error('Fehler beim Abmelden:', error);
         showNotification('Fehler beim Abmelden', 'error');
@@ -296,6 +301,11 @@ async function setActiveUser(username) {
             }));
             
             showNotification(`✓ Angemeldet als ${username}`, 'success');
+            
+            // Reload page after successful login to update all content
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
             const errorText = await response.text();
             showNotification(errorText || 'Benutzer nicht gefunden', 'error');
