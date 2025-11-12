@@ -1,6 +1,14 @@
 /* Chat-spezifische Styles */
 
-/* Überschreibung der Container-Styles aus showOffers.css nur für Chat */
+/* Chat-spezifische CSS-Variablen */
+:root {
+  --whatsapp-green: #25D366;
+  --whatsapp-light-green: #DCF8C6;
+  --whatsapp-chat-bg: #E5DDD5;
+  --whatsapp-header: #075E54;
+}
+
+/* Chat Page Container */
 .chat-page-container {
   flex: 1;
   display: flex;
@@ -12,25 +20,15 @@
   height: calc(100vh - 90px);
 }
 
-/* Chat-spezifische CSS-Variablen falls sie nicht in showOffers.css definiert sind */
-:root {
-  --whatsapp-green: #25D366;
-  --whatsapp-light-green: #DCF8C6;
-  --whatsapp-chat-bg: #E5DDD5;
-  --whatsapp-header: #075E54;
-}
-
-/* html und body nehmen immer die volle Höhe ein und verhindern das Browser-Scrolling */
+/* Chat page specific body styling */
 html,
 body {
   height: 100%;
   overflow: hidden;
 }
 
-body {
+.chats-page-body {
   font-family: "Roboto", sans-serif;
-  margin: 0;
-  padding: 0;
   background: linear-gradient(135deg, #e9eff5, #ffffff);
   display: flex;
   flex-direction: column;

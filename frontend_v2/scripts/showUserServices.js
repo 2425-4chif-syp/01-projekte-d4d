@@ -1,8 +1,115 @@
 import { API_URL } from './config.js';
 import { sessionManager } from './session-manager.js';
 
+// Global toast notification functions
+function showMessage(message, type = 'info', duration = 5000) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'toast-icon';
+    icon.innerHTML = getToastIcon(type);
+
+    // Content
+    const content = document.createElement('div');
+    content.className = 'toast-content';
+    content.textContent = message;
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.setAttribute('aria-label', 'Toast schließen');
+
+    // Progress bar for auto-dismiss
+    const progressBar = document.createElement('div');
+    progressBar.className = 'toast-progress';
+    progressBar.style.width = '100%';
+
+    // Assemble toast
+    toast.appendChild(icon);
+    toast.appendChild(content);
+    toast.appendChild(closeBtn);
+    toast.appendChild(progressBar);
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show toast with animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+
+    // Start progress bar animation
+    setTimeout(() => {
+        progressBar.style.width = '0%';
+        progressBar.style.transition = `width ${duration}ms linear`;
+    }, 100);
+
+    // Auto remove after duration
+    const autoRemoveTimeout = setTimeout(() => {
+        removeToast(toast);
+    }, duration);
+
+    // Manual close
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(autoRemoveTimeout);
+        removeToast(toast);
+    });
+
+    // Remove function
+    function removeToast(toastElement) {
+        toastElement.classList.add('hide');
+        setTimeout(() => {
+            if (toastElement.parentNode) {
+                toastElement.parentNode.removeChild(toastElement);
+            }
+            // Remove container if empty
+            if (toastContainer.children.length === 0) {
+                toastContainer.remove();
+            }
+        }, 400);
+    }
+}
+
+function getToastIcon(type) {
+    switch (type) {
+        case 'success':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        case 'error':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/></svg>';
+        case 'warning':
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        case 'info':
+        default:
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     const responseMessage = document.querySelector('.response-message');
+    
+    // Restore scroll position after rating submission reload
+    const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+    if (savedScrollPosition) {
+        setTimeout(() => {
+            window.scrollTo({
+                top: parseInt(savedScrollPosition),
+                behavior: 'smooth'
+            });
+            sessionStorage.removeItem('scrollPosition');
+        }, 1500); // Wait for content to load
+    }
     
     let allPerfectMatches = [];
     let allServices = [];
@@ -917,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         openRatingModal(serviceId, username, serviceTypeName, typeId, providerId);
                     } else {
                         // Show immediate feedback that the service was already reviewed
-                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'info');
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'warning');
                     }
                 })
                 .catch(err => {
@@ -1342,7 +1449,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (data && data.canReview) {
                         openRatingModal(finalServiceId, displayUsername, displayServiceType, finalTypeId, finalProviderId);
                     } else {
-                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'info');
+                        showMessage('Du hast diese Dienstleistung bereits bewertet!', 'warning');
                     }
                 })
                 .catch(err => {
@@ -1359,104 +1466,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         return cardDiv;
-    }
-
-    // Function to show messages
-    function showMessage(message, type = 'info') {
-        // Remove existing alert if present
-        const existing = document.getElementById('centeredAlertOverlay');
-        if (existing) existing.remove();
-
-        const overlay = document.createElement('div');
-        overlay.id = 'centeredAlertOverlay';
-        overlay.className = 'centered-alert-overlay';
-
-        const box = document.createElement('div');
-        box.className = `centered-alert-box centered-alert-${type}`;
-        box.setAttribute('role', 'dialog');
-        box.setAttribute('aria-modal', 'true');
-        box.setAttribute('aria-live', 'polite');
-
-        // Icon + Title
-        const header = document.createElement('div');
-        header.className = 'centered-alert-header';
-
-        const icon = document.createElement('div');
-        icon.className = 'centered-alert-icon';
-        icon.innerHTML = getAlertIcon(type);
-
-        const title = document.createElement('div');
-        title.className = 'centered-alert-title';
-        title.textContent = getAlertTitle(type);
-
-        header.appendChild(icon);
-        header.appendChild(title);
-
-        const msg = document.createElement('div');
-        msg.className = 'centered-alert-message';
-        msg.textContent = message;
-
-        const btn = document.createElement('button');
-        btn.className = 'alert-ok-btn';
-        btn.textContent = 'OK, weiter';
-        btn.addEventListener('click', () => {
-            removeOverlay();
-        });
-
-        // Prevent closing by clicking overlay; only OK closes
-        overlay.addEventListener('click', (e) => {
-            // don't close when clicking backdrop
-            e.stopPropagation();
-        });
-
-        // Prevent accidental keyboard closes; only Enter on button closes
-        const onKeyDown = (e) => {
-            if (e.key === 'Tab') {
-                // keep focus on button
-                e.preventDefault();
-                btn.focus();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                removeOverlay();
-            }
-        };
-
-        function removeOverlay() {
-            document.removeEventListener('keydown', onKeyDown);
-            overlay.remove();
-        }
-
-        box.appendChild(header);
-        box.appendChild(msg);
-        box.appendChild(btn);
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-
-        // ensure keyboard events handled
-        document.addEventListener('keydown', onKeyDown);
-
-        // focus the button for keyboard users
-        btn.focus();
-    }
-
-    function getAlertTitle(type) {
-        switch (type) {
-            case 'success': return 'Erfolg';
-            case 'error': return 'Fehler';
-            default: return 'Hinweis';
-        }
-    }
-
-    function getAlertIcon(type) {
-        // simple inline SVG icons
-        if (type === 'success') {
-            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        }
-        if (type === 'error') {
-            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        }
-        // info / default
-        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#2563EB" stroke-width="1.6"/><path d="M12 8h.01" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/><path d="M11.5 11.5h1v4h-1z" stroke="#2563EB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
 
     function createServicesSection() {
@@ -1774,13 +1783,17 @@ function updateRatingValue(rating) {
 
 // Open rating modal for a service
 window.openRatingModal = function(serviceId, providerName, serviceType, typeId, providerId) {
+    // Store current scroll position
+    const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    
     currentRatingData = {
         serviceId: serviceId,
         providerName: providerName,
         serviceType: serviceType,
         typeId: typeId,
         providerId: providerId,
-        selectedStars: 0
+        selectedStars: 0,
+        scrollPosition: scrollPosition
     };
     
     // Update modal display
@@ -1825,18 +1838,19 @@ window.submitRating = async function() {
     
     // Validation
     if (currentRatingData.selectedStars === 0) {
-        showModalMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
+        showMessage('Bitte wähle eine Bewertung aus (1-5 Sterne)', 'error');
         return;
     }
     
     if (!currentRatingData.serviceId) {
-        showModalMessage('Fehler: Service-ID nicht gefunden', 'error');
+        showMessage('Fehler: Service-ID nicht gefunden', 'error');
+        closeRatingModal();
         return;
     }
     
     const comment = commentInput.value.trim();
     if (comment.length > 1000) {
-        showModalMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
+        showMessage('Kommentar darf maximal 1000 Zeichen lang sein', 'error');
         return;
     }
     
@@ -1859,49 +1873,43 @@ window.submitRating = async function() {
         if (!response.ok) {
             const errorText = await response.text();
             if (response.status === 409) {
-                showModalMessage('Du hast diesen Service bereits bewertet', 'error');
+                showMessage('Du hast diesen Service bereits bewertet', 'warning');
+                closeRatingModal();
             } else if (response.status === 404) {
-                showModalMessage('Service nicht gefunden', 'error');
+                showMessage('Service nicht gefunden', 'error');
+                closeRatingModal();
             } else if (response.status === 400) {
-                showModalMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+                showMessage(errorText || 'Ungültige Bewertungsdaten', 'error');
+                closeRatingModal();
             } else {
-                showModalMessage('Fehler beim Speichern der Bewertung', 'error');
+                showMessage('Fehler beim Speichern der Bewertung', 'error');
+                closeRatingModal();
             }
             return;
         }
         
         const result = await response.json();
         
-        showModalMessage('Bewertung erfolgreich gespeichert!', 'success');
+        showMessage('Bewertung erfolgreich gespeichert!', 'success');
+        closeRatingModal();
         
-        // Close modal and reload ratings after 1.5 seconds
+        // Store the scroll position in sessionStorage before reload
+        const targetScrollPosition = currentRatingData.scrollPosition || 0;
+        sessionStorage.setItem('scrollPosition', targetScrollPosition.toString());
+        
+        // Reload the page after a short delay to show updated ratings
         setTimeout(() => {
-            closeRatingModal();
-            // Reload only the ratings instead of full page reload
-            if (currentRatingData.typeId && currentRatingData.providerId) {
-                // Find all rating containers for this type+provider combo and reload them
-                const ratingContainers = document.querySelectorAll('.rating-container');
-                ratingContainers.forEach(container => {
-                    loadRatingByTypeAndProvider(currentRatingData.typeId, currentRatingData.providerId, container);
-                });
-            } else {
-                // Fallback to page reload if IDs are not available
-                window.location.reload();
-            }
-        }, 1500);
+            window.location.reload();
+        }, 1000);
         
     } catch (error) {
         console.error('Fehler beim Absenden der Bewertung:', error);
-        showModalMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+        showMessage('Netzwerkfehler: Bewertung konnte nicht gespeichert werden', 'error');
+        closeRatingModal();
     }
 };
 
-function showModalMessage(message, type) {
-    const modalMessage = document.querySelector('.modal-message');
-    modalMessage.textContent = message;
-    modalMessage.className = `modal-message ${type}`;
-    modalMessage.style.display = 'block';
-}
+// Modal message functionality replaced by toast notifications
 
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {
