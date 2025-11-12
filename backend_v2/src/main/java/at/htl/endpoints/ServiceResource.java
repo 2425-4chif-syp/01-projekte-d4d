@@ -74,10 +74,11 @@ public class ServiceResource {
             }
         }
         
-        // Nutze die gemeinsame Matching-Methode
+        // Nutze die gemeinsame Matching-Methode (mit User-Ausschluss)
         List<Map<String, Object>> matches = serviceRepository.findMatchesWithPerfectMatchFlag(
             userOfferIds, 
-            userDemandIds
+            userDemandIds,
+            user.getId() // Schließe den aktuellen User aus
         );
         
         // Filtere nur Perfect Matches

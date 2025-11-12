@@ -100,14 +100,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 typeId: match.serviceType?.id,
                 providerId: match.user?.id,
                 rating: null,
-                isPerfectMatch: match.isPerfectMatch || false
+                isPerfectMatch: match.isPerfectMatch || false,
+                offer: match.offer // Backend gibt 0 oder 1
             }));
 
             console.log('Processed guest matches:', allServices);
+            console.log('Match details:', allServices.map(s => ({ 
+                username: s.username, 
+                service: s.serviceTypeName, 
+                offer: s.offer,
+                isOffer: s.isOffer,
+                isPerfectMatch: s.isPerfectMatch 
+            })));
 
             // Separiere Perfect Matches von normalen Matches
-            const perfectMatches = allServices.filter(s => s.isPerfectMatch);
+            let perfectMatches = allServices.filter(s => s.isPerfectMatch);
             const regularMatches = allServices.filter(s => !s.isPerfectMatch);
+            
+            console.log('Guest Perfect Matches RAW:', perfectMatches.map(s => ({
+                username: s.username,
+                service: s.serviceTypeName,
+                offer: s.offer,
+                isOffer: s.isOffer
+            })));
+            
+            // Perfect Matches werden unverändert angezeigt - das Backend hat bereits
+            // die richtige Logik: offer=1 bedeutet "User bietet an", offer=0 bedeutet "User sucht"
+            // Wir müssen sie NICHT umgruppieren, nur direkt anzeigen
             
             console.log('Guest Perfect Matches:', perfectMatches.length);
             console.log('Guest Regular Matches:', regularMatches.length);

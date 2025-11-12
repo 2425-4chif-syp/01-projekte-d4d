@@ -150,6 +150,17 @@ public class ServiceRepository implements PanacheRepository<Service> {
      * @return Liste von Maps mit Match-Details und isPerfectMatch Flag
      */
     public List<Map<String, Object>> findMatchesWithPerfectMatchFlag(List<Long> offerIds, List<Long> demandIds) {
+        return findMatchesWithPerfectMatchFlag(offerIds, demandIds, null);
+    }
+    
+    /**
+     * Findet Matches mit Perfect Match Flag und optionalem User-Ausschluss
+     * @param offerIds Liste der angebotenen Service-IDs
+     * @param demandIds Liste der gesuchten Service-IDs
+     * @param excludeUserId Optional: User-ID die ausgeschlossen werden soll
+     * @return Liste von Maps mit Match-Details und isPerfectMatch Flag
+     */
+    public List<Map<String, Object>> findMatchesWithPerfectMatchFlag(List<Long> offerIds, List<Long> demandIds, Long excludeUserId) {
         List<Market> allMarkets = marketRepository.listAll();
         List<Map<String, Object>> matches = new ArrayList<>();
         Set<String> addedMatches = new HashSet<>();
@@ -158,6 +169,12 @@ public class ServiceRepository implements PanacheRepository<Service> {
         Map<Long, List<Market>> marketsByUser = new HashMap<>();
         for (Market market : allMarkets) {
             Long userId = market.getUser().getId();
+            
+            // Überspringe ausgeschlossenen User
+            if (excludeUserId != null && userId.equals(excludeUserId)) {
+                continue;
+            }
+            
             marketsByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(market);
         }
         
@@ -166,8 +183,9 @@ public class ServiceRepository implements PanacheRepository<Service> {
             Long userId = entry.getKey();
             List<Market> userMarkets = entry.getValue();
             
-            // Zähle Matches für diesen User
-            int matchCount = 0;
+            // Zähle Angebote und Nachfragen separat für echten Perfect Match
+            int offerMatchCount = 0; // User bietet an was gesucht wird
+            int demandMatchCount = 0; // User sucht was angeboten wird
             List<Map<String, Object>> userMatchDetails = new ArrayList<>();
             
             for (Market market : userMarkets) {
@@ -179,14 +197,14 @@ public class ServiceRepository implements PanacheRepository<Service> {
                 if (isUserOffer && demandIds.contains(serviceTypeId)) {
                     // User bietet an, was gesucht wird
                     isMatch = true;
+                    offerMatchCount++;
                 } else if (!isUserOffer && offerIds.contains(serviceTypeId)) {
                     // User sucht, was angeboten wird
                     isMatch = true;
+                    demandMatchCount++;
                 }
                 
                 if (isMatch) {
-                    matchCount++;
-                    
                     String matchKey = userId + "-" + serviceTypeId + "-" + market.getOffer();
                     if (!addedMatches.contains(matchKey)) {
                         Map<String, Object> matchDetail = new HashMap<>();
@@ -207,8 +225,11 @@ public class ServiceRepository implements PanacheRepository<Service> {
                 }
             }
             
-            // Markiere alle Matches dieses Users als Perfect Match falls >= 2
-            if (matchCount >= 2) {
+            // Perfect Match nur wenn SOWOHL Angebot ALS AUCH Nachfrage vorhanden
+            // (gegenseitiger Austausch: User bietet was an UND sucht was)
+            boolean isPerfectMatch = offerMatchCount >= 1 && demandMatchCount >= 1;
+            
+            if (isPerfectMatch) {
                 for (Map<String, Object> detail : userMatchDetails) {
                     detail.put("isPerfectMatch", true);
                 }
