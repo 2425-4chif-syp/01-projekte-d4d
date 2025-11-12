@@ -1,7 +1,7 @@
-// Chat-Funktionalität - KORRIGIERT FÜR ADMIN-NACHRICHTEN
-console.log('Chat: Script startet');
+import { API_URL } from './config.js';
 
-const API_URL = "http://localhost/api";
+
+
 let currentChatId = null;
 let currentUser = null;
 let chats = [];
