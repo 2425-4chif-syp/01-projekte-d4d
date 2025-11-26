@@ -191,32 +191,69 @@ public class SessionResource {
                     .build();
         }
         
+        User user = session.getUser();
         List<SessionServiceType> sessionServiceTypes = 
                 sessionServiceTypeRepository.findBySession(session);
         
-        // Konvertiere zu Market-Einträgen über den MarketResource
-        Map<String, Object> marketData = new HashMap<>();
+        if (sessionServiceTypes.isEmpty()) {
+            return Response.ok()
+                    .entity(Map.of("success", true, "marketsCreated", 0, "message", "Keine Services zu konvertieren"))
+                    .build();
+        }
         
-        List<Long> offers = sessionServiceTypes.stream()
+        int marketsCreated = 0;
+        
+        // Erstelle Market-Einträge für Offers
+        List<SessionServiceType> offers = sessionServiceTypes.stream()
                 .filter(SessionServiceType::isOffer)
-                .map(sst -> sst.getServiceType().getId())
                 .collect(Collectors.toList());
         
-        List<Long> demands = sessionServiceTypes.stream()
+        for (SessionServiceType sst : offers) {
+            ServiceType serviceType = sst.getServiceType();
+            
+            // Prüfe ob Market bereits existiert (duplikatfrei)
+            Market existingMarket = marketRepository
+                    .find("user.id = ?1 and serviceType.id = ?2 and offer = 1", 
+                          user.getId(), serviceType.getId())
+                    .firstResult();
+            
+            if (existingMarket == null) {
+                Market market = new Market(1, serviceType, user);
+                marketRepository.persist(market);
+                marketsCreated++;
+            }
+        }
+        
+        // Erstelle Market-Einträge für Demands
+        List<SessionServiceType> demands = sessionServiceTypes.stream()
                 .filter(sst -> !sst.isOffer())
-                .map(sst -> sst.getServiceType().getId())
                 .collect(Collectors.toList());
         
-        marketData.put("offers", offers);
-        marketData.put("demands", demands);
-        marketData.put("username", session.getUser().getName());
+        for (SessionServiceType sst : demands) {
+            ServiceType serviceType = sst.getServiceType();
+            
+            // Prüfe ob Market bereits existiert (duplikatfrei)
+            Market existingMarket = marketRepository
+                    .find("user.id = ?1 and serviceType.id = ?2 and offer = 0", 
+                          user.getId(), serviceType.getId())
+                    .firstResult();
+            
+            if (existingMarket == null) {
+                Market market = new Market(0, serviceType, user);
+                marketRepository.persist(market);
+                marketsCreated++;
+            }
+        }
         
-        // Lösche Session-Daten nach Konvertierung
+        // Lösche Session-Daten nach erfolgreicher Konvertierung
         sessionServiceTypeRepository.deleteBySession(session);
         
-        return Response.ok(marketData)
-                .entity("Session zu Markets konvertiert")
-                .build();
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("marketsCreated", marketsCreated);
+        response.put("message", marketsCreated + " Market-Einträge erstellt");
+        
+        return Response.ok(response).build();
     }
 
     @GET
