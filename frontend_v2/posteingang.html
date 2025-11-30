@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posteingang - D4D</title>
+    <link rel="stylesheet" href="styles/navbar.css">
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/posteingang.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar"></nav>
+
+    <main class="container">
+        <div class="posteingang-container">
+            <div class="header-section">
+                <h1><i class="fas fa-inbox"></i> Posteingang</h1>
+                <p class="subtitle">Hier siehst du alle Anfragen für deine angebotenen Dienste</p>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="tab-btn active" data-filter="all">
+                    <i class="fas fa-list"></i> Alle
+                    <span class="badge-count" id="count-all">0</span>
+                </button>
+                <button class="tab-btn" data-filter="PENDING">
+                    <i class="fas fa-clock"></i> Ausstehend
+                    <span class="badge-count" id="count-pending">0</span>
+                </button>
+                <button class="tab-btn" data-filter="ACCEPTED">
+                    <i class="fas fa-check-circle"></i> Akzeptiert
+                    <span class="badge-count" id="count-accepted">0</span>
+                </button>
+                <button class="tab-btn" data-filter="REJECTED">
+                    <i class="fas fa-times-circle"></i> Abgelehnt
+                    <span class="badge-count" id="count-rejected">0</span>
+                </button>
+            </div>
+
+            <!-- Requests List -->
+            <div id="requestsList" class="requests-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Anfragen werden geladen...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="scripts/posteingang.js"></script>
+    <script type="module" src="scripts/navbar.js"></script>
+</body>
+</html>

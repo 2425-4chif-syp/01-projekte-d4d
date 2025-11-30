@@ -107,6 +107,10 @@ function renderNavbar() {
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="profile-menu">
+                        <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
+                            <i class="fas fa-inbox"></i>
+                            Posteingang
+                        </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
                             Abmelden
@@ -163,6 +167,10 @@ function renderNavbar() {
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="profile-menu">
+                        <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
+                            <i class="fas fa-inbox"></i>
+                            Posteingang
+                        </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
                             Abmelden

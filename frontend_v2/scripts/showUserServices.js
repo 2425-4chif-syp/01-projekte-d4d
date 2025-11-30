@@ -1106,8 +1106,13 @@ document.addEventListener("DOMContentLoaded", async function () {
       cardDiv.classList.add("clickable");
       cardDiv.style.cursor = "pointer";
 
-      // Extract IDs - prioritize serviceId from enriched Perfect Match data
-      const serviceId = service.serviceId || service.id || null;
+      // Extract marketId - for Perfect Match offers, get from marketProvider
+      const marketId = 
+        service.marketProvider?.id ||
+        service.id ||
+        null;
+      
+      // Extract typeId and providerId
       const typeId =
         service.typeId ||
         (service.serviceType && service.serviceType.id) ||
@@ -1129,71 +1134,27 @@ document.addEventListener("DOMContentLoaded", async function () {
           service.marketClient.user.id) ||
         null;
 
-      console.log("Perfect Match Card Data:", {
-        serviceId,
-        typeId,
-        providerId,
-        username,
-        serviceTypeName,
-      });
-
-      // Warnung wenn keine Service-ID vorhanden ist
-      if (!serviceId) {
-        console.warn("⚠️ Keine Service-ID für Perfect Match gefunden:", {
-          service,
-          username,
-          serviceTypeName,
-        });
-      }
-
-      // Add click handler: check if current user can review this service first
+      // Add click handler: open request modal to send a service request
       cardDiv.addEventListener("click", function (e) {
-        if (!serviceId) {
-          console.warn("Service ID not found for rating:", {
-            serviceId,
-            typeId,
-            providerId,
-            service,
-          });
-          alert("Bewertung nicht möglich: Fehlende Daten");
+        if (!marketId) {
+          console.warn("Market ID not found for request");
+          alert("Anfrage nicht möglich: Fehlende Daten");
           return;
         }
 
-        fetch(`${API_URL}/reviews/can-review/${serviceId}`, {
-          credentials: "include",
-        })
-          .then((resp) => resp.json())
-          .then((data) => {
-            if (data && data.canReview) {
-              openRatingModal(
-                serviceId,
-                username,
-                serviceTypeName,
-                typeId,
-                providerId
-              );
-            } else {
-              // Show immediate feedback that the service was already reviewed
-              showMessage(
-                "Du hast diese Dienstleistung bereits bewertet!",
-                "warning"
-              );
-            }
-          })
-          .catch((err) => {
-            console.error("Fehler beim Prüfen, ob bewertet werden kann:", err);
-            showMessage("Fehler beim Prüfen der Bewertungserlaubnis", "error");
-          });
+        // Open modal to send request
+        openRatingModal(
+          marketId,
+          username,
+          serviceTypeName,
+          typeId,
+          providerId
+        );
       });
 
       // Load rating specific to this TypeOfService + Provider combination
       const ratingContainer = cardDiv.querySelector(".rating-container");
       if (ratingContainer && typeId && providerId) {
-        console.log("Loading rating for Perfect Match:", {
-          typeId,
-          providerId,
-          username,
-        });
         loadRatingByTypeAndProvider(typeId, providerId, ratingContainer);
       }
     }
@@ -1779,15 +1740,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const finalProviderId =
       providerId || marketProvider?.user?.id || marketClient?.user?.id || null;
 
-    // Debug logging
-    console.log("Service Card IDs:", {
-      finalServiceId,
-      finalTypeId,
-      finalProviderId,
-      username: displayUsername,
-      serviceType: displayServiceType,
-    });
-
     // Create the card without the rating first
     const cardHTML = `
             <div class="card ${isOffer ? "offer-card" : "demand-card"}${
@@ -1829,38 +1781,25 @@ document.addEventListener("DOMContentLoaded", async function () {
       cardDiv.classList.add("clickable");
       cardDiv.style.cursor = "pointer";
 
-      // Add click handler: check permission before opening rating modal
+      // Add click handler: open request modal to send a service request
       cardDiv.addEventListener("click", function (e) {
-        if (!finalServiceId) {
-          console.warn("Service ID not found for rating");
-          alert("Bewertung nicht möglich: Fehlende Daten");
+        // Extract marketId from marketProvider (since this is an offer)
+        const marketId = marketProvider?.id || null;
+        
+        if (!marketId) {
+          console.warn("Market ID not found for request");
+          alert("Anfrage nicht möglich: Fehlende Daten");
           return;
         }
 
-        fetch(`${API_URL}/reviews/can-review/${finalServiceId}`, {
-          credentials: "include",
-        })
-          .then((resp) => resp.json())
-          .then((data) => {
-            if (data && data.canReview) {
-              openRatingModal(
-                finalServiceId,
-                displayUsername,
-                displayServiceType,
-                finalTypeId,
-                finalProviderId
-              );
-            } else {
-              showMessage(
-                "Du hast diese Dienstleistung bereits bewertet!",
-                "warning"
-              );
-            }
-          })
-          .catch((err) => {
-            console.error("Fehler beim Prüfen, ob bewertet werden kann:", err);
-            showMessage("Fehler beim Prüfen der Bewertungserlaubnis", "error");
-          });
+        // Open modal to send request
+        openRatingModal(
+          marketId,
+          displayUsername,
+          displayServiceType,
+          finalTypeId,
+          finalProviderId
+        );
       });
 
       // Load rating specific to this TypeOfService + Provider combination
@@ -2177,115 +2116,24 @@ document.addEventListener("DOMContentLoaded", async function () {
     displayFilteredServices(filteredServices);
   }
 });
-// ==================== RATING MODAL FUNCTIONALITY ====================
+// ==================== SERVICE REQUEST MODAL FUNCTIONALITY ====================
 
 let currentRatingData = {
-  serviceId: null,
+  marketId: null,
   providerName: null,
   serviceType: null,
   typeId: null,
   providerId: null,
-  selectedStars: 0,
 };
 
-// Initialize rating modal functionality
+// Initialize request modal functionality
 function initializeRatingModal() {
-  const stars = document.querySelectorAll(".stars-container i");
-  const halfOverlays = document.querySelectorAll(".star-half-overlay");
-  const commentTextarea = document.getElementById("ratingComment");
-  const charCount = document.querySelector(".char-count");
-
-  // Full star rating selection
-  stars.forEach((star) => {
-    star.addEventListener("click", function (e) {
-      // Check if clicked on half overlay
-      const isHalfClick = e.target.classList.contains("star-half-overlay");
-      if (!isHalfClick) {
-        const rating = parseFloat(this.getAttribute("data-rating"));
-        currentRatingData.selectedStars = rating;
-        updateStarDisplay(rating);
-        updateRatingValue(rating);
-      }
-    });
-
-    star.addEventListener("mouseenter", function (e) {
-      const isHalfHover = e.target.classList.contains("star-half-overlay");
-      if (!isHalfHover) {
-        const rating = parseFloat(this.getAttribute("data-rating"));
-        updateStarDisplay(rating, true);
-      }
-    });
-  });
-
-  // Half star rating selection
-  halfOverlays.forEach((overlay) => {
-    overlay.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const rating = parseFloat(this.getAttribute("data-rating"));
-      currentRatingData.selectedStars = rating;
-      updateStarDisplay(rating);
-      updateRatingValue(rating);
-    });
-
-    overlay.addEventListener("mouseenter", function (e) {
-      e.stopPropagation();
-      const rating = parseFloat(this.getAttribute("data-rating"));
-      updateStarDisplay(rating, true);
-    });
-  });
-
-  // Reset stars on mouse leave
-  document
-    .querySelector(".stars-container")
-    .addEventListener("mouseleave", function () {
-      updateStarDisplay(currentRatingData.selectedStars);
-    });
-
-  // Character count for comment
-  if (commentTextarea) {
-    commentTextarea.addEventListener("input", function () {
-      const length = this.value.length;
-      charCount.textContent = `${length} / 1000 Zeichen`;
-    });
-  }
+  // No initialization needed for request modal
 }
 
-function updateStarDisplay(rating, isHover = false) {
-  const stars = document.querySelectorAll(".stars-container i");
-  stars.forEach((star, index) => {
-    const starValue = index + 1;
-    const halfValue = index + 0.5;
-
-    // Reset classes
-    star.classList.remove("fas", "far", "fa-star-half-alt");
-
-    if (rating >= starValue) {
-      // Full star
-      star.classList.add("fas", "fa-star");
-    } else if (rating >= halfValue) {
-      // Half star
-      star.classList.add("fas", "fa-star-half-alt");
-    } else {
-      // Empty star
-      star.classList.add("far", "fa-star");
-    }
-  });
-}
-
-function updateRatingValue(rating) {
-  const ratingValue = document.querySelector(".rating-value");
-  if (rating === 0) {
-    ratingValue.textContent = "Keine Bewertung ausgewählt (0 Sterne)";
-  } else if (rating % 1 === 0) {
-    ratingValue.textContent = `${rating} ${rating === 1 ? "Stern" : "Sterne"}`;
-  } else {
-    ratingValue.textContent = `${rating} Sterne`;
-  }
-}
-
-// Open rating modal for a service
+// Open request modal for a service
 window.openRatingModal = function (
-  serviceId,
+  marketId,
   providerName,
   serviceType,
   typeId,
@@ -2296,26 +2144,19 @@ window.openRatingModal = function (
     window.pageYOffset || document.documentElement.scrollTop;
 
   currentRatingData = {
-    serviceId: serviceId,
+    marketId: marketId,
     providerName: providerName,
     serviceType: serviceType,
     typeId: typeId,
     providerId: providerId,
-    selectedStars: 0,
     scrollPosition: scrollPosition,
   };
 
   // Update modal display
   document.getElementById("ratingProviderName").textContent = providerName;
   document.getElementById("ratingServiceType").textContent = serviceType;
-  document.getElementById("ratingComment").value = "";
-  document.querySelector(".char-count").textContent = "0 / 1000 Zeichen";
   document.querySelector(".modal-message").style.display = "none";
   document.querySelector(".modal-message").className = "modal-message";
-
-  // Reset stars
-  updateStarDisplay(0);
-  updateRatingValue(0);
 
   // Show modal
   document.getElementById("ratingModal").classList.add("active");
@@ -2327,71 +2168,84 @@ window.openRatingModal = function (
   }
 };
 
-// Close rating modal
+// Close request modal
 window.closeRatingModal = function () {
   document.getElementById("ratingModal").classList.remove("active");
   currentRatingData = {
-    serviceId: null,
+    marketId: null,
     providerName: null,
     serviceType: null,
     typeId: null,
     providerId: null,
-    selectedStars: 0,
   };
 };
 
-// Submit rating
+// Submit service request
 window.submitRating = async function () {
   const modalMessage = document.querySelector(".modal-message");
-  const commentInput = document.getElementById("ratingComment");
 
   // Validation
-  if (currentRatingData.selectedStars === 0) {
-    showMessage("Bitte wähle eine Bewertung aus (1-5 Sterne)", "error");
-    return;
-  }
-
-  if (!currentRatingData.serviceId) {
-    showMessage("Fehler: Service-ID nicht gefunden", "error");
+  if (!currentRatingData.marketId) {
+    showMessage("Fehler: Market-ID nicht gefunden", "error");
     closeRatingModal();
     return;
   }
 
-  const comment = commentInput.value.trim();
-  if (comment.length > 1000) {
-    showMessage("Kommentar darf maximal 1000 Zeichen lang sein", "error");
-    return;
-  }
-
-  // Prepare request
-  const ratingData = {
-    serviceId: currentRatingData.serviceId,
-    stars: currentRatingData.selectedStars,
-    comment: comment || null,
-  };
-
   try {
-    const response = await fetch(`${API_URL}/reviews`, {
+    // Get current user
+    const userResponse = await fetch(`${API_URL}/user`, {
+      credentials: "include",
+    });
+
+    if (!userResponse.ok) {
+      showMessage("Fehler: Du musst angemeldet sein", "error");
+      closeRatingModal();
+      return;
+    }
+
+    const userText = await userResponse.text();
+    let senderUsername;
+    try {
+      const userJson = JSON.parse(userText);
+      senderUsername = userJson.username;
+    } catch (e) {
+      senderUsername = userText.trim();
+    }
+
+    if (!senderUsername || senderUsername === "Gast-Modus") {
+      showMessage("Fehler: Du musst angemeldet sein", "error");
+      closeRatingModal();
+      return;
+    }
+
+    // Prepare request
+    const requestData = {
+      senderUsername: senderUsername,
+      marketId: currentRatingData.marketId,
+    };
+
+    const response = await fetch(`${API_URL}/service-requests`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(ratingData),
+      credentials: "include",
+      body: JSON.stringify(requestData),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 409) {
-        showMessage("Du hast diesen Service bereits bewertet", "warning");
+        showMessage("Du hast bereits eine Anfrage an diesen User gesendet", "warning");
         closeRatingModal();
       } else if (response.status === 404) {
         showMessage("Service nicht gefunden", "error");
         closeRatingModal();
       } else if (response.status === 400) {
-        showMessage(errorText || "Ungültige Bewertungsdaten", "error");
+        showMessage(errorText || "Ungültige Anfragedaten", "error");
         closeRatingModal();
       } else {
-        showMessage("Fehler beim Speichern der Bewertung", "error");
+        showMessage("Fehler beim Senden der Anfrage", "error");
         closeRatingModal();
       }
       return;
@@ -2399,21 +2253,21 @@ window.submitRating = async function () {
 
     const result = await response.json();
 
-    showMessage("Bewertung erfolgreich gespeichert!", "success");
+    showMessage("Anfrage erfolgreich gesendet!", "success");
     closeRatingModal();
 
     // Store the scroll position in sessionStorage before reload
     const targetScrollPosition = currentRatingData.scrollPosition || 0;
     sessionStorage.setItem("scrollPosition", targetScrollPosition.toString());
 
-    // Reload the page after a short delay to show updated ratings
+    // Reload the page after a short delay to show updated state
     setTimeout(() => {
       window.location.reload();
     }, 1000);
   } catch (error) {
-    console.error("Fehler beim Absenden der Bewertung:", error);
+    console.error("Fehler beim Absenden der Anfrage:", error);
     showMessage(
-      "Netzwerkfehler: Bewertung konnte nicht gespeichert werden",
+      "Netzwerkfehler: Anfrage konnte nicht gesendet werden",
       "error"
     );
     closeRatingModal();
@@ -2440,7 +2294,7 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
-console.log("Rating modal functionality loaded");
+console.log("Service request modal functionality loaded");
 
 // ==================== COMPACT CARD (für compact view) ====================
 function createCompactCard(service) {
@@ -2467,31 +2321,18 @@ function createCompactCard(service) {
     </div>
   `;
 
-  // Click handler für Offers
-  if (service.isOffer && service.id) {
+  // Click handler for Offers
+  if (service.isOffer && service.marketProvider?.id) {
     cardDiv.classList.add("clickable");
     cardDiv.onclick = () => {
-      fetch(`${API_URL}/reviews/can-review/${service.id}`, {
-        credentials: "include",
-      })
-        .then((resp) => resp.json())
-        .then((data) => {
-          if (data && data.canReview) {
-            openRatingModal(
-              service.username,
-              service.serviceTypeName,
-              service.id
-            );
-          } else {
-            showMessage(
-              data.message || "Du kannst diesen Service nicht bewerten",
-              "warning"
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("Error checking review permission:", err);
-        });
+      const marketId = service.marketProvider.id;
+      openRatingModal(
+        marketId,
+        service.username,
+        service.serviceTypeName,
+        service.typeId,
+        service.providerId
+      );
     };
   }
 
@@ -2605,23 +2446,7 @@ function createLargeCard(service, allServices) {
   return cardDiv;
 }
 
-// Helper für Rating Modal aus Card View
-window.openRatingModalForCard = function (serviceId, username, serviceType) {
-  fetch(`${API_URL}/reviews/can-review/${serviceId}`, {
-    credentials: "include",
-  })
-    .then((resp) => resp.json())
-    .then((data) => {
-      if (data && data.canReview) {
-        openRatingModal(username, serviceType, serviceId);
-      } else {
-        showMessage(
-          data.message || "Du kannst diesen Service nicht bewerten",
-          "warning"
-        );
-      }
-    })
-    .catch((err) => {
-      console.error("Error checking review permission:", err);
-    });
+// Helper for opening request modal from card view
+window.openRatingModalForCard = function (marketId, username, serviceType, typeId, providerId) {
+  openRatingModal(marketId, username, serviceType, typeId, providerId);
 };

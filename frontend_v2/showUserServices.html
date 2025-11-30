@@ -25,11 +25,11 @@
       </div>
     </main>
 
-    <!-- Rating Modal -->
+    <!-- Service Request Modal -->
     <div id="ratingModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3><i class="fas fa-star"></i> Dienstleistung bewerten</h3>
+          <h3><i class="fas fa-paper-plane"></i> Anfrage senden</h3>
           <button class="close-modal" onclick="closeRatingModal()">
             &times;
           </button>
@@ -45,39 +45,11 @@
             </p>
           </div>
 
-          <div class="star-rating-input">
-            <label>Bewertung (0-5 Sterne, halbe Sterne möglich):</label>
-            <div class="stars-container">
-              <i class="far fa-star" data-rating="1">
-                <span class="star-half-overlay" data-rating="0.5"></span>
-              </i>
-              <i class="far fa-star" data-rating="2">
-                <span class="star-half-overlay" data-rating="1.5"></span>
-              </i>
-              <i class="far fa-star" data-rating="3">
-                <span class="star-half-overlay" data-rating="2.5"></span>
-              </i>
-              <i class="far fa-star" data-rating="4">
-                <span class="star-half-overlay" data-rating="3.5"></span>
-              </i>
-              <i class="far fa-star" data-rating="5">
-                <span class="star-half-overlay" data-rating="4.5"></span>
-              </i>
-            </div>
-            <p class="rating-value">Keine Bewertung ausgewählt (0 Sterne)</p>
-          </div>
-
-          <div class="comment-input">
-            <label for="ratingComment"
-              >Kommentar (optional, max. 1000 Zeichen):</label
-            >
-            <textarea
-              id="ratingComment"
-              rows="4"
-              maxlength="1000"
-              placeholder="Beschreibe deine Erfahrung..."
-            ></textarea>
-            <p class="char-count">0 / 1000 Zeichen</p>
+          <div class="request-info">
+            <p style="color: #666; font-size: 0.95em; margin-top: 1rem;">
+              <i class="fas fa-info-circle"></i> 
+              Der Anbieter wird über deine Anfrage benachrichtigt und kann diese annehmen oder ablehnen.
+            </p>
           </div>
 
           <div class="modal-message"></div>
@@ -87,7 +59,7 @@
             Abbrechen
           </button>
           <button class="btn-primary" onclick="submitRating()">
-            Bewertung abgeben
+            Anfrage senden
           </button>
         </div>
       </div>

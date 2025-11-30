@@ -217,6 +217,10 @@
     color: #3066be;
 }
 
+.inbox-btn {
+    /* Posteingang button - first item in menu */
+}
+
 .logout-btn {
     border-top: 1px solid #e0e0e0;
 }
