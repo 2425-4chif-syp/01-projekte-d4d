@@ -112,6 +112,30 @@ public class ServiceRequestResource {
     }
 
     /**
+     * Get all service requests sent by the user
+     * GET /service-requests/sent/{username}
+     */
+    @GET
+    @Path("/sent/{username}")
+    @Transactional
+    public Response getSentRequests(@PathParam("username") String username) {
+        User user = userRepository.find("name", username).firstResult();
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("User not found")
+                    .build();
+        }
+
+        List<ServiceRequest> requests = serviceRequestRepository.findBySender(user);
+        
+        List<ServiceRequestResponseDto> dtos = requests.stream()
+                .map(ServiceRequestResponseDto::fromEntity)
+                .collect(Collectors.toList());
+
+        return Response.ok(dtos).build();
+    }
+
+    /**
      * Accept a service request
      * PUT /service-requests/{id}/accept
      */

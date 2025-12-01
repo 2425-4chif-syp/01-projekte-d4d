@@ -109,7 +109,8 @@ function renderNavbar() {
                     <div class="profile-menu">
                         <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
                             <i class="fas fa-inbox"></i>
-                            Posteingang
+                            Postfach
+                            <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
                         </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
@@ -169,7 +170,8 @@ function renderNavbar() {
                     <div class="profile-menu">
                         <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
                             <i class="fas fa-inbox"></i>
-                            Posteingang
+                            Postfach
+                            <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
                         </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
@@ -185,6 +187,11 @@ function renderNavbar() {
 
   // Event Listeners hinzufügen
   attachNavbarEvents();
+  
+  // Check for inbox notifications
+  if (currentUser && currentUser !== 'Gast-Modus' && currentUser !== 'guest') {
+    checkInboxNotifications(currentUser);
+  }
 }
 
 /**
@@ -471,6 +478,53 @@ function showNotification(message, type = "info") {
       notification.remove();
     }, 300);
   }, 3000);
+}
+
+/**
+ * Check for inbox notifications (new requests or status changes)
+ */
+async function checkInboxNotifications(username) {
+  try {
+    // Fetch both received and sent requests
+    const [receivedResponse, sentResponse] = await Promise.all([
+      fetch(`${API_URL}/service-requests/inbox/${encodeURIComponent(username)}`, {
+        credentials: 'include'
+      }),
+      fetch(`${API_URL}/service-requests/sent/${encodeURIComponent(username)}`, {
+        credentials: 'include'
+      })
+    ]);
+    
+    if (!receivedResponse.ok || !sentResponse.ok) {
+      return; // Silently fail
+    }
+    
+    const receivedRequests = await receivedResponse.json();
+    const sentRequests = await sentResponse.json();
+    
+    // Get last inbox visit time
+    const lastVisit = localStorage.getItem('lastInboxVisit');
+    const lastVisitDate = lastVisit ? new Date(lastVisit) : new Date(0);
+    
+    // Check for new pending received requests created after last visit
+    const hasNewReceived = receivedRequests.some(r => 
+      r.status === 'PENDING' && new Date(r.createdAt) > lastVisitDate
+    );
+    
+    // Check for status changes on sent requests (accepted or rejected) after last visit
+    const hasStatusChange = sentRequests.some(r => 
+      (r.status === 'ACCEPTED' || r.status === 'REJECTED') && 
+      new Date(r.createdAt) > lastVisitDate
+    );
+    
+    // Show notification dot if there are new items
+    const notificationDot = document.getElementById('inboxNotification');
+    if (notificationDot && (hasNewReceived || hasStatusChange)) {
+      notificationDot.style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Error checking inbox notifications:', error);
+  }
 }
 
 // Event Listeners für andere Module

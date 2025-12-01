@@ -6,14 +6,14 @@
     <title>Postfach - D4D</title>
     <link rel="stylesheet" href="styles/navbar.css">
     <link rel="stylesheet" href="styles/common.css">
-    <link rel="stylesheet" href="styles/posteingang.css">
+    <link rel="stylesheet" href="styles/postfach.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar"></nav>
 
     <main class="container">
-        <div class="posteingang-container">
+        <div class="postfach-container">
             <div class="header-section">
                 <h1><i class="fas fa-inbox"></i> Postfach</h1>
                 <p class="subtitle">Verwalte deine Anfragen - eingegangen und gesendet</p>
@@ -24,9 +24,8 @@
                 <button class="view-btn active" data-view="received">
                     <i class="fas fa-inbox"></i> Empfangen
                 </button>
-                <button class="view-btn" data-view="sent" id="sentViewBtn">
+                <button class="view-btn" data-view="sent">
                     <i class="fas fa-paper-plane"></i> Gesendet
-                    <span class="view-notification-dot" id="sentNotification" style="display: none;"></span>
                 </button>
             </div>
 
@@ -60,7 +59,7 @@
         </div>
     </main>
 
-    <script type="module" src="scripts/posteingang.js"></script>
+    <script type="module" src="scripts/postfach.js"></script>
     <script type="module" src="scripts/navbar.js"></script>
 </body>
 </html>

@@ -20,9 +20,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
     
-    // Clear notification dot when visiting inbox
-    clearInboxNotification();
-    
     // Load requests
     await loadRequests(currentUser);
     
@@ -103,14 +100,11 @@ async function loadRequests(username) {
         
         console.log('Loaded requests:', allRequests);
         
-        // Check for sent request status changes
-        checkSentNotifications(sentRequests);
-        
         // Update badge counts
         updateBadgeCounts();
         
         // Display requests
-        displayRequests();
+        displayRequests(currentFilter);
         
     } catch (error) {
         console.error('Fehler beim Laden der Anfragen:', error);
@@ -148,15 +142,15 @@ function updateBadgeCounts() {
 /**
  * Display requests based on current filter
  */
-function displayRequests() {
+function displayRequests(filter) {
     const requestsList = document.getElementById('requestsList');
     
     const requests = allRequests[currentView];
     
     // Filter requests
     let filteredRequests = requests;
-    if (currentFilter !== 'all') {
-        filteredRequests = requests.filter(r => r.status === currentFilter);
+    if (filter !== 'all') {
+        filteredRequests = requests.filter(r => r.status === filter);
     }
     
     // Sort by newest first
@@ -168,7 +162,7 @@ function displayRequests() {
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
                 <h2>Keine Anfragen</h2>
-                <p>Du hast noch keine ${currentFilter === 'all' ? '' : getFilterLabel(currentFilter).toLowerCase() + ' '}Anfragen ${viewLabel}.</p>
+                <p>Du hast noch keine ${filter === 'all' ? '' : getFilterLabel(filter).toLowerCase() + ' '}Anfragen ${viewLabel}.</p>
             </div>
         `;
         return;
@@ -334,9 +328,8 @@ function setupFilterTabs() {
             tabButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // Update current filter
-            currentFilter = btn.dataset.filter;
-            
+            // Update filter and display
+            currentFilter = btn.getAttribute('data-filter');            
             // Re-display requests with new filter
             displayRequests();
         });
@@ -358,74 +351,14 @@ function setupViewToggle() {
             // Update current view
             currentView = btn.dataset.view;
             
-            // If switching to sent view, clear the notification dot and mark as seen
-            if (currentView === 'sent') {
-                const sentNotification = document.getElementById('sentNotification');
-                if (sentNotification) {
-                    sentNotification.style.display = 'none';
-                }
-                // Mark all sent requests as seen
-                markSentRequestsAsSeen();
-            }
-            
             // Update badge counts and display
             updateBadgeCounts();
             displayRequests();
         });
     });
-}
-
-/**
- * Check for sent request status changes and show notification dot
- */
-function checkSentNotifications(sentRequests) {
-    // Get the IDs of requests we've already seen with their status
-    const seenRequests = JSON.parse(localStorage.getItem('seenSentRequests') || '{}');
-    
-    // Check for status changes on sent requests (accepted or rejected)
-    let hasNewStatusChange = false;
-    
-    sentRequests.forEach(request => {
-        if (request.status === 'ACCEPTED' || request.status === 'REJECTED') {
-            const requestKey = `${request.id}`;
-            const seenStatus = seenRequests[requestKey];
-            
-            // If we haven't seen this status before, it's new
-            if (seenStatus !== request.status) {
-                hasNewStatusChange = true;
-            }
-        }
+}            displayRequests(currentFilter);
+        });
     });
-    
-    // Show notification dot on "Gesendet" button if there are new status changes
-    const sentNotification = document.getElementById('sentNotification');
-    if (sentNotification && hasNewStatusChange) {
-        sentNotification.style.display = 'block';
-    }
-}
-
-/**
- * Mark sent requests as seen
- */
-function markSentRequestsAsSeen() {
-    if (!allRequests.sent) return;
-    
-    const seenRequests = JSON.parse(localStorage.getItem('seenSentRequests') || '{}');
-    
-    // Mark all current sent requests with their status as seen
-    allRequests.sent.forEach(request => {
-        seenRequests[`${request.id}`] = request.status;
-    });
-    
-    localStorage.setItem('seenSentRequests', JSON.stringify(seenRequests));
-}
-
-/**
- * Clear inbox notification dot
- */
-function clearInboxNotification() {
-    // Store in localStorage that user has seen the inbox
-    localStorage.setItem('lastInboxVisit', new Date().toISOString());
 }
 
 /**

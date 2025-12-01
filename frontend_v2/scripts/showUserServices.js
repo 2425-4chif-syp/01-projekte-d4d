@@ -998,6 +998,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Process matches to ensure they have the expected format
         return matches.map((match) => ({
           ...match,
+          id: match.id, // Ensure id is preserved
           serviceTypeName: match.serviceType
             ? match.serviceType.name
             : "Unbekannter Dienstleistungstyp",
@@ -1106,10 +1107,12 @@ document.addEventListener("DOMContentLoaded", async function () {
       cardDiv.classList.add("clickable");
       cardDiv.style.cursor = "pointer";
 
-      // Extract marketId - for Perfect Match offers, get from marketProvider
+      // Extract marketId - for Perfect Match offers
+      // Check multiple possible locations for the market ID
       const marketId = 
-        service.marketProvider?.id ||
         service.id ||
+        service.marketId ||
+        service.marketProvider?.id ||
         null;
       
       // Extract typeId and providerId
@@ -1137,7 +1140,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Add click handler: open request modal to send a service request
       cardDiv.addEventListener("click", function (e) {
         if (!marketId) {
-          console.warn("Market ID not found for request");
+          console.error("Market ID not found for request. Service data:", service);
           alert("Anfrage nicht möglich: Fehlende Daten");
           return;
         }
