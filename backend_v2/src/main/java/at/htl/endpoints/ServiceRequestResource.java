@@ -3,9 +3,11 @@ package at.htl.endpoints;
 import at.htl.endpoints.dto.ServiceRequestCreateDto;
 import at.htl.endpoints.dto.ServiceRequestResponseDto;
 import at.htl.entity.Market;
+import at.htl.entity.Service;
 import at.htl.entity.ServiceRequest;
 import at.htl.entity.User;
 import at.htl.repository.MarketRepository;
+import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceRequestRepository;
 import at.htl.repository.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,6 +34,9 @@ public class ServiceRequestResource {
 
     @Inject
     MarketRepository marketRepository;
+
+    @Inject
+    ServiceRepository serviceRepository;
 
     /**
      * Create a new service request
@@ -160,6 +165,25 @@ public class ServiceRequestResource {
         // Update status to ACCEPTED
         request.setStatus("ACCEPTED");
         serviceRequestRepository.persist(request);
+
+        // Create a new Service
+        Market providerMarket = request.getMarket(); // The market that was requested (the offer)
+        User client = request.getSender(); // The user who sent the request
+        
+        // Try to find the client's corresponding market (their demand for the same service type)
+        // This may or may not exist - if not, clientMarket will be null
+        Market clientMarket = marketRepository.find(
+            "user = ?1 AND serviceType = ?2 AND offer = 0",
+            client,
+            providerMarket.getServiceType()
+        ).firstResult();
+        
+        // Create the service regardless of whether clientMarket exists
+        // providerMarket = always the offer being requested
+        // clientMarket = client's demand if they have one, null otherwise
+        Service service = new Service(providerMarket, clientMarket);
+        service.setStatus("ACTIVE");
+        serviceRepository.persist(service);
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }

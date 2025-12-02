@@ -91,6 +91,57 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    gap: 1rem;
+}
+
+/* Inbox Icon Button */
+.inbox-icon-btn {
+    position: relative;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inbox-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.inbox-icon-btn i {
+    font-size: 1.2rem;
+    color: white;
+    transition: color 0.3s ease;
+}
+
+.inbox-icon-btn .notification-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: #e53e3e;
+    border-radius: 50%;
+    border: 2px solid #3066BE;
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
 }
 
 /* Login Button (Guest) */
@@ -215,34 +266,6 @@
 
 .profile-menu button:hover i {
     color: #3066be;
-}
-
-.inbox-btn {
-    /* Posteingang button - first item in menu */
-    position: relative;
-}
-
-.notification-dot {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 10px;
-    height: 10px;
-    background: #e53e3e;
-    border-radius: 50%;
-    border: 2px solid white;
-    animation: pulse-dot 2s infinite;
-}
-
-@keyframes pulse-dot {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-    }
 }
 
 .logout-btn {

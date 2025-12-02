@@ -100,6 +100,10 @@ function renderNavbar() {
 
     profileHTML = `
             <div class="profile-section">
+                <button class="inbox-icon-btn" onclick="window.location.href='posteingang.html'" title="Postfach">
+                    <i class="fas fa-inbox"></i>
+                    <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
+                </button>
                 <div class="profile-dropdown">
                     <button class="profile-button">
                         <i class="fas fa-user-shield"></i>
@@ -107,11 +111,6 @@ function renderNavbar() {
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="profile-menu">
-                        <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
-                            <i class="fas fa-inbox"></i>
-                            Postfach
-                            <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
-                        </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
                             Abmelden
@@ -159,6 +158,10 @@ function renderNavbar() {
 
     profileHTML = `
             <div class="profile-section">
+                <button class="inbox-icon-btn" onclick="window.location.href='posteingang.html'" title="Postfach">
+                    <i class="fas fa-inbox"></i>
+                    <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
+                </button>
                 <div class="profile-dropdown">
                     <button class="profile-button">
                         <i class="fas fa-user"></i>
@@ -168,11 +171,6 @@ function renderNavbar() {
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="profile-menu">
-                        <button class="inbox-btn" onclick="window.location.href='posteingang.html'">
-                            <i class="fas fa-inbox"></i>
-                            Postfach
-                            <span class="notification-dot" id="inboxNotification" style="display: none;"></span>
-                        </button>
                         <button class="logout-btn" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
                             Abmelden
