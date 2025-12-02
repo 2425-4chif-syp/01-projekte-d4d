@@ -20,6 +20,145 @@ document.addEventListener('DOMContentLoaded', () => {
     let inactiveChats = []; // Kontakte ohne Nachrichtenverlauf
     let chatMessagesCache = {}; // Cache für Nachrichten
     let allUsers = []; // Liste aller verfügbaren Benutzer
+    let socket = null; // WebSocket Verbindung
+
+    // WebSocket verbinden
+    function connectWebSocket() {
+        if (socket) {
+            socket.close();
+        }
+
+        const wsUrl = API_URL.replace(/^http/, 'ws') + `/chat/${currentUserId}`;
+        console.log('Verbinde zu WebSocket:', wsUrl);
+
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            console.log('WebSocket verbunden');
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                handleIncomingMessage(msg);
+            } catch (e) {
+                console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', e);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('WebSocket getrennt');
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket Fehler:', error);
+        };
+    }
+
+    // Eingehende Nachricht verarbeiten
+    function handleIncomingMessage(msg) {
+        const senderId = msg.sender?.id;
+        const receiverId = msg.receiver?.id;
+        
+        // Bestimmen, wer der Gesprächspartner ist
+        const partnerId = (senderId == currentUserId) ? receiverId : senderId;
+
+        // Wenn der Chat mit diesem Partner offen ist, Nachricht anzeigen
+        if (currentChatId == partnerId) {
+            appendMessage(msg);
+            // Scrollen
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Kontaktliste aktualisieren (Last Message, Timestamp)
+        updateContactInList(partnerId, msg);
+    }
+
+    // Einzelne Nachricht anfügen
+    function appendMessage(msg) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        
+        const senderId = msg.sender?.id;
+        
+        if (senderId === currentUserId) {
+            messageDiv.classList.add('other');
+        } else {
+            messageDiv.classList.add('user');
+        }
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = msg.content || msg.message || '';
+        
+        if (senderId !== currentUserId) {
+            const messageSender = document.createElement('div');
+            messageSender.className = 'message-sender';
+            const senderName = msg.sender?.name || 'Kontakt';
+            messageSender.textContent = senderName;
+            messageDiv.appendChild(messageSender);
+        }
+        
+        const timestamp = new Date(msg.time || msg.timestamp || Date.now());
+        const timeString = timestamp.toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const messageTime = document.createElement('div');
+        messageTime.className = 'message-time';
+        messageTime.textContent = timeString;
+        
+        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(messageTime);
+        chatMessages.appendChild(messageDiv);
+    }
+
+    // Kontakt in der Liste aktualisieren
+    function updateContactInList(partnerId, msg) {
+        // Prüfen ob in activeChats
+        let chatIndex = activeChats.findIndex(c => c.id == partnerId);
+        let contact = null;
+
+        if (chatIndex !== -1) {
+            contact = activeChats[chatIndex];
+            // Aktualisieren
+            contact.lastMessage = msg.message || msg.content;
+            contact.timestamp = msg.time || msg.timestamp;
+            if (currentChatId != partnerId) {
+                contact.unreadCount = (contact.unreadCount || 0) + 1;
+            } else {
+                contact.unreadCount = 0;
+            }
+            // Nach oben schieben
+            activeChats.splice(chatIndex, 1);
+            activeChats.unshift(contact);
+        } else {
+            // Vielleicht in inactiveChats?
+            chatIndex = inactiveChats.findIndex(c => c.id == partnerId);
+            if (chatIndex !== -1) {
+                contact = inactiveChats[chatIndex];
+                contact.lastMessage = msg.message || msg.content;
+                contact.timestamp = msg.time || msg.timestamp;
+                if (currentChatId != partnerId) {
+                    contact.unreadCount = 1;
+                } else {
+                    contact.unreadCount = 0;
+                }
+                // Verschieben zu activeChats
+                inactiveChats.splice(chatIndex, 1);
+                activeChats.unshift(contact);
+            } else {
+                // Neuer Kontakt (sollte eigentlich geladen sein, aber falls nicht)
+                // Hier müssten wir User-Details holen, vereinfacht:
+                console.log("Kontakt nicht gefunden, lade neu...");
+                // Wir laden neu, aber im Hintergrund, damit es nicht flackert
+                fetchContacts(); 
+                return;
+            }
+        }
+        displayContacts();
+    }
     
     // Alle verfügbaren Nutzer laden
     async function loadAllUsers() {
@@ -92,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Aktueller Nutzer gewechselt zu ID:", currentUserId);
         updateCurrentUserDisplay();
         
+        // WebSocket neu verbinden
+        connectWebSocket();
+
         // Chat-Liste neu laden
         fetchContacts();
         
@@ -120,96 +262,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Kontakte abrufen
+    // Kontakte abrufen (Optimiert)
     async function fetchContacts() {
         try {
             // Zeige Ladeanzeige an
             chatItems.innerHTML = '<div class="loading-message">Kontakte werden geladen...</div>';
             
-            const response = await fetch(`${API_URL}${CHAT_API_PATH}/users`);
+            // Neuer optimierter Endpunkt
+            const response = await fetch(`${API_URL}${CHAT_API_PATH}/overview/${currentUserId}`);
             
             if (!response.ok) {
-                if (response.status === 404) {
-                    // Spezielle Behandlung für 404 - Keine Benutzer gefunden
-                    chatItems.innerHTML = `
-                        <div class="info-message">
-                            <p>Keine Chat-Kontakte gefunden.</p>
-                            <p>Starten Sie mit der Generierung von Testdaten oder erstellen Sie neue Chats.</p>
-                            <button id="generateDataButton" class="action-button">Testdaten generieren</button>
-                        </div>`;
-                    
-                    document.getElementById('generateDataButton')?.addEventListener('click', generateChatTestData);
-                    return;
-                }
-                
                 throw new Error(`${response.status}: ${response.statusText}`);
             }
             
-            const contacts = await response.json();
-            console.log("Kontakte erfolgreich geladen:", contacts);
+            const overviewData = await response.json();
+            console.log("Chat-Übersicht geladen:", overviewData);
             
-            // Für jeden Kontakt prüfen, ob Nachrichten existieren
-            await sortContactsByActivity(contacts);
-            
-            // Kontakte anzeigen
-            displayContacts();
+            processOverviewData(overviewData);
             
         } catch (error) {
             console.error('Fehler beim Abrufen der Kontakte:', error);
             chatItems.innerHTML = `
                 <div class="error-message">
                     <p>Netzwerkfehler: ${error.message}</p>
-                    <p>Überprüfen Sie bitte Ihre Netzwerkverbindung und ob der Backend-Server läuft.</p>
                     <button id="retryButton" class="retry-button">Erneut versuchen</button>
-                    <button id="generateDataButton" class="action-button">Testdaten generieren</button>
                 </div>`;
                     
             document.getElementById('retryButton')?.addEventListener('click', fetchContacts);
-            document.getElementById('generateDataButton')?.addEventListener('click', generateChatTestData);
         }
     }
     
-    // Kontakte nach Aktivität sortieren (mit/ohne Nachrichtenverlauf)
-    async function sortContactsByActivity(contacts) {
+    // Daten verarbeiten und anzeigen
+    function processOverviewData(data) {
         activeChats = [];
         inactiveChats = [];
         
-        // Aktuellen Benutzer aus der Liste ausschließen
-        const filteredContacts = contacts.filter(contact => contact.id !== currentUserId);
-        
-        for (const contact of filteredContacts) {
-            try {
-                // Prüfe, ob es Nachrichten zwischen den Benutzern gibt
-                const response = await fetch(`${API_URL}${CHAT_API_PATH}/${currentUserId}/${contact.id}`);
-                
-                if (response.ok) {
-                    const messages = await response.json();
-                    if (messages && messages.length > 0) {
-                        // Chat mit Nachrichten
-                        const lastMessage = messages[messages.length - 1];
-                        activeChats.push({
-                            ...contact,
-                            lastMessage: lastMessage.content || lastMessage.message || 'Nachricht',
-                            timestamp: lastMessage.time || lastMessage.timestamp || new Date().toISOString(),
-                            unreadCount: Math.floor(Math.random() * 3) // Zufällige Anzahl ungelesener Nachrichten (nur zur Demo)
-                        });
-                    } else {
-                        // Kontakt ohne Nachrichten
-                        inactiveChats.push(contact);
-                    }
-                } else {
-                    // Kontakt ohne Nachrichten (API-Fehler)
-                    inactiveChats.push(contact);
-                }
-            } catch (error) {
-                console.error(`Fehler beim Prüfen der Nachrichten für Kontakt ${contact.id}:`, error);
+        data.forEach(item => {
+            const contact = {
+                id: item.userId,
+                name: item.username,
+                lastMessage: item.lastMessage,
+                timestamp: item.timestamp,
+                unreadCount: item.unreadCount
+            };
+            
+            if (item.lastMessage) {
+                activeChats.push(contact);
+            } else {
                 inactiveChats.push(contact);
             }
-        }
+        });
         
-        // Nach Zeit sortieren (neueste zuerst)
-        activeChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        displayContacts();
     }
+    
+    // Veraltet: Kontakte nach Aktivität sortieren (mit/ohne Nachrichtenverlauf)
+    // async function sortContactsByActivity(contacts) { ... }
     
     // Kontakte anzeigen
     function displayContacts() {
@@ -262,6 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // ID für Chat-Funktion speichern
         const contactId = contact.id;
+        
+        // Highlight active chat
+        if (contactId == currentChatId) {
+            chatElement.classList.add('active');
+        }
         
         // Formatiere das Datum für aktive Chats
         let timeString = '';
@@ -451,64 +564,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const messageText = chatInput.value.trim();
-        const imageInput = document.getElementById('chatImage');
         
-        if (!messageText && !imageInput.files[0]) {
+        if (!messageText) {
             return; // Keine leeren Nachrichten senden
         }
         
         // Nachrichtendaten vorbereiten
         const messageData = {
-            // Neue API: Sender und Empfänger müssen als Objekte mit IDs angegeben werden
             sender: { id: currentUserId },
             receiver: { id: currentChatId },
             message: messageText,
-            time: new Date().toISOString()
+            time: null // Backend setzt Zeit
         };
         
-        // Optional: Bild-Handling, falls unterstützt
-        if (imageInput.files[0]) {
-            try {
-                const base64Image = await getBase64(imageInput.files[0]);
-                // Falls dein Backend Bildunterstützung hat:
-                // messageData.image = base64Image;
-            } catch (error) {
-                console.error('Fehler beim Verarbeiten des Bildes:', error);
-            }
-        }
-        
         try {
-            const sendButton = chatForm.querySelector('button[type="submit"]');
-            const originalText = sendButton.innerHTML;
-            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Senden...';
-            sendButton.disabled = true;
-            
-            const response = await fetch(`${API_URL}${CHAT_API_PATH}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(messageData)
-            });
-            
-            sendButton.innerHTML = originalText;
-            sendButton.disabled = false;
-            
-            if (!response.ok) {
-                throw new Error(`${response.status}: ${response.statusText}`);
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(messageData));
+                resetInputFields();
+                // Nachricht wird über onmessage (Echo) angezeigt
+            } else {
+                console.warn('WebSocket nicht verbunden. Versuche neu zu verbinden...');
+                connectWebSocket();
+                alert('Verbindung wird wiederhergestellt. Bitte versuche es gleich noch einmal.');
             }
-            
-            // Eingabefelder zurücksetzen
-            resetInputFields();
-            
-            // Nachrichten neu laden
-            fetchChatMessages(currentChatId);
-            
-            // Chat-Liste aktualisieren nach dem Senden einer neuen Nachricht
-            fetchContacts();
             
         } catch (error) {
-            console.error('Netzwerkfehler beim Senden der Nachricht:', error);
+            console.error('Fehler beim Senden der Nachricht:', error);
             alert(`Fehler beim Senden: ${error.message}`);
         }
     });
@@ -647,4 +728,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllUsers(); // Lade alle Benutzer
     fetchContacts();
     resetChatArea();
+    connectWebSocket();
 });
