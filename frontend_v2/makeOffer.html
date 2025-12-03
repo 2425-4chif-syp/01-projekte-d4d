@@ -1,53 +1,66 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dienstleistung anbieten - D4D</title>
-    <link rel="stylesheet" href="styles/navbar.css">
-    <link rel="stylesheet" href="styles/common.css">
-    <link rel="stylesheet" href="styles/showOffers.css">
-    <link rel="stylesheet" href="styles/makeOffer.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles/navbar.css" />
+    <link rel="stylesheet" href="styles/common.css" />
+    <link rel="stylesheet" href="styles/showOffers.css" />
+    <link rel="stylesheet" href="styles/makeOffer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/keycloak-js@25.0.5/dist/keycloak.min.js"></script>
+  </head>
+  <body>
     <nav class="navbar"></nav>
+
     <main class="container marketplace-container-page">
-        <div class="marktplatz-container">
-            <div class="content-section">
-                <h2><i class="fas fa-plus-circle"></i> Angebote und Nachfragen erstellen</h2>
-                
-                <div class="card">
-                    <div class="card-body">
-                        <p class="instruction">Klicke auf die Dienstleistungen, die du anbieten oder in Anspruch nehmen möchtest.</p>
-                        
-                        <div class="service-categories">
-                            <div class="service-category">
-                                <h4>Angebote</h4>
-                                <div id="offeredServicesList" class="service-list service-list-compact">
-                                </div>
-                            </div>
-                            
-                            <div class="service-category">
-                                <h4>Nachfragen</h4>
-                                <div id="demandedServicesList" class="service-list service-list-compact">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button id="submitButton">
-                        <i class="fas fa-paper-plane"></i>
-                        Einreichen
-                    </button>
-                    <div class="response-message"></div>
+      <div class="marktplatz-container">
+        <div class="content-section">
+          <h2>
+            <i class="fas fa-plus-circle"></i> Angebote und Nachfragen erstellen
+          </h2>
+
+          <div class="card">
+            <div class="card-body">
+              <p class="instruction">
+                Klicke auf die Dienstleistungen, die du anbieten oder in
+                Anspruch nehmen möchtest.
+              </p>
+
+              <div class="service-categories">
+                <div class="service-category">
+                  <h4>Angebote</h4>
+                  <div
+                    id="offeredServicesList"
+                    class="service-list service-list-compact"
+                  ></div>
                 </div>
+
+                <div class="service-category">
+                  <h4>Nachfragen</h4>
+                  <div
+                    id="demandedServicesList"
+                    class="service-list service-list-compact"
+                  ></div>
+                </div>
+              </div>
             </div>
+
+            <button id="submitButton">
+              <i class="fas fa-paper-plane"></i>
+              Einreichen
+            </button>
+            <div class="response-message"></div>
+          </div>
         </div>
+      </div>
     </main>
     <script type="module" src="scripts/session-manager.js"></script>
     <script type="module" src="scripts/makeOffer.js"></script>
     <script type="module" src="scripts/navbar.js"></script>
-</body>
+  </body>
 </html>
-

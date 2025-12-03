@@ -18,3 +18,7 @@ up-d:
 # Stoppt alle Services und entfernt Volumes
 down:
     docker compose -f docker-compose.dev.yaml down -v
+
+# Stoppt alle Services
+down-no-v:
+    docker compose -f docker-compose.dev.yaml down

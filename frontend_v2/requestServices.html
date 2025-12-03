@@ -1,43 +1,47 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nachhilfe suchen - D4D</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles/navbar.css">
-    <link rel="stylesheet" href="styles/common.css">
-    <link rel="stylesheet" href="styles/service-pages.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles/navbar.css" />
+    <link rel="stylesheet" href="styles/common.css" />
+    <link rel="stylesheet" href="styles/service-pages.css" />
+    <script src="https://cdn.jsdelivr.net/npm/keycloak-js@25.0.5/dist/keycloak.min.js"></script>
+  </head>
+  <body>
     <nav class="navbar"></nav>
 
     <div class="page-container">
-        <div class="page-header">
-            <h1>
-                <i class="fas fa-graduation-cap"></i>
-                Nachhilfe suchen
-            </h1>
-            <p>Wähle die Fächer aus, in denen du Unterstützung brauchst</p>
-        </div>
+      <div class="page-header">
+        <h1>
+          <i class="fas fa-graduation-cap"></i>
+          Nachhilfe suchen
+        </h1>
+        <p>Wähle die Fächer aus, in denen du Unterstützung brauchst</p>
+      </div>
 
-        <div class="content-card">
-            <h2>
-                <i class="fas fa-list-check"></i>
-                Verfügbare Fächer
-            </h2>
-            <div id="demandedServicesList" class="services-grid"></div>
-            
-            <div class="submit-section">
-                <button id="submitButton" class="submit-btn">
-                    <i class="fas fa-check-circle"></i>
-                    Nachfragen speichern
-                </button>
-            </div>
+      <div class="content-card">
+        <h2>
+          <i class="fas fa-list-check"></i>
+          Verfügbare Fächer
+        </h2>
+        <div id="demandedServicesList" class="services-grid"></div>
+
+        <div class="submit-section">
+          <button id="submitButton" class="submit-btn">
+            <i class="fas fa-check-circle"></i>
+            Nachfragen speichern
+          </button>
         </div>
+      </div>
     </div>
 
     <script type="module" src="scripts/requestServices.js"></script>
     <script type="module" src="scripts/navbar.js"></script>
-</body>
+  </body>
 </html>

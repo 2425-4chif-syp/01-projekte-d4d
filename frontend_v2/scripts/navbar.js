@@ -2,16 +2,40 @@
 
 import { API_URL } from "./config.js";
 import { sessionManager } from "./session-manager.js";
-import { initKeycloak, loginKeycloak, logoutKeycloak, isKeycloakAuthenticated } from "./keycloak-auth.js";
+import {
+  initKeycloak,
+  loginKeycloak,
+  logoutKeycloak,
+  isKeycloakAuthenticated,
+} from "./keycloak-auth.js";
 
 let currentUser = null;
 let currentUserState = "guest"; // 'guest', 'user', 'admin'
 
+// Cache für schnelleres Rendering
+const USER_STATUS_CACHE_KEY = "d4d_user_status_cache";
+
 document.addEventListener("DOMContentLoaded", async function () {
-  await initKeycloak();
-  await checkUserStatus();
+  // Lade gecachten Status für sofortiges Rendering
+  loadCachedUserStatus();
+
+  // Rendere Navbar sofort mit gecachtem Status
   renderNavbar();
   setActiveNavButton();
+
+  // Dann Keycloak und User-Status im Hintergrund aktualisieren
+  try {
+    await initKeycloak();
+  } catch (error) {
+    console.error("Failed to initialize Keycloak:", error);
+  }
+
+  // Prüfe echten User-Status und aktualisiere wenn nötig
+  const statusChanged = await checkUserStatus();
+  if (statusChanged) {
+    renderNavbar();
+    setActiveNavButton();
+  }
 });
 
 /**
@@ -191,9 +215,9 @@ function renderNavbar() {
 
   // Event Listeners hinzufügen
   attachNavbarEvents();
-  
+
   // Check for inbox notifications
-  if (currentUser && currentUser !== 'Gast-Modus' && currentUser !== 'guest') {
+  if (currentUser && currentUser !== "Gast-Modus" && currentUser !== "guest") {
     checkInboxNotifications(currentUser);
   }
 }
@@ -251,8 +275,8 @@ function showLoginPrompt() {
 async function handleLogout() {
   try {
     if (isKeycloakAuthenticated()) {
-        await logoutKeycloak();
-        return;
+      await logoutKeycloak();
+      return;
     }
 
     // Lösche Session
@@ -407,7 +431,48 @@ async function setActiveUser(username) {
 /**
  * Prüft den User-Status beim Laden
  */
+/**
+ * Lädt gecachten User-Status für schnelleres Rendering
+ */
+function loadCachedUserStatus() {
+  try {
+    const cached = localStorage.getItem(USER_STATUS_CACHE_KEY);
+    if (cached) {
+      const { user, state, timestamp } = JSON.parse(cached);
+      // Cache ist 5 Minuten gültig
+      if (Date.now() - timestamp < 5 * 60 * 1000) {
+        currentUser = user;
+        currentUserState = state;
+        console.log("📦 Gecachten User-Status geladen:", state);
+      }
+    }
+  } catch (error) {
+    console.debug("Kein gecachter User-Status vorhanden");
+  }
+}
+
+/**
+ * Speichert User-Status im Cache
+ */
+function cacheUserStatus() {
+  try {
+    localStorage.setItem(
+      USER_STATUS_CACHE_KEY,
+      JSON.stringify({
+        user: currentUser,
+        state: currentUserState,
+        timestamp: Date.now(),
+      })
+    );
+  } catch (error) {
+    console.debug("Cache konnte nicht gespeichert werden");
+  }
+}
+
 async function checkUserStatus() {
+  const previousState = currentUserState;
+  const previousUser = currentUser;
+
   try {
     const response = await fetch(`${API_URL}/user`, {
       credentials: "include",
@@ -431,7 +496,11 @@ async function checkUserStatus() {
           sessionManager.username = username;
           sessionManager.isAnonymous = false;
         }
-        return;
+
+        cacheUserStatus();
+        return (
+          previousState !== currentUserState || previousUser !== currentUser
+        );
       }
     }
   } catch (error) {
@@ -447,6 +516,9 @@ async function checkUserStatus() {
   if (sessionManager && !sessionManager.sessionId) {
     await sessionManager.init();
   }
+
+  cacheUserStatus();
+  return previousState !== currentUserState || previousUser !== currentUser;
 }
 
 /**
@@ -502,43 +574,50 @@ async function checkInboxNotifications(username) {
   try {
     // Fetch both received and sent requests
     const [receivedResponse, sentResponse] = await Promise.all([
-      fetch(`${API_URL}/service-requests/inbox/${encodeURIComponent(username)}`, {
-        credentials: 'include'
-      }),
-      fetch(`${API_URL}/service-requests/sent/${encodeURIComponent(username)}`, {
-        credentials: 'include'
-      })
+      fetch(
+        `${API_URL}/service-requests/inbox/${encodeURIComponent(username)}`,
+        {
+          credentials: "include",
+        }
+      ),
+      fetch(
+        `${API_URL}/service-requests/sent/${encodeURIComponent(username)}`,
+        {
+          credentials: "include",
+        }
+      ),
     ]);
-    
+
     if (!receivedResponse.ok || !sentResponse.ok) {
       return; // Silently fail
     }
-    
+
     const receivedRequests = await receivedResponse.json();
     const sentRequests = await sentResponse.json();
-    
+
     // Get last inbox visit time
-    const lastVisit = localStorage.getItem('lastInboxVisit');
+    const lastVisit = localStorage.getItem("lastInboxVisit");
     const lastVisitDate = lastVisit ? new Date(lastVisit) : new Date(0);
-    
+
     // Check for new pending received requests created after last visit
-    const hasNewReceived = receivedRequests.some(r => 
-      r.status === 'PENDING' && new Date(r.createdAt) > lastVisitDate
+    const hasNewReceived = receivedRequests.some(
+      (r) => r.status === "PENDING" && new Date(r.createdAt) > lastVisitDate
     );
-    
+
     // Check for status changes on sent requests (accepted or rejected) after last visit
-    const hasStatusChange = sentRequests.some(r => 
-      (r.status === 'ACCEPTED' || r.status === 'REJECTED') && 
-      new Date(r.createdAt) > lastVisitDate
+    const hasStatusChange = sentRequests.some(
+      (r) =>
+        (r.status === "ACCEPTED" || r.status === "REJECTED") &&
+        new Date(r.createdAt) > lastVisitDate
     );
-    
+
     // Show notification dot if there are new items
-    const notificationDot = document.getElementById('inboxNotification');
+    const notificationDot = document.getElementById("inboxNotification");
     if (notificationDot && (hasNewReceived || hasStatusChange)) {
-      notificationDot.style.display = 'block';
+      notificationDot.style.display = "block";
     }
   } catch (error) {
-    console.error('Error checking inbox notifications:', error);
+    console.error("Error checking inbox notifications:", error);
   }
 }
 

@@ -122,8 +122,21 @@ document.addEventListener("DOMContentLoaded", async function () {
   let currentViewMode = localStorage.getItem("matchesViewMode") || "grouped"; // grouped, compact, card
   let currentCardIndex = 0; // For card view
 
+  // Pagination State
+  let currentPage = 1;
+  let itemsPerPage = 10; // Default, will be calculated dynamically
+
   // Initialize session first (for guest mode)
   await sessionManager.init();
+
+  // Calculate initial items per page
+  calculateItemsPerPage();
+
+  // Listen for window resize to adjust items per page
+  window.addEventListener("resize", () => {
+    calculateItemsPerPage();
+    filterAndDisplayServices();
+  });
 
   getActiveUser();
 
@@ -244,90 +257,23 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Load ratings
       await loadRatingsForServices(allServices);
 
-      // ALLE Services (Perfect + Regular) werden zusammen angezeigt
-      // Perfect Matches werden durch isPerfectMatch Flag erkennbar gemacht
+      // Initialize container
+      initializeResultsContainer();
 
-      // Create and display services section
-      createServicesSection();
+      // Populate filters if we can extract types
+      const types = [...new Set(allServices.map((s) => s.serviceTypeName))];
+      populateServiceTypeFilter(types);
+
+      // Display services
       filterAndDisplayServices();
     } catch (error) {
       console.error("Error loading guest matches:", error);
-      matchesContainer.innerHTML =
-        '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Fehler beim Laden der Matches.</div>';
+      const matchesContainer = document.getElementById("matchesContainer");
+      if (matchesContainer) {
+        matchesContainer.innerHTML =
+          '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Fehler beim Laden der Matches.</div>';
+      }
     }
-  }
-
-  // Guest Perfect Matches Section
-  function createGuestPerfectMatchesSection(perfectMatches) {
-    const matchesContainer = document.getElementById("matchesContainer");
-
-    const perfectMatchSection = document.createElement("div");
-    perfectMatchSection.className = "main-services-section perfect-matches";
-    perfectMatchSection.innerHTML =
-      '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
-
-    const perfectMatchContainer = document.createElement("div");
-    perfectMatchContainer.id = "perfectMatchContainer";
-    perfectMatchContainer.className = "services-display";
-
-    // Gruppiere nach User
-    const matchesByUser = {};
-    perfectMatches.forEach((match) => {
-      const userId = match.providerId || match.user?.id;
-      const username = match.username;
-      const key = `${userId}-${username}`;
-
-      if (!matchesByUser[key]) {
-        matchesByUser[key] = {
-          username: username,
-          userId: userId,
-          matches: [],
-        };
-      }
-      matchesByUser[key].matches.push(match);
-    });
-
-    // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling (wie bei eingeloggten Usern)
-    Object.values(matchesByUser).forEach((userGroup) => {
-      // Erstelle Gruppen-Container für Perfect Matches
-      const groupDiv = document.createElement("div");
-      groupDiv.className = "service-group group-perfect-match";
-
-      // Erstelle Gruppen-Header für Perfect Matches
-      const headerDiv = document.createElement("div");
-      headerDiv.className = "service-group-header";
-
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "service-group-title";
-      titleDiv.innerHTML = `
-                <span class="group-icon"><i class="fas fa-star"></i></span>
-                <h3>${userGroup.username}</h3>
-                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
-            `;
-
-      headerDiv.appendChild(titleDiv);
-
-      // Lade User-Bewertung für den Group Header
-      const userRatingContainer = titleDiv.querySelector(".group-user-rating");
-      if (
-        userRatingContainer &&
-        userGroup.username !== "Unbekannter Benutzer"
-      ) {
-        loadUserRatingForGroup(userGroup.username, userRatingContainer);
-      }
-
-      // Erstelle Grid für Perfect Matches dieser Gruppe
-      const gridDiv = document.createElement("div");
-      gridDiv.className = "service-grid";
-
-      userGroup.matches.forEach((match) => {
-        const card = createPerfectMatchCard(match);
-        gridDiv.appendChild(card);
-      });
-    });
-
-    perfectMatchSection.appendChild(perfectMatchContainer);
-    matchesContainer.appendChild(perfectMatchSection);
   }
 
   // Funktion, um einen Benutzer als aktiv zu markieren
@@ -361,154 +307,142 @@ document.addEventListener("DOMContentLoaded", async function () {
       });
   }
 
-  // Add filter functionality
-  const perfectMatchFilter = document.getElementById("perfectMatchFilter");
-  const serviceFilter = document.getElementById("serviceFilter");
-  const serviceTypeFilter = document.getElementById("serviceTypeFilter");
+  // Initialize filters and event listeners
+  function initializeFilters() {
+    // View Mode Toggle
+    const viewModeButtons = document.querySelectorAll(".view-mode-btn");
+    const servicesDisplay = document.getElementById("servicesContainer");
 
-  if (perfectMatchFilter) {
-    perfectMatchFilter.addEventListener("input", () => {
-      filterPerfectMatches(allPerfectMatches);
-    });
-  }
+    viewModeButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        viewModeButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentViewMode = btn.dataset.view;
+        currentCardIndex = 0;
+        localStorage.setItem("matchesViewMode", currentViewMode);
 
-  if (serviceFilter) {
-    serviceFilter.addEventListener("input", () => {
-      filterServices(allServices);
-    });
-  }
+        if (servicesDisplay) {
+          servicesDisplay.className = `services-display view-${currentViewMode}`;
+        }
 
-  if (serviceTypeFilter) {
-    serviceTypeFilter.addEventListener("change", () => {
-      filterServices(allServices);
-    });
-  }
-
-  function filterPerfectMatches(matches) {
-    const filterText = perfectMatchFilter.value.toLowerCase();
-    const filteredMatches = matches.filter((match) => {
-      // Get username directly from the user object
-      const username =
-        match.username ||
-        (match.user && match.user.name
-          ? match.user.name
-          : "Unbekannter Benutzer");
-      // Get service type name directly from the serviceType object
-      const serviceTypeName =
-        match.serviceTypeName ||
-        (match.serviceType && match.serviceType.name
-          ? match.serviceType.name
-          : "Unbekannter Dienstleistungstyp");
-
-      return (
-        username.toLowerCase().includes(filterText) ||
-        serviceTypeName.toLowerCase().includes(filterText)
-      );
+        // WICHTIG: Erst items per page berechnen, dann filtern!
+        calculateItemsPerPage();
+        filterAndDisplayServices(true);
+      });
     });
 
-    displayFilteredPerfectMatches(filteredMatches);
-  }
-
-  function filterServices(services) {
-    const filterText = serviceFilter.value.toLowerCase();
-    const filterType = serviceTypeFilter.value;
-
-    const filteredServices = services.filter((service) => {
-      // Ensure we have proper username and serviceTypeName values
-      const username =
-        service.username ||
-        (service.marketClient &&
-        service.marketClient.user &&
-        service.marketClient.user.name
-          ? service.marketClient.user.name
-          : "Unbekannter Benutzer");
-
-      const serviceTypeName =
-        service.serviceTypeName ||
-        (service.marketProvider &&
-        service.marketProvider.serviceType &&
-        service.marketProvider.serviceType.name
-          ? service.marketProvider.serviceType.name
-          : "Unbekannter Dienstleistungstyp");
-
-      const textMatch =
-        username.toLowerCase().includes(filterText) ||
-        serviceTypeName.toLowerCase().includes(filterText);
-
-      if (filterType === "all") return textMatch;
-      if (filterType === "offer") return textMatch && service.isOffer;
-      if (filterType === "demand") return textMatch && !service.isOffer;
-
-      return textMatch;
-    });
-
-    displayFilteredServices(filteredServices);
-  }
-
-  function createFilterSection(title, filterId, isServiceSection = false) {
-    const sectionDiv = document.createElement("div");
-    sectionDiv.className = "service-container";
-
-    const titleElement = document.createElement("h3");
-    titleElement.innerHTML = `<i class="${
-      isServiceSection ? "fas fa-clipboard-list" : "fas fa-star"
-    }"></i> ${title}`;
-    sectionDiv.appendChild(titleElement);
-
-    const filterControls = document.createElement("div");
-    filterControls.className = "filter-controls";
-
-    const filterInput = document.createElement("input");
-    filterInput.type = "text";
-    filterInput.id = filterId;
-    filterInput.className = "filter-input";
-    filterInput.placeholder = `Filter ${
-      isServiceSection ? "Services" : "Perfect Matches"
-    }...`;
-    filterControls.appendChild(filterInput);
-
-    if (isServiceSection) {
-      const typeFilter = document.createElement("select");
-      typeFilter.id = "serviceTypeFilter";
-      typeFilter.innerHTML = `
-                <option value="all">Alle Arten</option>
-                <option value="offer">Nur Angebote</option>
-                <option value="demand">Nur Nachfragen</option>
-            `;
-      filterControls.appendChild(typeFilter);
+    // Text Filter
+    const textFilter = document.getElementById("textFilter");
+    if (textFilter) {
+      textFilter.addEventListener("input", () => {
+        filterAndDisplayServices(true);
+      });
     }
 
-    sectionDiv.appendChild(filterControls);
+    // Service Type Filter
+    const serviceTypeFilter = document.getElementById("serviceTypeFilter");
+    if (serviceTypeFilter) {
+      serviceTypeFilter.addEventListener("change", (e) => {
+        currentServiceType = e.target.value;
+        filterAndDisplayServices(true);
+      });
+    }
 
-    const scrollContainer = document.createElement("div");
-    scrollContainer.className = "scrollable-container";
+    // Offer/Demand Filter
+    const offerFilter = document.getElementById("offerFilter");
+    const ratingFilterGroup = document.getElementById("ratingFilterGroup");
 
-    const gridContainer = document.createElement("div");
-    gridContainer.className = "service-grid";
-    gridContainer.id = `${
-      isServiceSection ? "userServiceResults" : "perfectMatchContainer"
-    }`;
+    if (offerFilter) {
+      offerFilter.addEventListener("change", (e) => {
+        currentFilterType = e.target.value;
 
-    scrollContainer.appendChild(gridContainer);
-    sectionDiv.appendChild(scrollContainer);
+        // Show/hide rating filter based on selection
+        if (ratingFilterGroup) {
+          if (e.target.value === "offer" || e.target.value === "all") {
+            ratingFilterGroup.style.display = "flex";
+          } else {
+            ratingFilterGroup.style.display = "none";
+            currentRatingFilter = "all";
+            const ratingSelect = document.getElementById("ratingFilter");
+            if (ratingSelect) ratingSelect.value = "all";
+          }
+        }
 
-    return sectionDiv;
+        filterAndDisplayServices(true);
+      });
+    }
+
+    // Rating Filter
+    const ratingFilter = document.getElementById("ratingFilter");
+    if (ratingFilter) {
+      ratingFilter.addEventListener("change", (e) => {
+        currentRatingFilter = e.target.value;
+        filterAndDisplayServices(true);
+      });
+    }
+
+    // Sort Filter
+    const sortFilter = document.getElementById("sortFilter");
+    if (sortFilter) {
+      sortFilter.addEventListener("change", (e) => {
+        currentSortOption = e.target.value;
+        filterAndDisplayServices(true);
+      });
+    }
   }
+
+  function initializeResultsContainer() {
+    const matchesContainer = document.getElementById("matchesContainer");
+    if (!matchesContainer) return;
+
+    matchesContainer.innerHTML = "";
+
+    // Create services display container if it doesn't exist
+    let servicesDisplay = document.getElementById("servicesContainer");
+    if (!servicesDisplay) {
+      servicesDisplay = document.createElement("div");
+      servicesDisplay.id = "servicesContainer";
+      servicesDisplay.className = `services-display view-${currentViewMode}`;
+      matchesContainer.appendChild(servicesDisplay);
+    }
+  }
+
+  // Populate Service Type Filter
+  function populateServiceTypeFilter(types) {
+    const select = document.getElementById("serviceTypeFilter");
+    if (!select) return;
+
+    // Keep "All" option
+    select.innerHTML = '<option value="all">Alle Services</option>';
+
+    types.forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      select.appendChild(option);
+    });
+  }
+
+  // Call initialization
+  initializeFilters();
 
   // Function to search for user services
   function searchUserServices(username) {
-    const matchesContainer = document.getElementById("matchesContainer");
-    matchesContainer.innerHTML = "";
+    // Initialize container
+    initializeResultsContainer();
 
     fetchServiceTypes()
       .then((types) => {
         serviceTypes = types;
+        // Populate sidebar filter
+        populateServiceTypeFilter(types);
         return getPerfectMatches(username);
       })
       .then((pm) => {
         if (pm && pm.length > 0) {
           allPerfectMatches = pm;
-          createPerfectMatchesSection(pm);
+          // We don't create a separate section anymore, they are part of the main list
+          // but we might want to highlight them or keep them at top
           return [pm, username];
         }
         return [[], username];
@@ -520,235 +454,77 @@ document.addEventListener("DOMContentLoaded", async function () {
         ]);
       })
       .then(([services, perfectMatches]) => {
-        console.log("Raw services from API:", services?.length || 0);
+        console.log("Raw matches from API:", services?.length || 0);
         console.log("Perfect matches:", perfectMatches?.length || 0);
 
         if (services && services.length > 0) {
-          // Keep all services - we want to display both perfect matches and regular services
-          const allAvailableServices = [...services];
+          // services are now matches (Market entries)
 
-          // No need to filter out perfect matches - we want to show them in both sections
-          // This keeps backward compatibility with the existing code
-          const filteredServices = removePerfectMatches(
-            services,
-            perfectMatches
+          // Create a Set of Perfect Match IDs to exclude them from regular matches
+          const perfectMatchIds = new Set();
+          if (perfectMatches && perfectMatches.length > 0) {
+            perfectMatches.forEach((pm) => {
+              if (pm.id) perfectMatchIds.add(pm.id);
+            });
+          }
+
+          // Filter out Perfect Matches from the general list
+          const regularMatches = services.filter(
+            (match) => !perfectMatchIds.has(match.id)
           );
 
-          // Process all services
-          if (allAvailableServices.length > 0) {
-            console.log("Services from backend:", allAvailableServices);
+          console.log("Regular matches count:", regularMatches.length);
 
-            // Map services to a format with all required fields
-            console.log("Processing services for user:", username);
-            console.log(
-              "Raw services from backend:",
-              allAvailableServices.length
-            );
+          // Map to the format expected by display functions
+          const mappedRegularMatches = regularMatches.map((match) => ({
+            id: match.id, // Market ID
+            username: match.username || "Unbekannter Benutzer",
+            serviceTypeName: match.serviceTypeName || "Unbekannter Service",
+            isOffer: match.offer === 1,
+            typeId: match.typeId,
+            providerId: match.providerId,
+            rating: null,
+            isPerfectMatch: false,
+            // Mock marketProvider for compatibility with click handlers
+            marketProvider:
+              match.offer === 1
+                ? { id: match.id, user: { id: match.providerId } }
+                : null,
+          }));
 
-            // Schritt 1: Services eindeutig machen basierend auf Service-ID
-            const uniqueRawServices = [];
-            const seenServiceIds = new Set();
+          // Map Perfect Matches to the same format
+          const mappedPerfectMatches = perfectMatches.map((match) => ({
+            id: match.id,
+            username: match.username || "Unbekannter Benutzer",
+            serviceTypeName: match.serviceTypeName || "Unbekannter Service",
+            isOffer: match.offer === 1,
+            typeId: match.typeId, // Might need to extract if not present
+            providerId: match.providerId || match.user?.id,
+            rating: null,
+            isPerfectMatch: true,
+            marketProvider:
+              match.offer === 1
+                ? {
+                    id: match.id,
+                    user: { id: match.providerId || match.user?.id },
+                  }
+                : null,
+          }));
 
-            allAvailableServices.forEach((service, index) => {
-              const serviceId = service.id;
-              if (!serviceId) {
-                console.warn(`Service at index ${index} has no ID:`, service);
-                return;
-              }
+          // Combine all services
+          allServices = [...mappedPerfectMatches, ...mappedRegularMatches];
 
-              if (seenServiceIds.has(serviceId)) {
-                console.log(`Skipping duplicate service ID ${serviceId}`);
-                return;
-              }
+          console.log("Total processed matches:", allServices.length);
 
-              seenServiceIds.add(serviceId);
-              uniqueRawServices.push(service);
-            });
+          // Load ratings for all services
+          loadRatingsForServices(allServices);
 
-            console.log("After ID deduplication:", uniqueRawServices.length);
-
-            // Schritt 2: Services verarbeiten - nur die, wo BEIDE User beteiligt sind
-            const processedServices = [];
-            const currentUsername = username; // Der gesuchte User
-
-            uniqueRawServices.forEach((service, index) => {
-              const providerName = service.marketProvider?.user?.name;
-              const clientName = service.marketClient?.user?.name;
-
-              // Prüfe ob der gesuchte User an diesem Service beteiligt ist
-              const isProvider = providerName === currentUsername;
-              const isClient = clientName === currentUsername;
-
-              if (!isProvider && !isClient) {
-                // Gesuchter User ist NICHT an diesem Service beteiligt - überspringe
-                if (index < 3) {
-                  console.log(
-                    `Service ${service.id} doesn't involve ${currentUsername} (Provider: ${providerName}, Client: ${clientName})`
-                  );
-                }
-                return;
-              }
-
-              // Logge Details für Debugging
-              if (index < 3) {
-                console.log(`Processing service ${service.id}:`, {
-                  provider: providerName,
-                  client: clientName,
-                  providerType: service.marketProvider?.serviceType?.name,
-                  clientType: service.marketClient?.serviceType?.name,
-                  providerOffer: service.marketProvider?.offer,
-                  clientOffer: service.marketClient?.offer,
-                  currentUserRole: isProvider ? "Provider" : "Client",
-                });
-              }
-
-              // Bestimme den "anderen" User (den Partner in diesem Service)
-              let otherUsername;
-              let serviceTypeName;
-              let isOffer;
-              let typeId;
-              let providerId;
-
-              if (isProvider) {
-                // Gesuchter User ist Provider -> zeige den Client
-                otherUsername = clientName || "Unbekannter Benutzer";
-                serviceTypeName =
-                  service.marketClient?.serviceType?.name ||
-                  "Unbekannter Dienstleistungstyp";
-                isOffer = service.marketClient?.offer === 1;
-                typeId = service.marketClient?.serviceType?.id;
-                providerId = service.marketClient?.user?.id;
-              } else {
-                // Gesuchter User ist Client -> zeige den Provider
-                otherUsername = providerName || "Unbekannter Benutzer";
-                serviceTypeName =
-                  service.marketProvider?.serviceType?.name ||
-                  "Unbekannter Dienstleistungstyp";
-                isOffer = service.marketProvider?.offer === 1;
-                typeId = service.marketProvider?.serviceType?.id;
-                providerId = service.marketProvider?.user?.id;
-              }
-
-              // Nur gültige Services hinzufügen
-              if (
-                otherUsername &&
-                otherUsername !== "Unbekannter Benutzer" &&
-                serviceTypeName &&
-                serviceTypeName !== "Unbekannter Dienstleistungstyp"
-              ) {
-                processedServices.push({
-                  ...service,
-                  username: otherUsername,
-                  serviceTypeName,
-                  isOffer,
-                  typeId,
-                  providerId,
-                  rating: null,
-                });
-              } else {
-                console.log(
-                  `Skipping invalid service ${service.id}: ${otherUsername} - ${serviceTypeName}`
-                );
-              }
-            });
-
-            console.log(
-              "After processing and filtering:",
-              processedServices.length
-            );
-
-            // Schritt 3: Content-basierte Deduplizierung
-            // Entferne Services mit identischem Content (Username + ServiceType + isOffer)
-            const finalServices = [];
-            const contentKeys = new Set();
-
-            processedServices.forEach((service) => {
-              // Erstelle einen eindeutigen Content-Key
-              const contentKey = `${service.username}|${service.serviceTypeName}|${service.isOffer}`;
-
-              if (contentKeys.has(contentKey)) {
-                console.log(
-                  `Removing duplicate content: ${contentKey} (ID: ${service.id})`
-                );
-                return;
-              }
-
-              contentKeys.add(contentKey);
-              finalServices.push(service);
-            });
-
-            console.log("After content deduplication:", finalServices.length);
-
-            // Schritt 4: Entferne Services, die bereits in Perfect Matches sind
-            // Erstelle Set von Perfect Match IDs
-            const perfectMatchIds = new Set();
-            if (perfectMatches && perfectMatches.length > 0) {
-              perfectMatches.forEach((pm) => {
-                if (pm.id) perfectMatchIds.add(pm.id);
-              });
-              console.log(
-                "Perfect Match IDs to exclude:",
-                Array.from(perfectMatchIds)
-              );
-            }
-
-            // Filtere Services, die NICHT in Perfect Matches sind
-            const servicesWithoutPerfectMatches = finalServices.filter(
-              (service) => {
-                const isPerfectMatch = perfectMatchIds.has(service.id);
-                if (isPerfectMatch) {
-                  console.log(
-                    `Removing service ${service.id} (${service.username} - ${service.serviceTypeName}) because it's a Perfect Match`
-                  );
-                }
-                return !isPerfectMatch;
-              }
-            );
-
-            console.log(
-              "After removing Perfect Matches:",
-              servicesWithoutPerfectMatches.length
-            );
-            allServices = servicesWithoutPerfectMatches;
-
-            console.log(
-              "Mapped services before deduplication:",
-              allServices.length
-            );
-
-            // Finale Validierung und Benutzer-Statistiken
-            const userCounts = {};
-            allServices.forEach((service) => {
-              userCounts[service.username] =
-                (userCounts[service.username] || 0) + 1;
-            });
-
-            console.log("Final service counts per user:");
-            Object.keys(userCounts).forEach((username) => {
-              console.log(`- ${username}: ${userCounts[username]} service(s)`);
-              if (userCounts[username] > 5) {
-                console.warn(
-                  `⚠️ User "${username}" has ${userCounts[username]} services - this might be unusual`
-                );
-              }
-            });
-
-            console.log("Final processed services:", allServices.length);
-
-            // Load ratings for all offer services
-            loadRatingsForServices(allServices);
-
-            createServicesSection();
-            setTimeout(() => filterAndDisplayServices(), 0);
-          }
-        }
-
-        if (
-          !document.querySelector(".perfect-matches") &&
-          !document.querySelector("#servicesContainer")
-        ) {
+          setTimeout(() => filterAndDisplayServices(), 0);
+        } else {
+          // Handle empty case
+          const matchesContainer = document.getElementById("matchesContainer");
           matchesContainer.innerHTML =
-            '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Dienstleistungen gefunden.</div>';
+            '<div class="no-results"><i class="fas fa-info-circle"></i> Keine passenden Matches gefunden.</div>';
         }
       })
       .catch((error) => {
@@ -758,64 +534,6 @@ document.addEventListener("DOMContentLoaded", async function () {
           "error"
         );
       });
-  }
-
-  function createPerfectMatchesSection(perfectMatches) {
-    const matchesContainer = document.getElementById("matchesContainer");
-
-    // Perfect Matches Section - Vereinfacht für Gruppierung
-    const perfectMatchSection = document.createElement("div");
-    perfectMatchSection.className = "main-services-section perfect-matches";
-    perfectMatchSection.innerHTML =
-      '<h3><i class="fas fa-star"></i> Perfect Matches</h3>';
-
-    // Container für Perfect Matches
-    const perfectMatchContainer = document.createElement("div");
-    perfectMatchContainer.id = "perfectMatchContainer";
-    perfectMatchContainer.className = "services-display";
-    perfectMatchSection.appendChild(perfectMatchContainer);
-
-    matchesContainer.appendChild(perfectMatchSection);
-
-    // Zeige alle Perfect Matches mit Gruppierung an
-    displayFilteredPerfectMatches(perfectMatches);
-  }
-
-  async function filterAndDisplayPerfectMatches() {
-    const filteredMatches = allPerfectMatches.filter((match) => {
-      // Access user.name directly from the match object
-      const username =
-        match.user && match.user.name
-          ? match.user.name
-          : "Unbekannter Benutzer";
-      return (
-        currentPerfectMatchUser === "all" ||
-        username === currentPerfectMatchUser
-      );
-    });
-
-    const perfectMatchContainer = document.getElementById(
-      "perfectMatchContainer"
-    );
-    if (!perfectMatchContainer) return;
-
-    perfectMatchContainer.innerHTML = "";
-
-    if (filteredMatches.length === 0) {
-      perfectMatchContainer.innerHTML =
-        '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Perfect Matches gefunden.</div>';
-      return;
-    }
-
-    const gridDiv = document.createElement("div");
-    gridDiv.className = "service-grid";
-
-    filteredMatches.forEach((match) => {
-      const card = createPerfectMatchCard(match);
-      gridDiv.appendChild(card);
-    });
-
-    perfectMatchContainer.appendChild(gridDiv);
   }
 
   // Funktion zum Abrufen aller Service-Typen
@@ -828,93 +546,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         return response.json();
       })
       .then((serviceTypes) => serviceTypes.map((type) => type.name));
-  }
-
-  function createServiceTypeSection(serviceType) {
-    const sectionDiv = document.createElement("div");
-    sectionDiv.className = "service-type-section";
-
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "service-type-header";
-
-    const title = document.createElement("h3");
-    title.innerHTML = `<i class="fas fa-tags"></i> ${serviceType}`;
-
-    const filterSelect = document.createElement("select");
-    filterSelect.className = "offer-filter";
-    filterSelect.innerHTML = `
-            <option value="all">Alle anzeigen</option>
-            <option value="offer">Nur Angebote</option>
-            <option value="demand">Nur Nachfragen</option>
-        `;
-
-    headerDiv.appendChild(title);
-    headerDiv.appendChild(filterSelect);
-    sectionDiv.appendChild(headerDiv);
-
-    const servicesContainer = document.createElement("div");
-    servicesContainer.className = "scrollable-container";
-    servicesContainer.id = `services-${serviceType.replace(/\s+/g, "-")}`;
-    sectionDiv.appendChild(servicesContainer);
-
-    return { sectionDiv, filterSelect, servicesContainer };
-  }
-
-  function displayServicesByType(services) {
-    const matchesContainer = document.getElementById("matchesContainer");
-    if (!matchesContainer) return;
-
-    // Gruppiere Services nach Typ
-    const servicesByType = {};
-    services.forEach((service) => {
-      if (!servicesByType[service.serviceTypeName]) {
-        servicesByType[service.serviceTypeName] = [];
-      }
-      servicesByType[service.serviceTypeName].push(service);
-    });
-
-    // Erstelle Sektionen für jeden Service-Typ
-    Object.entries(servicesByType).forEach(([type, typeServices]) => {
-      const { sectionDiv, filterSelect, servicesContainer } =
-        createServiceTypeSection(type);
-
-      // Filter-Event-Listener
-      filterSelect.addEventListener("change", (e) => {
-        const filterValue = e.target.value;
-        const filteredServices = typeServices.filter((service) => {
-          if (filterValue === "all") return true;
-          if (filterValue === "offer") return service.isOffer;
-          if (filterValue === "demand") return !service.isOffer;
-          return true;
-        });
-
-        displayServicesInContainer(filteredServices, servicesContainer);
-      });
-
-      // Initial anzeigen
-      displayServicesInContainer(typeServices, servicesContainer);
-      matchesContainer.appendChild(sectionDiv);
-    });
-  }
-
-  function displayServicesInContainer(services, container) {
-    container.innerHTML = "";
-
-    if (services.length === 0) {
-      container.innerHTML =
-        '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Dienstleistungen gefunden.</div>';
-      return;
-    }
-
-    const gridDiv = document.createElement("div");
-    gridDiv.className = "service-grid";
-
-    services.forEach((service) => {
-      const card = createServiceCard(service);
-      gridDiv.appendChild(card);
-    });
-
-    container.appendChild(gridDiv);
   }
 
   // Function to get user services by username
@@ -1014,46 +645,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       });
   }
 
-  // Function to show perfect-matches as cards -> gold
-  function showPerfectMatches(pm) {
-    const perfectMatchContainer = document.getElementById(
-      "perfectMatchContainer"
-    );
-    if (!perfectMatchContainer) {
-      console.error("perfectMatchContainer element not found in the DOM");
-      return;
-    }
-
-    perfectMatchContainer.innerHTML = ""; // Clear previous results
-    if (!pm || pm.length === 0) {
-      perfectMatchContainer.innerHTML =
-        '<div class="no-results"><i class="fas fa-info-circle"></i> Keine perfekten Übereinstimmungen gefunden.</div>';
-      return;
-    }
-
-    pm.forEach((market) => {
-      // Get username directly from the user object
-      const username =
-        market.username ||
-        (market.user && market.user.name
-          ? market.user.name
-          : "Unbekannter Benutzer");
-      // Get service type name directly from the serviceType object
-      const serviceTypeName =
-        market.serviceTypeName ||
-        (market.serviceType && market.serviceType.name
-          ? market.serviceType.name
-          : "Unbekannter Dienstleistungstyp");
-
-      const card = createPerfectMatchCard({
-        username: username,
-        serviceTypeName: serviceTypeName,
-        offer: market.offer,
-      });
-      perfectMatchContainer.appendChild(card);
-    });
-  }
-
   // Function to create a perfect-match service card -> gold, kein Angebot, Nachfrage
   function createPerfectMatchCard(service) {
     const cardDiv = document.createElement("div");
@@ -1109,12 +700,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
       // Extract marketId - for Perfect Match offers
       // Check multiple possible locations for the market ID
-      const marketId = 
-        service.id ||
-        service.marketId ||
-        service.marketProvider?.id ||
-        null;
-      
+      const marketId =
+        service.id || service.marketId || service.marketProvider?.id || null;
+
       // Extract typeId and providerId
       const typeId =
         service.typeId ||
@@ -1140,7 +728,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Add click handler: open request modal to send a service request
       cardDiv.addEventListener("click", function (e) {
         if (!marketId) {
-          console.error("Market ID not found for request. Service data:", service);
+          console.error(
+            "Market ID not found for request. Service data:",
+            service
+          );
           alert("Anfrage nicht möglich: Fehlende Daten");
           return;
         }
@@ -1170,67 +761,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     // We actually want to show all services, not filter out the perfect matches from regular view
     // This function is now a pass-through to maintain compatibility
     return services;
-  }
-
-  // Function to display filtered perfect matches
-  function displayFilteredPerfectMatches(matches) {
-    const perfectMatchContainer = document.getElementById(
-      "perfectMatchContainer"
-    );
-    if (!perfectMatchContainer) return;
-
-    perfectMatchContainer.innerHTML = "";
-
-    if (matches.length === 0) {
-      perfectMatchContainer.innerHTML =
-        '<div class="no-results"><i class="fas fa-info-circle"></i> Keine Übereinstimmungen gefunden.</div>';
-      return;
-    }
-
-    // Gruppiere Perfect Matches nach Benutzername
-    const groupedMatches = groupPerfectMatchesByUser(matches);
-
-    // Erstelle für jede Gruppe einen eigenen Bereich mit Perfect Match Styling
-    Object.keys(groupedMatches).forEach((username) => {
-      const userMatches = groupedMatches[username];
-
-      // Erstelle Gruppen-Container für Perfect Matches
-      const groupDiv = document.createElement("div");
-      groupDiv.className = "service-group group-perfect-match";
-
-      // Erstelle Gruppen-Header für Perfect Matches
-      const headerDiv = document.createElement("div");
-      headerDiv.className = "service-group-header";
-
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "service-group-title";
-      titleDiv.innerHTML = `
-                <span class="group-icon"><i class="fas fa-star"></i></span>
-                <h3>${username}</h3>
-                <div class="group-user-rating"><i class="fas fa-spinner fa-spin"></i> Lade Bewertung...</div>
-            `;
-
-      headerDiv.appendChild(titleDiv);
-
-      // Lade User-Bewertung für den Group Header
-      const userRatingContainer = titleDiv.querySelector(".group-user-rating");
-      if (userRatingContainer && username !== "Unbekannter Benutzer") {
-        loadUserRatingForGroup(username, userRatingContainer);
-      }
-
-      // Erstelle Grid für Perfect Matches dieser Gruppe
-      const gridDiv = document.createElement("div");
-      gridDiv.className = "service-grid";
-
-      userMatches.forEach((match) => {
-        const card = createPerfectMatchCard(match);
-        gridDiv.appendChild(card);
-      });
-
-      groupDiv.appendChild(headerDiv);
-      groupDiv.appendChild(gridDiv);
-      perfectMatchContainer.appendChild(groupDiv);
-    });
   }
 
   function displayFilteredServices(services) {
@@ -1343,76 +873,67 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   // CARD VIEW: Tinder-Style einzelne Karte
   function displayCardView(services, container) {
-    if (services.length === 0) return;
+    // Clear container to ensure we don't stack cards when navigating
+    container.innerHTML = "";
 
-    // Begrenze Index
-    if (currentCardIndex >= services.length) {
-      currentCardIndex = services.length - 1;
+    if (services.length === 0) {
+      container.innerHTML =
+        '<div class="no-results">Keine Services gefunden.</div>';
+      return;
     }
-    if (currentCardIndex < 0) {
-      currentCardIndex = 0;
-    }
+
+    // Ensure index is valid
+    if (currentCardIndex >= services.length) currentCardIndex = 0;
+    if (currentCardIndex < 0) currentCardIndex = services.length - 1;
 
     const service = services[currentCardIndex];
 
     const cardViewContainer = document.createElement("div");
     cardViewContainer.className = "card-view-container";
 
-    // Progress Indicator
-    const progressDiv = document.createElement("div");
-    progressDiv.className = "card-progress";
-    progressDiv.textContent = `${currentCardIndex + 1} / ${services.length}`;
-    cardViewContainer.appendChild(progressDiv);
-
     // Main Card
     const mainCard = createLargeCard(service, allServices);
     cardViewContainer.appendChild(mainCard);
 
     // Navigation Controls
-    const navDiv = document.createElement("div");
-    navDiv.className = "card-nav";
+    const navContainer = document.createElement("div");
+    navContainer.className = "card-nav-container";
+    navContainer.style.display = "flex";
+    navContainer.style.justifyContent = "center";
+    navContainer.style.alignItems = "center";
+    navContainer.style.gap = "20px";
+    navContainer.style.marginTop = "20px";
 
     const prevBtn = document.createElement("button");
-    prevBtn.className = "card-nav-btn prev";
-    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Vorheriger';
-    prevBtn.disabled = currentCardIndex === 0;
+    prevBtn.className = "card-nav-btn";
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
     prevBtn.onclick = () => {
       currentCardIndex--;
-      filterAndDisplayServices();
+      if (currentCardIndex < 0) currentCardIndex = services.length - 1;
+      displayCardView(services, container);
     };
 
     const nextBtn = document.createElement("button");
-    nextBtn.className = "card-nav-btn next";
-    nextBtn.innerHTML = 'Nächster <i class="fas fa-chevron-right"></i>';
-    nextBtn.disabled = currentCardIndex === services.length - 1;
+    nextBtn.className = "card-nav-btn";
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
     nextBtn.onclick = () => {
       currentCardIndex++;
-      filterAndDisplayServices();
+      if (currentCardIndex >= services.length) currentCardIndex = 0;
+      displayCardView(services, container);
     };
 
-    navDiv.appendChild(prevBtn);
-    navDiv.appendChild(nextBtn);
-    cardViewContainer.appendChild(navDiv);
+    const counter = document.createElement("span");
+    counter.className = "card-counter";
+    counter.textContent = `${currentCardIndex + 1} / ${services.length}`;
+    counter.style.fontSize = "1.2em";
+    counter.style.fontWeight = "bold";
 
+    navContainer.appendChild(prevBtn);
+    navContainer.appendChild(counter);
+    navContainer.appendChild(nextBtn);
+
+    cardViewContainer.appendChild(navContainer);
     container.appendChild(cardViewContainer);
-
-    // Keyboard navigation
-    const handleKeyPress = (e) => {
-      if (currentViewMode !== "card") return;
-      if (e.key === "ArrowLeft" && currentCardIndex > 0) {
-        currentCardIndex--;
-        filterAndDisplayServices();
-      } else if (
-        e.key === "ArrowRight" &&
-        currentCardIndex < services.length - 1
-      ) {
-        currentCardIndex++;
-        filterAndDisplayServices();
-      }
-    };
-
-    document.removeEventListener("keydown", handleKeyPress);
-    document.addEventListener("keydown", handleKeyPress);
   }
 
   // Hilfsfunktion zum Gruppieren von Services nach Benutzername
@@ -1420,8 +941,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const groups = {};
     const processedIds = new Set(); // Verhindere Duplikate
     const processedPerfectMatchUsers = new Set(); // Spezielle Behandlung für Perfect Matches
-
-    console.log("Grouping services:", services.length, "total services");
 
     services.forEach((service, index) => {
       const username = service.username || "Unbekannter Benutzer";
@@ -1457,66 +976,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (!a.isPerfectMatch && b.isPerfectMatch) return 1;
         return 0;
       });
-    });
-
-    // Debugging: Zeige Gruppierung
-    Object.keys(groups).forEach((username) => {
-      console.log(`Group "${username}":`, groups[username].length, "services");
-      if (groups[username].length > 10) {
-        console.warn(
-          `⚠️ Unusual high count for user "${username}":`,
-          groups[username].length
-        );
-      }
-    });
-
-    return groups;
-  }
-
-  // Hilfsfunktion zum Gruppieren von Perfect Matches nach Benutzername
-  function groupPerfectMatchesByUser(matches) {
-    const groups = {};
-    const processedIds = new Set();
-
-    console.log("Grouping perfect matches:", matches.length, "total matches");
-
-    matches.forEach((match, index) => {
-      // Extrahiere Username aus verschiedenen möglichen Quellen
-      const username =
-        match.username ||
-        (match.user && match.user.name) ||
-        (match.marketProvider &&
-          match.marketProvider.user &&
-          match.marketProvider.user.name) ||
-        (match.marketClient &&
-          match.marketClient.user &&
-          match.marketClient.user.name) ||
-        "Unbekannter Benutzer";
-
-      const matchId = match.id || match.serviceId || `perfect-${index}`;
-
-      // Prüfe auf Duplikate
-      if (processedIds.has(matchId)) {
-        console.warn("Duplicate perfect match found:", matchId, username);
-        return;
-      }
-
-      processedIds.add(matchId);
-
-      if (!groups[username]) {
-        groups[username] = [];
-      }
-
-      groups[username].push(match);
-    });
-
-    // Debugging für Perfect Matches
-    Object.keys(groups).forEach((username) => {
-      console.log(
-        `Perfect Match Group "${username}":`,
-        groups[username].length,
-        "matches"
-      );
     });
 
     return groups;
@@ -1788,7 +1247,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       cardDiv.addEventListener("click", function (e) {
         // Extract marketId from marketProvider (since this is an offer)
         const marketId = marketProvider?.id || null;
-        
+
         if (!marketId) {
           console.warn("Market ID not found for request");
           alert("Anfrage nicht möglich: Fehlende Daten");
@@ -1817,165 +1276,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     return cardDiv;
-  }
-
-  function createServicesSection() {
-    const matchesContainer = document.getElementById("matchesContainer");
-
-    // Main Services Section
-    const mainServicesSection = document.createElement("div");
-    mainServicesSection.className = "main-services-section";
-
-    // View Mode Toggle (ganz oben)
-    const viewModeContainer = document.createElement("div");
-    viewModeContainer.className = "view-mode-container";
-    viewModeContainer.innerHTML = `
-            <div class="view-mode-toggle">
-                <button class="view-mode-btn ${
-                  currentViewMode === "grouped" ? "active" : ""
-                }" data-view="grouped" title="Gruppiert (Original)">
-                    <i class="fas fa-users"></i>
-                </button>
-                <button class="view-mode-btn ${
-                  currentViewMode === "compact" ? "active" : ""
-                }" data-view="compact" title="Kompakt (Alle)">
-                    <i class="fas fa-th"></i>
-                </button>
-                <button class="view-mode-btn ${
-                  currentViewMode === "card" ? "active" : ""
-                }" data-view="card" title="Karten (Einzeln)">
-                    <i class="fas fa-address-card"></i>
-                </button>
-            </div>
-        `;
-    mainServicesSection.appendChild(viewModeContainer);
-
-    // Get unique service types from actual services
-    const usedServiceTypes = [
-      ...new Set(allServices.map((service) => service.serviceTypeName)),
-    ];
-
-    // Horizontal scrolling service types
-    const serviceTypesNav = document.createElement("nav");
-    serviceTypesNav.className = "service-types-nav";
-
-    const allTypesBtn = document.createElement("button");
-    allTypesBtn.className = "service-type-btn active";
-    allTypesBtn.dataset.type = "all";
-    allTypesBtn.innerHTML = '<i class="fas fa-list"></i> Alle Services';
-
-    const serviceTypesList = document.createElement("div");
-    serviceTypesList.className = "service-types-list";
-    serviceTypesList.appendChild(allTypesBtn);
-
-    // Nur die verwendeten Service-Typen anzeigen
-    usedServiceTypes.forEach((type) => {
-      const button = document.createElement("button");
-      button.className = "service-type-btn";
-      button.dataset.type = type;
-      button.innerHTML = `<i class="fas fa-tags"></i> ${type}`;
-      serviceTypesList.appendChild(button);
-    });
-
-    serviceTypesNav.appendChild(serviceTypesList);
-    mainServicesSection.appendChild(serviceTypesNav);
-
-    // Filter for Angebot/Nachfrage
-    const filterContainer = document.createElement("div");
-    filterContainer.className = "filter-container";
-
-    // Base filter HTML
-    let filterHTML = `
-            <select class="offer-filter">
-                <option value="all">Alle anzeigen</option>
-                <option value="offer">Nur Angebote</option>
-                <option value="demand">Nur Nachfragen</option>
-            </select>
-            <select class="rating-filter" style="display: none;">
-                <option value="all">Alle Bewertungen</option>
-                <option value="4+">4+ Sterne</option>
-                <option value="3+">3+ Sterne</option>
-                <option value="2+">2+ Sterne</option>
-                <option value="1+">1+ Sterne</option>
-                <option value="unrated">Ohne Bewertung</option>
-            </select>
-            <select class="sort-filter">
-                <option value="none">Standard Sortierung</option>
-                <option value="rating-desc">Bewertung (hoch → niedrig)</option>
-                <option value="rating-asc">Bewertung (niedrig → hoch)</option>
-                <option value="name-asc">Name (A → Z)</option>
-                <option value="name-desc">Name (Z → A)</option>
-            </select>
-        `;
-
-    filterContainer.innerHTML = filterHTML;
-    mainServicesSection.appendChild(filterContainer);
-
-    // Services display container
-    const servicesDisplay = document.createElement("div");
-    servicesDisplay.id = "servicesContainer";
-    servicesDisplay.className = `services-display view-${currentViewMode}`;
-    mainServicesSection.appendChild(servicesDisplay);
-
-    matchesContainer.appendChild(mainServicesSection);
-
-    // Event Listeners
-    const typeButtons = serviceTypesNav.querySelectorAll(".service-type-btn");
-    typeButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        typeButtons.forEach((btn) => btn.classList.remove("active"));
-        button.classList.add("active");
-        currentServiceType = button.dataset.type;
-        filterAndDisplayServices();
-      });
-    });
-
-    // View Mode Toggle Event Listeners
-    const viewModeButtons =
-      viewModeContainer.querySelectorAll(".view-mode-btn");
-    viewModeButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        viewModeButtons.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        currentViewMode = btn.dataset.view;
-        currentCardIndex = 0; // Reset card index
-        localStorage.setItem("matchesViewMode", currentViewMode);
-
-        // Update container class
-        servicesDisplay.className = `services-display view-${currentViewMode}`;
-
-        // Re-render with new view mode
-        filterAndDisplayServices();
-      });
-    });
-
-    const offerFilter = filterContainer.querySelector(".offer-filter");
-    const ratingFilter = filterContainer.querySelector(".rating-filter");
-
-    offerFilter.addEventListener("change", (e) => {
-      currentFilterType = e.target.value;
-
-      // Show/hide rating filter based on selection
-      if (e.target.value === "offer" || e.target.value === "all") {
-        ratingFilter.style.display = "inline-block";
-      } else {
-        ratingFilter.style.display = "none";
-        currentRatingFilter = "all"; // Reset rating filter when hidden
-      }
-
-      filterAndDisplayServices();
-    });
-
-    ratingFilter.addEventListener("change", (e) => {
-      currentRatingFilter = e.target.value;
-      filterAndDisplayServices();
-    });
-
-    const sortFilter = filterContainer.querySelector(".sort-filter");
-    sortFilter.addEventListener("change", (e) => {
-      currentSortOption = e.target.value;
-      filterAndDisplayServices();
-    });
   }
 
   // Load ratings for all services
@@ -2043,8 +1343,191 @@ document.addEventListener("DOMContentLoaded", async function () {
     filterAndDisplayServices();
   }
 
-  function filterAndDisplayServices() {
+  // Calculate items per page based on screen size
+  function calculateItemsPerPage() {
+    const container = document.querySelector(".content-section");
+    if (!container) return;
+
+    // Estimate available height
+    // Window height - Navbar (approx 60px) - Padding/Margins (approx 40px) - Pagination (approx 60px)
+    const availableHeight = window.innerHeight - 160;
+
+    // Estimate item height based on view mode
+    let itemHeight;
+    if (currentViewMode === "grouped") {
+      itemHeight = 300; // Increased from 150 to account for group headers and spacing
+    } else if (currentViewMode === "compact") {
+      itemHeight = 100; // Approx height of compact card
+    } else {
+      itemHeight = 400; // Card view is different, usually 1 per page
+    }
+
+    // Calculate items that fit
+    let calculatedItems = Math.floor(availableHeight / itemHeight);
+
+    // Adjust for width (columns) in compact view
+    if (currentViewMode === "compact") {
+      const containerWidth = container.clientWidth;
+      const itemWidth = 200; // Min width of compact card
+      const columns = Math.floor(containerWidth / itemWidth);
+      calculatedItems = calculatedItems * columns;
+    }
+
+    // Set bounds
+    if (currentViewMode === "card") {
+      itemsPerPage = 1; // Card view: 1 item per page (Tinder-style)
+    } else if (currentViewMode === "compact") {
+      itemsPerPage = 16; // Compact view: 16 items per page (Kacheln)
+    } else {
+      itemsPerPage = 2; // Grouped view: 2 items per page
+    }
+
+    console.log(
+      `Calculated items per page: ${itemsPerPage} (View: ${currentViewMode})`
+    );
+  }
+
+  // Render Pagination Controls
+  function renderPagination(totalItems) {
+    const paginationContainer = document.getElementById("paginationContainer");
+    if (!paginationContainer) return;
+
+    paginationContainer.innerHTML = "";
+
+    // Don't render pagination for card view
+    if (currentViewMode === "card") {
+      return;
+    }
+
+    if (totalItems <= itemsPerPage) {
+      return; // No pagination needed if all items fit
+    }
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    // Container for buttons
+    const nav = document.createElement("nav");
+    nav.className = "pagination-nav";
+
+    // Previous Button
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "pagination-btn prev";
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        filterAndDisplayServices();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+    nav.appendChild(prevBtn);
+
+    // Page Numbers (Smart display: 1 ... 4 5 6 ... 10)
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    if (startPage > 1) {
+      const firstPageBtn = document.createElement("button");
+      firstPageBtn.className = "pagination-btn";
+      firstPageBtn.textContent = "1";
+      firstPageBtn.onclick = () => {
+        currentPage = 1;
+        filterAndDisplayServices();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+      nav.appendChild(firstPageBtn);
+
+      if (startPage > 2) {
+        const dots = document.createElement("span");
+        dots.className = "pagination-dots";
+        dots.textContent = "...";
+        nav.appendChild(dots);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const pageBtn = document.createElement("button");
+      pageBtn.className = `pagination-btn ${i === currentPage ? "active" : ""}`;
+      pageBtn.textContent = i;
+      pageBtn.onclick = () => {
+        currentPage = i;
+        filterAndDisplayServices();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+      nav.appendChild(pageBtn);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const dots = document.createElement("span");
+        dots.className = "pagination-dots";
+        dots.textContent = "...";
+        nav.appendChild(dots);
+      }
+
+      const lastPageBtn = document.createElement("button");
+      lastPageBtn.className = "pagination-btn";
+      lastPageBtn.textContent = totalPages;
+      lastPageBtn.onclick = () => {
+        currentPage = totalPages;
+        filterAndDisplayServices();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+      nav.appendChild(lastPageBtn);
+    }
+
+    // Next Button
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "pagination-btn next";
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        filterAndDisplayServices();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+    nav.appendChild(nextBtn);
+
+    // Info Text
+    const infoText = document.createElement("div");
+    infoText.className = "pagination-info";
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+    infoText.textContent = `${startItem}-${endItem} von ${totalItems}`;
+
+    paginationContainer.appendChild(nav);
+    paginationContainer.appendChild(infoText);
+  }
+
+  function filterAndDisplayServices(resetPage = false) {
+    if (resetPage) {
+      currentPage = 1;
+    }
+
+    const textFilterInput = document.getElementById("textFilter");
+    const filterText = textFilterInput
+      ? textFilterInput.value.toLowerCase()
+      : "";
+
     let filteredServices = allServices.filter((service) => {
+      // Text Filter (Name or Service Type)
+      const username = service.username || "";
+      const serviceTypeName = service.serviceTypeName || "";
+      const textMatch =
+        username.toLowerCase().includes(filterText) ||
+        serviceTypeName.toLowerCase().includes(filterText);
+
+      if (!textMatch) return false;
+
+      // Service Type Filter
       const typeMatch =
         currentServiceType === "all" ||
         service.serviceTypeName === currentServiceType;
@@ -2103,20 +1586,86 @@ document.addEventListener("DOMContentLoaded", async function () {
       return 0; // Behalte die vorherige Sortierung bei
     });
 
-    // Dedupliziere Perfect Matches: Nur einen Service pro User behalten
-    // (Backend liefert beide Markets für Perfect Match Users)
-    const seenPerfectMatchUsers = new Set();
-    filteredServices = filteredServices.filter((service) => {
-      if (service.isPerfectMatch) {
-        if (seenPerfectMatchUsers.has(service.username)) {
-          return false; // Überspringe Duplikat
+    // Dedupliziere Perfect Matches NUR für Grouped View
+    // In Compact/Card View sollen beide Services (Angebot + Nachfrage) einzeln angezeigt werden
+    if (currentViewMode === "grouped") {
+      const seenPerfectMatchUsers = new Set();
+      filteredServices = filteredServices.filter((service) => {
+        if (service.isPerfectMatch) {
+          if (seenPerfectMatchUsers.has(service.username)) {
+            return false; // Überspringe Duplikat
+          }
+          seenPerfectMatchUsers.add(service.username);
         }
-        seenPerfectMatchUsers.add(service.username);
-      }
-      return true;
-    });
+        return true;
+      });
+    }
 
-    displayFilteredServices(filteredServices);
+    // Pagination Logic
+    const totalItems = filteredServices.length;
+
+    // For grouped view, we need to paginate by groups, not individual items
+    let paginatedServices;
+    let totalPages;
+
+    if (currentViewMode === "grouped") {
+      // Group services first to count groups
+      const groupedServices = {};
+
+      filteredServices.forEach((service) => {
+        const username = service.username || "Unbekannter Benutzer";
+        if (!groupedServices[username]) {
+          groupedServices[username] = [];
+        }
+        groupedServices[username].push(service);
+      });
+
+      const groupNames = Object.keys(groupedServices);
+      totalPages = Math.ceil(groupNames.length / itemsPerPage);
+
+      // Ensure currentPage is valid
+      if (currentPage > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+      }
+      if (currentPage < 1) currentPage = 1;
+
+      // Get groups for current page
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const currentPageGroups = groupNames.slice(startIndex, endIndex);
+
+      // Flatten services from selected groups
+      paginatedServices = [];
+      currentPageGroups.forEach((username) => {
+        paginatedServices.push(...groupedServices[username]);
+      });
+
+      // Render pagination based on number of groups
+      renderPagination(groupNames.length);
+    } else if (currentViewMode === "card") {
+      paginatedServices = filteredServices; // Pass all services for card view
+      totalPages = filteredServices.length; // Each service is a page
+      renderPagination(totalItems);
+    } else {
+      // Compact view: paginate by individual items
+      totalPages = Math.ceil(totalItems / itemsPerPage);
+
+      // Ensure currentPage is valid
+      if (currentPage > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+      }
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      paginatedServices = filteredServices.slice(startIndex, endIndex);
+
+      // Render Pagination Controls
+      renderPagination(totalItems);
+    }
+
+    // Display current page items
+    displayFilteredServices(paginatedServices);
   }
 });
 // ==================== SERVICE REQUEST MODAL FUNCTIONALITY ====================
@@ -2239,7 +1788,10 @@ window.submitRating = async function () {
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 409) {
-        showMessage("Du hast bereits eine Anfrage an diesen User gesendet", "warning");
+        showMessage(
+          "Du hast bereits eine Anfrage an diesen User gesendet",
+          "warning"
+        );
         closeRatingModal();
       } else if (response.status === 404) {
         showMessage("Service nicht gefunden", "error");
@@ -2308,11 +1860,6 @@ function createCompactCard(service) {
 
   cardDiv.innerHTML = `
     <div class="compact-badge">${service.isOffer ? "A" : "N"}</div>
-    ${
-      service.isPerfectMatch
-        ? '<div class="compact-perfect-badge"><i class="fas fa-star"></i></div>'
-        : ""
-    }
     <div class="compact-content">
       <h5>${service.username}</h5>
       <p>${service.serviceTypeName}</p>
@@ -2349,12 +1896,15 @@ function createLargeCard(service, allServices) {
     service.isOffer ? "offer-large" : "demand-large"
   }${service.isPerfectMatch ? " perfect-match" : ""}`;
 
+  // Zähle alle Services dieses Users
+  const userServices = allServices.filter(
+    (s) => s.username === service.username
+  );
+  const serviceCount = userServices.length;
+
   // Für Perfect Matches: Spezielle 2-Spalten Ansicht
   if (service.isPerfectMatch) {
     // Finde das komplementäre Service des gleichen Users
-    const userServices = allServices.filter(
-      (s) => s.username === service.username
-    );
     const complementService = userServices.find(
       (s) => s.isOffer !== service.isOffer
     );
@@ -2379,6 +1929,9 @@ function createLargeCard(service, allServices) {
     cardDiv.innerHTML = `
       <div class="large-card-header">
         <span class="perfect-match-badge large"><i class="fas fa-star"></i> Perfect Match</span>
+        <span class="service-count-badge">${serviceCount} ${
+      serviceCount === 1 ? "Service" : "Services"
+    }</span>
       </div>
       <div class="large-card-body perfect-match-layout">
         <div class="perfect-match-user">
@@ -2434,6 +1987,9 @@ function createLargeCard(service, allServices) {
         }">
           ${service.isOffer ? "Bietet an" : "Sucht"}
         </span>
+        <span class="service-count-badge">${serviceCount} ${
+      serviceCount === 1 ? "Service" : "Services"
+    }</span>
       </div>
       <div class="large-card-body">
         <div class="large-avatar">
@@ -2450,6 +2006,12 @@ function createLargeCard(service, allServices) {
 }
 
 // Helper for opening request modal from card view
-window.openRatingModalForCard = function (marketId, username, serviceType, typeId, providerId) {
+window.openRatingModalForCard = function (
+  marketId,
+  username,
+  serviceType,
+  typeId,
+  providerId
+) {
   openRatingModal(marketId, username, serviceType, typeId, providerId);
 };

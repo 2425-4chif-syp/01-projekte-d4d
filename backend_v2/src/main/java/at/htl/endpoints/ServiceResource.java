@@ -122,11 +122,46 @@ public class ServiceResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        List<Service> services = serviceRepository.getRelevantServicesForUser(user);
+        // Get user's markets to find what they offer and demand
+        List<Market> userMarkets = marketRepository.list("user", user);
+        List<Long> userOfferIds = new ArrayList<>();
+        List<Long> userDemandIds = new ArrayList<>();
 
-        if (services == null || services.isEmpty()) {
+        for (Market market : userMarkets) {
+            if (market.getOffer() == 1) {
+                userOfferIds.add(market.getServiceType().getId());
+            } else {
+                userDemandIds.add(market.getServiceType().getId());
+            }
+        }
+
+        // Find matches (Market entries that match user's needs)
+        List<Map<String, Object>> matches = serviceRepository.findMatchesWithPerfectMatchFlag(
+            userOfferIds, 
+            userDemandIds,
+            user.getId()
+        );
+
+        if (matches == null || matches.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(services).build();
+
+        // Enrich matches with flat structure for frontend compatibility
+        List<Map<String, Object>> enrichedMatches = new ArrayList<>();
+        for (Map<String, Object> match : matches) {
+            Map<String, Object> enrichedMatch = new HashMap<>(match);
+            
+            Map<String, Object> serviceType = (Map<String, Object>) match.get("serviceType");
+            Map<String, Object> userMap = (Map<String, Object>) match.get("user");
+            
+            enrichedMatch.put("serviceTypeName", serviceType.get("name"));
+            enrichedMatch.put("username", userMap.get("name"));
+            enrichedMatch.put("typeId", serviceType.get("id"));
+            enrichedMatch.put("providerId", userMap.get("id"));
+            
+            enrichedMatches.add(enrichedMatch);
+        }
+
+        return Response.ok(enrichedMatches).build();
     }
 }

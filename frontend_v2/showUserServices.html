@@ -11,17 +11,106 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+    <script src="https://cdn.jsdelivr.net/npm/keycloak-js@25.0.5/dist/keycloak.min.js"></script>
   </head>
   <body>
     <nav class="navbar"></nav>
 
-    <main class="container">
+    <main class="container main-layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h3><i class="fas fa-filter"></i> Filter</h3>
+        </div>
+        <div class="sidebar-content">
+          <!-- View Mode -->
+          <div class="filter-group">
+            <label>Ansicht</label>
+            <div class="view-mode-toggle">
+              <button
+                class="view-mode-btn active"
+                data-view="grouped"
+                title="Gruppiert"
+              >
+                <i class="fas fa-users"></i>
+              </button>
+              <button class="view-mode-btn" data-view="compact" title="Kompakt">
+                <i class="fas fa-th"></i>
+              </button>
+              <button class="view-mode-btn" data-view="card" title="Karten">
+                <i class="fas fa-address-card"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Search/Text Filter -->
+          <div class="filter-group">
+            <label>Suche</label>
+            <div class="input-with-icon">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="textFilter"
+                placeholder="Name oder Service..."
+                class="full-width"
+              />
+            </div>
+          </div>
+
+          <!-- Service Type Filter -->
+          <div class="filter-group">
+            <label>Service Typ</label>
+            <select id="serviceTypeFilter" class="full-width">
+              <option value="all">Alle Services</option>
+              <!-- Options will be populated by JS -->
+            </select>
+          </div>
+
+          <!-- Offer/Demand Filter -->
+          <div class="filter-group">
+            <label>Art</label>
+            <select id="offerFilter" class="full-width">
+              <option value="all">Alle anzeigen</option>
+              <option value="offer">Nur Angebote</option>
+              <option value="demand">Nur Nachfragen</option>
+            </select>
+          </div>
+
+          <!-- Rating Filter -->
+          <div class="filter-group" id="ratingFilterGroup">
+            <label>Bewertung</label>
+            <select id="ratingFilter" class="full-width">
+              <option value="all">Alle Bewertungen</option>
+              <option value="4+">4+ Sterne</option>
+              <option value="3+">3+ Sterne</option>
+              <option value="2+">2+ Sterne</option>
+              <option value="1+">1+ Sterne</option>
+              <option value="unrated">Ohne Bewertung</option>
+            </select>
+          </div>
+
+          <!-- Sort Filter -->
+          <div class="filter-group">
+            <label>Sortierung</label>
+            <select id="sortFilter" class="full-width">
+              <option value="none">Standard</option>
+              <option value="rating-desc">Bewertung (hoch → niedrig)</option>
+              <option value="rating-asc">Bewertung (niedrig → hoch)</option>
+              <option value="name-asc">Name (A → Z)</option>
+              <option value="name-desc">Name (Z → A)</option>
+            </select>
+          </div>
+        </div>
+      </aside>
+
       <div class="content-section">
         <div class="response-message"></div>
 
         <div id="matchesContainer">
           <!-- Dynamischer Inhalt wird hier eingefügt -->
         </div>
+
+        <!-- Pagination Container -->
+        <div id="paginationContainer" class="pagination-container"></div>
       </div>
     </main>
 
@@ -46,9 +135,10 @@
           </div>
 
           <div class="request-info">
-            <p style="color: #666; font-size: 0.95em; margin-top: 1rem;">
-              <i class="fas fa-info-circle"></i> 
-              Der Anbieter wird über deine Anfrage benachrichtigt und kann diese annehmen oder ablehnen.
+            <p style="color: #666; font-size: 0.95em; margin-top: 1rem">
+              <i class="fas fa-info-circle"></i>
+              Der Anbieter wird über deine Anfrage benachrichtigt und kann diese
+              annehmen oder ablehnen.
             </p>
           </div>
 
