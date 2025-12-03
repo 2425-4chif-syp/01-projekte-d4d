@@ -14,7 +14,9 @@ const keycloak = new Keycloak(keycloakConfig);
 const initOptions = {
     onLoad: "check-sso",
     enableLogging: true,
-    checkLoginIframe: false
+    checkLoginIframe: false,
+    silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+    pkceMethod: 'S256'
 };
 
 let isInitialized = false;
@@ -24,15 +26,24 @@ export async function initKeycloak() {
 
     try {
         console.log("Initializing Keycloak...");
+        console.log("Keycloak config:", keycloakConfig);
         const authenticated = await keycloak.init(initOptions);
         isInitialized = true;
         console.log(`Keycloak init success. Authenticated: ${authenticated}`);
         
         if (authenticated) {
+            console.log("User is authenticated, syncing with backend...");
             await syncWithBackend(keycloak.token);
+        } else {
+            console.log("User is not authenticated");
         }
     } catch (error) {
         console.error('Failed to initialize Keycloak:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            keycloakConfig: keycloakConfig
+        });
         
         // If init failed with a code in URL, it's likely a stale/invalid code.
         // Clean up and reload to try again fresh.
@@ -44,7 +55,8 @@ export async function initKeycloak() {
             url.searchParams.delete('session_state');
             url.searchParams.delete('iss');
             window.history.replaceState({}, document.title, url.toString());
-            window.location.reload();
+            // Don't reload immediately to avoid loops
+            setTimeout(() => window.location.reload(), 1000);
             return;
         }
         isInitialized = true; // Mark as initialized even if failed to prevent loops
