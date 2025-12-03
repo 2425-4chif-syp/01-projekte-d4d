@@ -2,6 +2,7 @@
 
 import { API_URL } from "./config.js";
 import { sessionManager } from "./session-manager.js";
+import "./auth-merge.js"; // Import auth-merge to handle guest session merging
 import {
   initKeycloak,
   loginKeycloak,
@@ -275,6 +276,10 @@ function showLoginPrompt() {
 async function handleLogout() {
   try {
     if (isKeycloakAuthenticated()) {
+      // Zuerst lokale Session löschen, damit wir beim Redirect nicht wieder eingeloggt sind
+      if (sessionManager) {
+        await sessionManager.deleteSession();
+      }
       await logoutKeycloak();
       return;
     }
