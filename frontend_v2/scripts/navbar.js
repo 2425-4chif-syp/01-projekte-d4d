@@ -2,11 +2,13 @@
 
 import { API_URL } from "./config.js";
 import { sessionManager } from "./session-manager.js";
+import { initKeycloak, loginKeycloak, logoutKeycloak, isKeycloakAuthenticated } from "./keycloak-auth.js";
 
 let currentUser = null;
 let currentUserState = "guest"; // 'guest', 'user', 'admin'
 
 document.addEventListener("DOMContentLoaded", async function () {
+  await initKeycloak();
   await checkUserStatus();
   renderNavbar();
   setActiveNavButton();
@@ -70,6 +72,10 @@ function renderNavbar() {
                 <button class="login-button" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i>
                     Anmelden
+                </button>
+                <button class="login-button" id="loginPupilBtn" style="margin-left: 10px;">
+                    <i class="fas fa-user-graduate"></i>
+                    Anmelden Schüler
                 </button>
             </div>
         `;
@@ -202,6 +208,12 @@ function attachNavbarEvents() {
     loginBtn.addEventListener("click", showLoginPrompt);
   }
 
+  // Login Button (Schüler)
+  const loginPupilBtn = document.getElementById("loginPupilBtn");
+  if (loginPupilBtn) {
+    loginPupilBtn.addEventListener("click", loginKeycloak);
+  }
+
   // Logout Button (für eingeloggte User und Admin)
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
@@ -238,6 +250,11 @@ function showLoginPrompt() {
  */
 async function handleLogout() {
   try {
+    if (isKeycloakAuthenticated()) {
+        await logoutKeycloak();
+        return;
+    }
+
     // Lösche Session
     if (sessionManager && sessionManager.sessionId) {
       await sessionManager.deleteSession();

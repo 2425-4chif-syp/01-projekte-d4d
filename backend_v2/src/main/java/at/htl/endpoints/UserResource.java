@@ -15,6 +15,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.NewCookie;
 import java.util.Map;
+import io.quarkus.security.Authenticated;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("user")
 @Produces(MediaType.APPLICATION_JSON)
@@ -25,6 +27,62 @@ public class UserResource {
     
     @Inject
     SessionRepository sessionRepository;
+
+    @Inject
+    JsonWebToken jwt;
+
+    @POST
+    @Path("keycloak")
+    @Authenticated
+    @Transactional
+    public Response loginKeycloak(@CookieParam("d4d_session_id") String sessionId) {
+        String pupilId = jwt.getClaim("preferred_username");
+        String name = jwt.getClaim("name");
+        
+        if (pupilId == null) {
+             return Response.status(Response.Status.BAD_REQUEST).entity("No pupil_id in token").build();
+        }
+
+        User user = userRepository.find("pupilId", pupilId).firstResult();
+        if (user == null) {
+            user = new User();
+            user.setPupilId(pupilId);
+            user.setName(name != null ? name : pupilId);
+            userRepository.persist(user);
+        } else {
+            // Update name if changed
+            if (name != null && !name.equals(user.getName())) {
+                user.setName(name);
+            }
+        }
+
+        // Session logic
+        Session session;
+        if (sessionId == null || sessionId.isEmpty()) {
+            session = new Session(java.util.UUID.randomUUID().toString());
+            sessionRepository.persist(session);
+        } else {
+            session = sessionRepository.findByIdOrNull(sessionId);
+            if (session == null) {
+                session = new Session(java.util.UUID.randomUUID().toString());
+                sessionRepository.persist(session);
+            }
+        }
+        
+        session.setUser(user);
+        session.setAnonymous(false);
+        sessionRepository.persist(session);
+        
+        NewCookie cookie = new NewCookie.Builder("d4d_session_id")
+                .value(session.getId())
+                .path("/")
+                .maxAge(86400) // 24 Stunden
+                .build();
+        
+        return Response.ok(user.getName())
+                .cookie(cookie)
+                .build();
+    }
 
     @GET
     @Transactional
