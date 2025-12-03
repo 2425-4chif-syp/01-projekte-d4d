@@ -33,23 +33,43 @@ public class UserResource {
 
     @POST
     @Path("keycloak")
-    @Authenticated
     @Transactional
-    public Response loginKeycloak(@CookieParam("d4d_session_id") String sessionId) {
+    public Response loginKeycloak(@CookieParam("d4d_session_id") String sessionId,
+                                   @HeaderParam("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("No Bearer token provided")
+                    .build();
+        }
+        
+        String token = authHeader.substring(7);
         String pupilId = null;
         String name = null;
         
         try {
-            pupilId = jwt.getClaim("preferred_username");
-            name = jwt.getClaim("name");
+            // Decode JWT token (base64)
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Invalid JWT token format")
+                        .build();
+            }
+            
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+            
+            // Parse JSON manually (simple approach)
+            pupilId = extractJsonValue(payload, "preferred_username");
+            name = extractJsonValue(payload, "name");
+            
         } catch (Exception e) {
-            System.err.println("Error reading JWT claims: " + e.getMessage());
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity("Invalid token: " + e.getMessage())
+            System.err.println("Error decoding JWT: " + e.getMessage());
+            e.printStackTrace();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error decoding token: " + e.getMessage())
                     .build();
         }
         
-        if (pupilId == null) {
+        if (pupilId == null || pupilId.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("No preferred_username in token")
                     .build();
@@ -170,5 +190,18 @@ public class UserResource {
         return Response.ok("")
                 .cookie(cookie)
                 .build();
+    }
+    
+    private String extractJsonValue(String json, String key) {
+        String search = "\"" + key + "\"";
+        int start = json.indexOf(search);
+        if (start == -1) return null;
+        
+        start = json.indexOf(":", start) + 1;
+        start = json.indexOf("\"", start) + 1;
+        int end = json.indexOf("\"", start);
+        
+        if (start == -1 || end == -1) return null;
+        return json.substring(start, end);
     }
 }
