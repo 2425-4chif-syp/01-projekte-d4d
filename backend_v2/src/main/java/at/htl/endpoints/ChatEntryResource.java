@@ -1,5 +1,6 @@
 package at.htl.endpoints;
 
+import at.htl.endpoints.dto.ChatOverviewDto;
 import at.htl.entity.ChatEntry;
 import at.htl.entity.ServiceType;
 import at.htl.entity.User;
@@ -13,7 +14,10 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Path("chatentry")
 @Produces(MediaType.APPLICATION_JSON)
@@ -24,6 +28,67 @@ public class ChatEntryResource {
     
     @Inject
     UserRepository userRepository;
+
+    @GET
+    @Path("/overview/{userId}")
+    @Transactional
+    public Response getChatOverview(@PathParam("userId") Long userId) {
+        List<User> allUsers = userRepository.listAll();
+        List<ChatOverviewDto> overview = new ArrayList<>();
+
+        // Fetch all messages involving this user
+        List<ChatEntry> allMessages = chatEntryRepository.list(
+            "(sender.id = ?1 OR receiver.id = ?1) ORDER BY time ASC", 
+            userId
+        );
+
+        Map<Long, ChatEntry> lastMessages = new HashMap<>();
+        
+        for (ChatEntry msg : allMessages) {
+            Long partnerId = msg.getSender().getId().equals(userId) ? msg.getReceiver().getId() : msg.getSender().getId();
+            lastMessages.put(partnerId, msg);
+        }
+
+        for (User user : allUsers) {
+            if (user.getId().equals(userId)) continue;
+
+            ChatEntry lastMsg = lastMessages.get(user.getId());
+            if (lastMsg != null) {
+                overview.add(new ChatOverviewDto(
+                    user.getId(),
+                    user.getName(), // Assuming getName() exists, otherwise use username
+                    lastMsg.getMessage(),
+                    lastMsg.getTime(),
+                    0 // Unread count logic can be added later if needed
+                ));
+            } else {
+                // Include users with no chat history as well? 
+                // Frontend logic separated active/inactive. 
+                // Let's return them with null values to let frontend handle it, or just omit them?
+                // The frontend expects a list of contacts.
+                // Let's return all users, but those without messages have null fields.
+                 overview.add(new ChatOverviewDto(
+                    user.getId(),
+                    user.getName(),
+                    null,
+                    null,
+                    0
+                ));
+            }
+        }
+        
+        // Sort: Users with messages first (sorted by time desc), then others
+        overview.sort((a, b) -> {
+            if (a.timestamp != null && b.timestamp != null) {
+                return b.timestamp.compareTo(a.timestamp);
+            }
+            if (a.timestamp != null) return -1;
+            if (b.timestamp != null) return 1;
+            return 0;
+        });
+
+        return Response.ok(overview).build();
+    }
 
     @GET
     @Path("/users")

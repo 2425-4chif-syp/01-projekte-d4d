@@ -208,6 +208,7 @@ public class ServiceRepository implements PanacheRepository<Service> {
                     String matchKey = userId + "-" + serviceTypeId + "-" + market.getOffer();
                     if (!addedMatches.contains(matchKey)) {
                         Map<String, Object> matchDetail = new HashMap<>();
+                        matchDetail.put("id", market.getId()); // Add market ID
                         matchDetail.put("serviceType", Map.of(
                             "id", market.getServiceType().getId(),
                             "name", market.getServiceType().getName()

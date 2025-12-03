@@ -280,7 +280,8 @@ function displayFilteredServices(services, toggleFilter = null) {
             m.startDate,
             m.endDate,
             m.offer === 1,
-            m.serviceType && m.serviceType.id ? m.serviceType.id : null,
+            m.id || null, // Market ID
+            m.serviceType && m.serviceType.id ? m.serviceType.id : null, // ServiceType ID
             m.user && m.user.id ? m.user.id : null
         );
         servicesGrid.appendChild(listItem);
@@ -823,7 +824,7 @@ function createSimpleList(data) {
     console.log('Simple list created with', serviceList.children.length, 'items');
 }
 
-function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer, typeId, providerId) {
+function createServiceCard(serviceOffer, serviceWanted, name, description, startdate, enddate, isOffer, marketId, serviceTypeId, providerId) {
     const listItem = document.createElement("li");
     listItem.className = "service-item";
 
@@ -879,8 +880,12 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
     const badgeText = isOffer ? "Angebot" : "Gesucht";
     const cardIcon = isOffer ? "fas fa-hands-helping" : "fas fa-hand-holding";
 
+    // Get current user to check if logged in
+    const currentUser = getCurrentUsername();
+    const isLoggedIn = currentUser && currentUser !== "Nicht angemeldet" && currentUser !== "Gast-Modus";
+
     listItem.innerHTML = `
-        <div class="card ${cardClassName}" style="height: auto; min-height: 200px;">
+        <div class="card ${cardClassName}" style="height: auto; min-height: 200px;" data-market-id="${marketId}" data-provider-id="${providerId}">
             <div class="card-header">
                 <h3 style="margin: 0 0 8px 0; font-size: 1rem; color: #333;">
                     <i class="${cardIcon}"></i> ${serviceOffer}
@@ -892,19 +897,90 @@ function createServiceCard(serviceOffer, serviceWanted, name, description, start
                 <p style="margin: 0 0 4px 0;"><strong>Name:</strong> ${name}</p>
                 <p style="margin: 0 0 8px 0;"><strong>Beschreibung:</strong> ${description}</p>
                 ${isOffer ? '<div class="rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>' : ''}
+                ${isOffer && isLoggedIn ? `
+                    <div style="margin-top: 12px;">
+                        <button class="send-request-btn" data-market-id="${marketId}" data-provider-name="${name}">
+                            <i class="fas fa-paper-plane"></i> Anfrage senden
+                        </button>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
 
     // If it's an offer, fetch and display the average rating by type and provider
-    if (isOffer && typeId && providerId) {
+    if (isOffer && serviceTypeId && providerId) {
         const ratingContainer = listItem.querySelector('.rating-container');
         
         // Load rating for this specific type and provider
-        loadRatingByTypeAndProvider(typeId, providerId, ratingContainer);
+        loadRatingByTypeAndProvider(serviceTypeId, providerId, ratingContainer);
+    }
+
+    // Add event listener for "Send Request" button
+    if (isOffer && isLoggedIn) {
+        const sendRequestBtn = listItem.querySelector('.send-request-btn');
+        if (sendRequestBtn) {
+            sendRequestBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const marketId = e.currentTarget.getAttribute('data-market-id');
+                const providerName = e.currentTarget.getAttribute('data-provider-name');
+                handleSendRequest(marketId, providerName, sendRequestBtn);
+            });
+        }
     }
 
     return listItem;
+}
+
+/**
+ * Handle sending a service request
+ */
+async function handleSendRequest(marketId, providerName, buttonElement) {
+    const currentUser = getCurrentUsername();
+    
+    if (!currentUser || currentUser === "Nicht angemeldet") {
+        showMessage("Bitte melde dich an, um eine Anfrage zu senden.");
+        return;
+    }
+
+    // Disable button during request
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Wird gesendet...';
+
+    try {
+        const response = await fetch(`${API_URL}/service-requests`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                senderUsername: currentUser,
+                marketId: parseInt(marketId)
+            })
+        });
+
+        if (response.ok) {
+            showMessage(`✓ Anfrage an ${providerName} erfolgreich gesendet!`);
+            buttonElement.innerHTML = '<i class="fas fa-check"></i> Anfrage gesendet';
+            buttonElement.style.backgroundColor = '#28a745';
+            buttonElement.style.cursor = 'default';
+        } else {
+            const errorText = await response.text();
+            if (response.status === 409) {
+                showMessage("Du hast bereits eine Anfrage an diesen Anbieter gesendet.");
+                buttonElement.innerHTML = '<i class="fas fa-check"></i> Bereits gesendet';
+                buttonElement.style.backgroundColor = '#6c757d';
+                buttonElement.style.cursor = 'default';
+            } else {
+                throw new Error(errorText || 'Fehler beim Senden der Anfrage');
+            }
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der Anfrage:', error);
+        showMessage("Fehler beim Senden der Anfrage: " + error.message);
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = '<i class="fas fa-paper-plane"></i> Anfrage senden';
+    }
 }
 
 // Einfache Test-Funktion um zu sehen ob das HTML funktioniert

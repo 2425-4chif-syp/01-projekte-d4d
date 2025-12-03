@@ -3174,3 +3174,268 @@ input:focus, select:focus, textarea:focus {
     background: var(--demand-color);
     color: white;
 }
+
+
+/* Send Request Button */
+.send-request-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #3066BE, #0BAFD4);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(48, 102, 190, 0.2);
+}
+
+.send-request-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(48, 102, 190, 0.3);
+}
+
+.send-request-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.send-request-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.send-request-btn i {
+    font-size: 1rem;
+}
+
+/* Clickable Card Styling */
+.clickable-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(48, 102, 190, 0.2);
+}
+
+/* Request Modal Overlay */
+.request-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.request-modal-overlay.show {
+    opacity: 1;
+}
+
+/* Modal Content */
+.request-modal-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header h2 i {
+    color: #3066BE;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #718096;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close-btn:hover {
+    background: #f7fafc;
+    color: #2d3748;
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.modal-provider-info {
+    background: #f7fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #3066BE;
+}
+
+.modal-provider-info p {
+    margin: 0;
+    font-size: 1rem;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-provider-info i {
+    color: #3066BE;
+}
+
+/* Modal Rating Section */
+.modal-rating {
+    background: #f7fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.modal-rating h4 {
+    margin: 0 0 1rem 0;
+    color: #2d3748;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.modal-rating h4 i {
+    color: #ffd700;
+}
+
+.modal-rating .service-rating {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.5rem;
+}
+
+.modal-rating .rating-count {
+    margin: 0.5rem 0 0 0;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.modal-rating .no-rating {
+    margin: 0;
+    color: #718096;
+    font-style: italic;
+}
+
+/* Modal Actions */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.modal-send-request-btn {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #3066BE, #0BAFD4);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(48, 102, 190, 0.3);
+}
+
+.modal-send-request-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(48, 102, 190, 0.4);
+}
+
+.modal-send-request-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.modal-send-request-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.modal-send-request-btn i {
+    font-size: 1.1rem;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .request-modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+}

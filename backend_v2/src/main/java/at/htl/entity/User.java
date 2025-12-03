@@ -13,12 +13,20 @@ public class User {
     @Column(name="u_name")
     private String name;
 
+    @Column(name="u_pupil_id")
+    private String pupilId;
+
     public User() {
 
     }
 
     public User(String name) {
         this.name = name;
+    }
+
+    public User(String name, String pupilId) {
+        this.name = name;
+        this.pupilId = pupilId;
     }
 
     public Long getId() {
@@ -35,5 +43,13 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getPupilId() {
+        return pupilId;
+    }
+
+    public void setPupilId(String pupilId) {
+        this.pupilId = pupilId;
     }
 }

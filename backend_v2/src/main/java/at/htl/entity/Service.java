@@ -1,6 +1,7 @@
 package at.htl.entity;
 
 import jakarta.persistence.*;
+import java.sql.Timestamp;
 
 @Entity
 @Table(name="d4d_service")
@@ -18,16 +19,22 @@ public class Service {
     @JoinColumn(name="s_m_client_id")
     private Market marketClient;
 
-    /*
-    @ManyToOne
-    @JoinColumn(name="s_s_id")
-    private Service service;*/
+    @Column(name="s_status", length=20)
+    private String status; // ACTIVE, COMPLETED, CANCELLED
+
+    @Column(name="s_created_at")
+    private Timestamp createdAt;
+
+    @Column(name="s_completed_at")
+    private Timestamp completedAt;
 
     public Service() {
-
+        this.createdAt = new Timestamp(System.currentTimeMillis());
+        this.status = "ACTIVE";
     }
 
     public Service(Market marketProvider, Market marketClient) {
+        this();
         this.marketProvider = marketProvider;
         this.marketClient = marketClient;
     }
@@ -54,5 +61,29 @@ public class Service {
 
     public void setMarketClient(Market marketClient) {
         this.marketClient = marketClient;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Timestamp getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Timestamp completedAt) {
+        this.completedAt = completedAt;
     }
 }
