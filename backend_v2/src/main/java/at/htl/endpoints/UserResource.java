@@ -36,11 +36,23 @@ public class UserResource {
     @Authenticated
     @Transactional
     public Response loginKeycloak(@CookieParam("d4d_session_id") String sessionId) {
-        String pupilId = jwt.getClaim("preferred_username");
-        String name = jwt.getClaim("name");
+        String pupilId = null;
+        String name = null;
+        
+        try {
+            pupilId = jwt.getClaim("preferred_username");
+            name = jwt.getClaim("name");
+        } catch (Exception e) {
+            System.err.println("Error reading JWT claims: " + e.getMessage());
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("Invalid token: " + e.getMessage())
+                    .build();
+        }
         
         if (pupilId == null) {
-             return Response.status(Response.Status.BAD_REQUEST).entity("No pupil_id in token").build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("No preferred_username in token")
+                    .build();
         }
 
         User user = userRepository.find("pupilId", pupilId).firstResult();
