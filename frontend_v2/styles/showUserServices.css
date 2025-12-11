@@ -526,8 +526,7 @@ body {
   transition: var(--transition);
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 200px;
+  height:200px;
   border: 1px solid rgba(16, 24, 40, 0.04);
 }
 
@@ -1489,6 +1488,15 @@ body {
 .large-rating .stars {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
+}
+
+.large-rating .stars .fa-star {
+  color: #ddd;
+}
+
+.large-rating .stars .fa-star.selected,
+.large-rating .stars .fa-star-half-alt.selected {
+  color: #ffd700;
 }
 
 .large-rating .rating-value {
