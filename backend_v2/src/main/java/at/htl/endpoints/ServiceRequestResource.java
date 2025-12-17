@@ -10,12 +10,14 @@ import at.htl.repository.MarketRepository;
 import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceRequestRepository;
 import at.htl.repository.UserRepository;
+import at.htl.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ServiceRequestResource {
+
+    private static final Logger LOG = Logger.getLogger(ServiceRequestResource.class);
 
     @Inject
     ServiceRequestRepository serviceRequestRepository;
@@ -37,6 +41,9 @@ public class ServiceRequestResource {
 
     @Inject
     ServiceRepository serviceRepository;
+
+    @Inject
+    NotificationService notificationService;
 
     /**
      * Create a new service request
@@ -86,6 +93,23 @@ public class ServiceRequestResource {
         // Create and persist the request
         ServiceRequest request = new ServiceRequest(sender, receiver, market);
         serviceRequestRepository.persist(request);
+
+        // ✉️ E-MAIL: Sende Bestätigung an Sender dass Anfrage versendet wurde
+        if (sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+            String providerName = receiver.getName();
+            String serviceTypeName = market.getServiceType().getName();
+            
+            LOG.info("Sending request-created email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
+            
+            notificationService.sendRequestCreatedEmail(sender.getPupilId(), providerName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-created email queued for: " + sender.getName()),
+                    failure -> LOG.error("Failed to send request-created email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send email: Sender has no pupilId");
+        }
 
         return Response.status(Response.Status.CREATED)
                 .entity(ServiceRequestResponseDto.fromEntity(request))
@@ -184,6 +208,22 @@ public class ServiceRequestResource {
         Service service = new Service(providerMarket, clientMarket);
         service.setStatus("ACTIVE");
         serviceRepository.persist(service);
+
+        // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an den Schüler (sender)
+        User sender = request.getSender();
+        if (sender != null && sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+            LOG.info("Sending confirmation email to sender (pupilId): " + sender.getPupilId());
+            
+            // Asynchroner E-Mail-Versand - blockiert den API-Call NICHT!
+            notificationService.sendConfirmationEmail(sender.getPupilId())
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Email notification queued successfully for user: " + sender.getName()),
+                    failure -> LOG.error("Failed to queue email notification for user: " + sender.getName(), failure)
+                );
+        } else {
+            LOG.warn("Cannot send email: Sender has no pupilId. User: " + (sender != null ? sender.getName() : "null"));
+        }
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }
