@@ -1,0 +1,83 @@
+/* Custom styles to complement Bootstrap */
+
+/* Hero gradient text */
+.hero-gradient-text {
+    background: linear-gradient(135deg, #3066be 0%, #3627ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Hero CTA Cards */
+.hero-cta-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 16px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-cta-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #3066be 0%, #3627ff 100%);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+}
+
+.hero-cta-card:hover::before {
+    transform: scaleX(1);
+}
+
+.hero-cta-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 32px rgba(48, 102, 190, 0.25) !important;
+}
+
+.hero-cta-card .cta-arrow {
+    transition: all 0.3s ease;
+}
+
+.hero-cta-card:hover .cta-arrow {
+    transform: translateX(8px);
+}
+
+/* Info Box */
+.info-box {
+    background: linear-gradient(135deg, #3066be 0%, #3627ff 100%) !important;
+    border: none !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-box::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(130, 217, 252, 0.2) 0%, transparent 70%);
+    animation: pulse 15s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.info-box p {
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}

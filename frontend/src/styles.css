@@ -1,0 +1,27 @@
+/* Import Bootstrap - already loaded via angular.json */
+
+/* Custom CSS Variables for D4D Branding */
+:root {
+  --primary-color: #3066be;
+  --primary-dark: #3627ff;
+  --accent-color: #82d9fc;
+}
+
+/* Custom Bootstrap theme overrides */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+  transform: translateY(-2px);
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+body {
+  background-color: #f5f7fa;
+}

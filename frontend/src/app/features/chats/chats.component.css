@@ -1,0 +1,90 @@
+/* Minimal custom styles - most styling comes from Bootstrap */
+
+/* Chat item hover and active states */
+.chat-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.chat-item:hover {
+  background-color: #f8f9fa;
+}
+
+.chat-item.active {
+  background-color: #e3f2fd;
+  border-left: 3px solid var(--bs-primary);
+}
+
+/* Chat avatar circles */
+.chat-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.admin-avatar {
+  background: linear-gradient(135deg, #ffc107, #ffb300);
+  color: #000;
+}
+
+.admin-name {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+/* Message bubbles */
+.message-bubble {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  word-wrap: break-word;
+}
+
+.message-outgoing {
+  background: var(--bs-primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message-incoming {
+  background: #e9ecef;
+  color: #000;
+  border-bottom-left-radius: 4px;
+}
+
+/* Message input */
+.message-input-container {
+  border-top: 1px solid #dee2e6;
+  background: white;
+}
+
+/* Scrollable chat area */
+.overflow-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+.overflow-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}

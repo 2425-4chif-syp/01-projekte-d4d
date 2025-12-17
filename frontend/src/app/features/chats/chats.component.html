@@ -1,0 +1,242 @@
+<div class="container-fluid h-100 p-0">
+  <div class="row h-100 g-0">
+    <!-- Chatliste (Sidebar) -->
+    <div class="col-md-4 col-lg-3 border-end bg-white">
+      <div class="d-flex flex-column h-100">
+        <!-- Header -->
+        <div class="p-3 border-bottom bg-light">
+          <h5 class="mb-3">
+            <i class="fas fa-comments text-primary me-2"></i>
+            Chats
+          </h5>
+          
+          <!-- Suchleiste -->
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control border-start-0"
+              placeholder="Kontakte durchsuchen..."
+              [(ngModel)]="searchTerm"
+              (input)="filterChats()">
+          </div>
+        </div>
+
+        <!-- Chat Liste -->
+        <div class="flex-grow-1 overflow-auto">
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Lädt...</span>
+              </div>
+            </div>
+          } @else if (!currentUser) {
+            <div class="p-4 text-center text-muted">
+              <i class="fas fa-user-circle fs-1 mb-3 d-block"></i>
+              <p class="mb-0">Bitte melden Sie sich zuerst an.</p>
+              <small>Geben Sie einen Benutzernamen ein und drücken Enter.</small>
+            </div>
+          } @else if (filteredChats.length === 0) {
+            <div class="p-4 text-center text-muted">
+              <i class="fas fa-inbox fs-1 mb-3 d-block"></i>
+              <p>Keine Chats vorhanden</p>
+            </div>
+          } @else {
+            <!-- Admin Chats -->
+            @if (adminChats.length > 0) {
+              <div class="px-3 pt-3 pb-2">
+                <small class="text-muted fw-semibold">
+                  <i class="fas fa-crown text-warning me-1"></i>
+                  Support
+                </small>
+              </div>
+              @for (chat of adminChats; track chat.id) {
+                <div 
+                  class="chat-item p-3 border-bottom"
+                  [class.active]="currentChatId === chat.id"
+                  [class.admin-chat]="chat.isAdmin"
+                  (click)="selectChat(chat)">
+                  <div class="d-flex align-items-start">
+                    <div class="chat-avatar me-3" [class.admin-avatar]="chat.isAdmin">
+                      @if (chat.isAdmin) {
+                        <i class="fas fa-crown"></i>
+                      } @else {
+                        {{ getInitial(chat.user2Username) }}
+                      }
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="mb-0 text-truncate" [class.admin-name]="chat.isAdmin">
+                          {{ chat.user2Username }}
+                        </h6>
+                        <small class="text-muted ms-2">{{ formatTime(chat.lastUpdate) }}</small>
+                      </div>
+                      <p class="mb-0 small text-muted text-truncate" 
+                         [class.fw-semibold]="hasMessages(chat)">
+                        {{ chat.lastMessage }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Kürzliche Chats -->
+            @if (activeChats.length > 0) {
+              <div class="px-3 pt-3 pb-2">
+                <small class="text-muted fw-semibold">
+                  <i class="fas fa-clock me-1"></i>
+                  Kürzliche Chats
+                </small>
+              </div>
+              @for (chat of activeChats; track chat.id) {
+                <div 
+                  class="chat-item p-3 border-bottom"
+                  [class.active]="currentChatId === chat.id"
+                  (click)="selectChat(chat)">
+                  <div class="d-flex align-items-start">
+                    <div class="chat-avatar me-3">
+                      {{ getInitial(chat.user2Username) }}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="mb-0 text-truncate">{{ chat.user2Username }}</h6>
+                        <small class="text-muted ms-2">{{ formatTime(chat.lastUpdate) }}</small>
+                      </div>
+                      <p class="mb-0 small text-muted text-truncate fw-semibold">
+                        {{ chat.lastMessage }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Neue Chats -->
+            @if (newChats.length > 0) {
+              <div class="px-3 pt-3 pb-2">
+                <small class="text-muted fw-semibold">
+                  <i class="fas fa-plus-circle me-1"></i>
+                  Neue Chats
+                </small>
+              </div>
+              @for (chat of newChats; track chat.id) {
+                <div 
+                  class="chat-item p-3 border-bottom"
+                  [class.active]="currentChatId === chat.id"
+                  (click)="selectChat(chat)">
+                  <div class="d-flex align-items-start">
+                    <div class="chat-avatar me-3">
+                      {{ getInitial(chat.user2Username) }}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="mb-0 text-truncate">{{ chat.user2Username }}</h6>
+                        <small class="text-muted ms-2">{{ formatTime(chat.lastUpdate) }}</small>
+                      </div>
+                      <p class="mb-0 small text-muted text-truncate fst-italic">
+                        {{ chat.lastMessage }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Bereich -->
+    <div class="col-md-8 col-lg-9 d-flex flex-column">
+      @if (!currentChatId) {
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+          <div class="text-center">
+            <i class="fas fa-comments fs-1 mb-3 d-block"></i>
+            <h5>Bitte wähle einen Chat</h5>
+          </div>
+        </div>
+      } @else {
+        <!-- Chat Header -->
+        <div class="p-3 border-bottom bg-light">
+          <h5 class="mb-0">
+            <i class="fas fa-user-circle text-primary me-2"></i>
+            {{ currentChatTitle }}
+          </h5>
+        </div>
+
+        <!-- Nachrichten -->
+        <div class="flex-grow-1 overflow-auto p-4 bg-light" #messagesContainer>
+          @if (messages.length === 0) {
+            <div class="text-center text-muted py-5">
+              <i class="fas fa-inbox fs-1 mb-3 d-block"></i>
+              <p class="mb-0">Noch keine Nachrichten in diesem Chat</p>
+              <small>Schreiben Sie die erste Nachricht!</small>
+            </div>
+          } @else {
+            @for (message of messages; track message.id) {
+              <div 
+                class="message mb-3"
+                [class.message-user]="isCurrentUser(message)"
+                [class.message-other]="!isCurrentUser(message)">
+                <div class="message-content p-3 rounded shadow-sm">
+                  <div class="message-sender small fw-bold mb-1">
+                    {{ message.sender?.name || 'Unbekannt' }}
+                  </div>
+                  <div class="message-text">{{ message.message }}</div>
+                  <div class="message-meta d-flex align-items-center justify-content-end gap-2 mt-2">
+                    <small class="text-muted">{{ formatDateTime(message.time) }}</small>
+                    @if (isCurrentUser(message)) {
+                      <div class="read-status">
+                        @if (getMessageAge(message) < 1000) {
+                          <i class="fas fa-clock text-muted"></i>
+                        } @else if (getMessageAge(message) < 5000) {
+                          <i class="fas fa-check text-success"></i>
+                        } @else {
+                          <i class="fas fa-check-double text-primary"></i>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Eingabe -->
+        <div class="p-3 border-top bg-white">
+          <form (submit)="sendMessage($event)">
+            <div class="input-group">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary"
+                title="Bild hochladen">
+                <i class="fas fa-image"></i>
+              </button>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Nachricht schreiben..."
+                [(ngModel)]="messageText"
+                name="message"
+                [disabled]="submitting">
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                [disabled]="!messageText.trim() || submitting">
+                @if (submitting) {
+                  <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                <i class="fas fa-paper-plane"></i>
+                Senden
+              </button>
+            </div>
+          </form>
+        </div>
+      }
+    </div>
+  </div>
+</div>

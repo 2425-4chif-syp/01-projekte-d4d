@@ -1,0 +1,31 @@
+.service-checkbox {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+  user-select: none;
+}
+
+.service-checkbox:hover {
+  background-color: #e8f2ff;
+  border-color: var(--primary-color) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(48, 102, 190, 0.1);
+}
+
+.service-checkbox.selected {
+  background: linear-gradient(135deg, rgba(48, 102, 190, 0.1) 0%, rgba(130, 217, 252, 0.15) 100%);
+  border-color: var(--primary-color) !important;
+  border-width: 2px !important;
+}
+
+.service-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.service-checkbox label {
+  cursor: pointer;
+  margin-bottom: 0;
+  font-weight: 500;
+  width: 100%;
+}
