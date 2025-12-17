@@ -26,6 +26,13 @@ services:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/db
       QUARKUS_DATASOURCE_USERNAME: app
       QUARKUS_DATASOURCE_PASSWORD: app
+      # Brevo SMTP Configuration
+      SMTP_HOST: smtp-relay.brevo.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: 9e4362001@smtp-brevo.com
+      SMTP_PASSWORD: bskigKHzj8FYe9S
+      SMTP_FROM: s.jelic@students.htl-leonding.ac.at
+      TEST_EMAIL: s.jelic@htl-leonding.ac.at
     networks:
       - d4d-v2-net
 
