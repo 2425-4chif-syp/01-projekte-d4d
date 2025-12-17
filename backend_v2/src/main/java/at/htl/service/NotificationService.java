@@ -90,6 +90,60 @@ public class NotificationService {
     }
 
     /**
+     * Sendet Benachrichtigung an Provider, dass er eine NEUE ANFRAGE erhalten hat.
+     * 
+     * @param pupilId Die Keycloak User-ID des Providers (Empfänger)
+     * @param senderName Name des Schülers der die Anfrage gesendet hat
+     * @param serviceTypeName Name des Fachs
+     * @return Uni<Void>
+     */
+    public Uni<Void> sendRequestReceivedEmail(String pupilId, String senderName, String serviceTypeName) {
+        String recipientEmail = keycloakUserService.getUserEmail(pupilId);
+        
+        if (recipientEmail == null) {
+            LOG.error("Cannot send email: No email address for pupilId: " + pupilId);
+            return Uni.createFrom().voidItem();
+        }
+        
+        LOG.info("Sending request received email for pupilId: " + pupilId + " to: " + recipientEmail);
+
+        String subject = "🔔 Neue Nachhilfe-Anfrage erhalten!";
+        String body = buildRequestReceivedEmailBody(senderName, serviceTypeName);
+        
+        return mailer.send(Mail.withHtml(recipientEmail, subject, body).setFrom(fromEmail))
+            .onItem().invoke(() -> LOG.info("Request received email sent to: " + recipientEmail))
+            .onFailure().invoke(t -> LOG.error("Failed to send request received email", t))
+            .replaceWithVoid();
+    }
+
+    /**
+     * Sendet Benachrichtigung an Sender, dass seine Anfrage ABGELEHNT wurde.
+     * 
+     * @param pupilId Die Keycloak User-ID des Senders
+     * @param providerName Name des Providers der abgelehnt hat
+     * @param serviceTypeName Name des Fachs
+     * @return Uni<Void>
+     */
+    public Uni<Void> sendRequestRejectedEmail(String pupilId, String providerName, String serviceTypeName) {
+        String recipientEmail = keycloakUserService.getUserEmail(pupilId);
+        
+        if (recipientEmail == null) {
+            LOG.error("Cannot send email: No email address for pupilId: " + pupilId);
+            return Uni.createFrom().voidItem();
+        }
+        
+        LOG.info("Sending request rejected email for pupilId: " + pupilId + " to: " + recipientEmail);
+
+        String subject = "❌ Nachhilfe-Anfrage wurde abgelehnt";
+        String body = buildRequestRejectedEmailBody(providerName, serviceTypeName);
+        
+        return mailer.send(Mail.withHtml(recipientEmail, subject, body).setFrom(fromEmail))
+            .onItem().invoke(() -> LOG.info("Request rejected email sent to: " + recipientEmail))
+            .onFailure().invoke(t -> LOG.error("Failed to send request rejected email", t))
+            .replaceWithVoid();
+    }
+
+    /**
      * Erstellt den HTML-Body der Bestätigungs-E-Mail.
      * 
      * @return HTML-String
@@ -236,6 +290,184 @@ public class NotificationService {
                     </p>
                     <p>
                         Du erhältst eine weitere E-Mail, sobald die Anfrage bestätigt wurde.
+                    </p>
+                    
+                    <p>
+                        Viel Erfolg!<br>
+                        Dein D4D-Team 🚀
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>Dies ist eine automatische E-Mail von der D4D Tutoring Platform.</p>
+                </div>
+            </body>
+            </html>
+            """.formatted(serviceTypeName, providerName);
+    }
+
+    /**
+     * Erstellt Email-Body wenn Provider eine NEUE ANFRAGE erhalten hat.
+     */
+    private String buildRequestReceivedEmailBody(String senderName, String serviceTypeName) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        color: ##333;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, ##ffd89b 0%%, ##19547b 100%%);
+                        color: white;
+                        padding: 20px;
+                        text-align: center;
+                        border-radius: 8px 8px 0 0;
+                    }
+                    .content {
+                        background: ##f9f9f9;
+                        padding: 30px;
+                        border-radius: 0 0 8px 8px;
+                    }
+                    .info-box {
+                        background: white;
+                        padding: 15px;
+                        border-left: 4px solid ##ffd89b;
+                        margin: 20px 0;
+                    }
+                    .button {
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background: ##19547b;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin-top: 20px;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 20px;
+                        font-size: 12px;
+                        color: ##666;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🔔 Neue Anfrage!</h1>
+                </div>
+                <div class="content">
+                    <h2>Hallo!</h2>
+                    <p>
+                        Du hast eine <strong>neue Nachhilfe-Anfrage</strong> erhalten!
+                    </p>
+                    
+                    <div class="info-box">
+                        <p><strong>📚 Fach:</strong> %s</p>
+                        <p><strong>👤 Schüler:</strong> %s</p>
+                    </div>
+                    
+                    <p>
+                        Bitte melde dich auf der Plattform an, um die Anfrage anzunehmen oder abzulehnen.
+                    </p>
+                    
+                    <p>
+                        <a href="http://vm10.htl-leonding.ac.at" class="button">Anfrage anzeigen</a>
+                    </p>
+                    
+                    <p>
+                        Viel Erfolg!<br>
+                        Dein D4D-Team 🚀
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>Dies ist eine automatische E-Mail von der D4D Tutoring Platform.</p>
+                </div>
+            </body>
+            </html>
+            """.formatted(serviceTypeName, senderName);
+    }
+
+    /**
+     * Erstellt Email-Body wenn Anfrage ABGELEHNT wurde.
+     */
+    private String buildRequestRejectedEmailBody(String providerName, String serviceTypeName) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        color: ##333;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, ##ff6b6b 0%%, ##ee5a6f 100%%);
+                        color: white;
+                        padding: 20px;
+                        text-align: center;
+                        border-radius: 8px 8px 0 0;
+                    }
+                    .content {
+                        background: ##f9f9f9;
+                        padding: 30px;
+                        border-radius: 0 0 8px 8px;
+                    }
+                    .info-box {
+                        background: white;
+                        padding: 15px;
+                        border-left: 4px solid ##ff6b6b;
+                        margin: 20px 0;
+                    }
+                    .button {
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background: ##667eea;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin-top: 20px;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 20px;
+                        font-size: 12px;
+                        color: ##666;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>❌ Anfrage abgelehnt</h1>
+                </div>
+                <div class="content">
+                    <h2>Hallo!</h2>
+                    <p>
+                        Leider wurde deine Nachhilfe-Anfrage <strong>abgelehnt</strong>.
+                    </p>
+                    
+                    <div class="info-box">
+                        <p><strong>📚 Fach:</strong> %s</p>
+                        <p><strong>👨‍🏫 Lehrer:</strong> %s</p>
+                    </div>
+                    
+                    <p>
+                        Aber keine Sorge! Es gibt viele andere Nachhilfelehrer auf der Plattform.
+                    </p>
+                    
+                    <p>
+                        <a href="http://vm10.htl-leonding.ac.at" class="button">Andere Lehrer finden</a>
                     </p>
                     
                     <p>

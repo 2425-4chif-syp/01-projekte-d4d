@@ -94,7 +94,7 @@ public class ServiceRequestResource {
         ServiceRequest request = new ServiceRequest(sender, receiver, market);
         serviceRequestRepository.persist(request);
 
-        // ✉️ E-MAIL: Sende Bestätigung an Sender dass Anfrage versendet wurde
+        // ✉️ E-MAIL 1: Sende Bestätigung an Sender dass Anfrage versendet wurde
         if (sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
             String providerName = receiver.getName();
             String serviceTypeName = market.getServiceType().getName();
@@ -108,7 +108,24 @@ public class ServiceRequestResource {
                     failure -> LOG.error("Failed to send request-created email", failure)
                 );
         } else {
-            LOG.warn("Cannot send email: Sender has no pupilId");
+            LOG.warn("Cannot send email to sender: Sender has no pupilId");
+        }
+
+        // ✉️ E-MAIL 2: Sende Benachrichtigung an Provider dass er neue Anfrage erhalten hat
+        if (receiver.getPupilId() != null && !receiver.getPupilId().isBlank()) {
+            String senderName = sender.getName();
+            String serviceTypeName = market.getServiceType().getName();
+            
+            LOG.info("Sending request-received email to provider: " + receiver.getName() + " (pupilId: " + receiver.getPupilId() + ")");
+            
+            notificationService.sendRequestReceivedEmail(receiver.getPupilId(), senderName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-received email queued for: " + receiver.getName()),
+                    failure -> LOG.error("Failed to send request-received email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send email to provider: Receiver has no pupilId");
         }
 
         return Response.status(Response.Status.CREATED)
@@ -253,6 +270,25 @@ public class ServiceRequestResource {
         // Update status to REJECTED
         request.setStatus("REJECTED");
         serviceRequestRepository.persist(request);
+
+        // ✉️ E-MAIL: Sende Benachrichtigung an Sender dass Anfrage abgelehnt wurde
+        User sender = request.getSender();
+        User receiver = request.getReceiver();
+        if (sender != null && sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+            String providerName = receiver.getName();
+            String serviceTypeName = request.getMarket().getServiceType().getName();
+            
+            LOG.info("Sending request-rejected email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
+            
+            notificationService.sendRequestRejectedEmail(sender.getPupilId(), providerName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-rejected email queued for: " + sender.getName()),
+                    failure -> LOG.error("Failed to send request-rejected email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send rejection email: Sender has no pupilId");
+        }
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }
