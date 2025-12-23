@@ -31,6 +31,12 @@ export class OfferServicesComponent implements OnInit {
   async ngOnInit() {
     await this.loadServiceTypes();
     await this.checkUserStatus();
+
+    // Reload data after login
+    window.addEventListener('user-logged-in', () => {
+      this.loadServiceTypes();
+      this.checkUserStatus();
+    });
   }
 
   async loadServiceTypes() {
@@ -59,15 +65,28 @@ export class OfferServicesComponent implements OnInit {
         next: (username) => {
           if (username && username.trim() !== '' && username !== 'Gast-Modus') {
             this.loadUserOffers(username);
+          } else {
+            // Guest mode - load session offers
+            this.loadSessionOffers();
           }
         },
         error: () => {
-          // Guest mode - no pre-selection needed yet
-          // TODO: implement session management
+          // Guest mode - load session offers
+          this.loadSessionOffers();
         },
       });
     } catch (err) {
       console.error('Fehler beim Prüfen des User-Status:', err);
+    }
+  }
+
+  async loadSessionOffers() {
+    try {
+      const sessionOffers = this.sessionService.getOffers();
+      this.selectedOffers = [...sessionOffers];
+      console.log('📦 Session-Offers geladen:', sessionOffers);
+    } catch (err) {
+      console.error('Fehler beim Laden der Session-Offers:', err);
     }
   }
 
@@ -135,29 +154,40 @@ export class OfferServicesComponent implements OnInit {
             return;
           }
 
-          // Logged-in mode - save to database
-          const offerNames = this.selectedOffers.map(
+          // Logged-in mode - save to database with intelligent merging
+          const newOfferNames = this.selectedOffers.map(
             (id) => this.serviceTypeMap.get(id) || ''
           );
 
-          // Load existing demands
-          let existingDemands: string[] = [];
+          // Load existing markets and merge
           this.serviceTypeService.getUserMarkets(username).subscribe({
             next: (markets) => {
-              existingDemands = markets
+              // Extract existing offers and demands
+              const existingOfferNames = markets
+                .filter((m) => m.offer === 1)
+                .map((m) => m.serviceType.name);
+              const existingDemands = markets
                 .filter((m) => m.offer === 0)
                 .map((m) => m.serviceType.name);
 
-              // Save to database
+              // Merge offers (remove duplicates)
+              const mergedOffers = [
+                ...new Set([...existingOfferNames, ...newOfferNames]),
+              ];
+
+              console.log('🔀 Merging Offers:', {
+                existing: existingOfferNames,
+                new: newOfferNames,
+                merged: mergedOffers,
+              });
+
+              // Save merged data to database
               this.serviceTypeService
-                .saveMarkets(username, offerNames, existingDemands)
+                .saveMarkets(username, mergedOffers, existingDemands)
                 .subscribe({
                   next: () => {
                     this.submitting = false;
-                    alert('✓ Angebote gespeichert! Zeige Matches...');
-                    setTimeout(() => {
-                      this.router.navigate(['/user-matches']);
-                    }, 1000);
+                    this.router.navigate(['/user-matches']);
                   },
                   error: (err) => {
                     console.error('Fehler beim Speichern:', err);
@@ -167,16 +197,13 @@ export class OfferServicesComponent implements OnInit {
                 });
             },
             error: () => {
-              // No existing demands, save anyway
+              // No existing markets, save new ones
               this.serviceTypeService
-                .saveMarkets(username, offerNames, [])
+                .saveMarkets(username, newOfferNames, [])
                 .subscribe({
                   next: () => {
                     this.submitting = false;
-                    alert('✓ Angebote gespeichert! Zeige Matches...');
-                    setTimeout(() => {
-                      this.router.navigate(['/user-matches']);
-                    }, 1000);
+                    this.router.navigate(['/user-matches']);
                   },
                   error: (err) => {
                     console.error('Fehler beim Speichern:', err);

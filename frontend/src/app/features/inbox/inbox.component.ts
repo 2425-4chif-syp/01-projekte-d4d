@@ -42,6 +42,12 @@ export class InboxComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+
+    // Reload data after login
+    window.addEventListener('user-logged-in', () => {
+      console.log('🔄 User logged in, reloading inbox...');
+      this.loadData();
+    });
   }
 
   async loadData() {

@@ -4,8 +4,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 30px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -75,9 +75,9 @@
 
 .nav-buttons button.active {
   background: white;
-  color: #1e3a8a;
+  color: #3b82f6;
   border-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-weight: 700;
 }
 

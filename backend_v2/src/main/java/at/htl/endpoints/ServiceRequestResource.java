@@ -53,7 +53,7 @@ public class ServiceRequestResource {
     @Transactional
     public Response createServiceRequest(ServiceRequestCreateDto dto) {
         // Validate sender
-        User sender = userRepository.find("name", dto.senderUsername()).firstResult();
+        User sender = userRepository.findByPupilIdOrName(dto.senderUsername());
         if (sender == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Sender user not found")
@@ -141,7 +141,7 @@ public class ServiceRequestResource {
     @Path("/inbox/{username}")
     @Transactional
     public Response getInbox(@PathParam("username") String username) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("User not found")
@@ -165,7 +165,7 @@ public class ServiceRequestResource {
     @Path("/sent/{username}")
     @Transactional
     public Response getSentRequests(@PathParam("username") String username) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("User not found")

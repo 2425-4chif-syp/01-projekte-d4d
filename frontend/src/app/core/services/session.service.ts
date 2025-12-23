@@ -28,11 +28,11 @@ export class SessionService {
    * Initialize session on app start
    */
   async init(): Promise<void> {
-    // Check if session cookie exists
-    this.sessionId = this.getCookie('d4d_session_id');
+    // Check localStorage first (since cookies are HttpOnly and can't be read by JS)
+    this.sessionId = localStorage.getItem('d4d_session_id');
 
     console.log(
-      '🔍 Session-Service Init: Cookie gefunden?',
+      '🔍 Session-Service Init: Session ID gefunden?',
       this.sessionId ? 'Ja: ' + this.sessionId : 'Nein'
     );
 
@@ -42,6 +42,7 @@ export class SessionService {
       console.log('✓ Session valid?', isValid);
       if (!isValid) {
         this.sessionId = null;
+        localStorage.removeItem('d4d_session_id');
       }
     }
 
@@ -75,6 +76,11 @@ export class SessionService {
 
       this.sessionId = response.sessionId;
       this.isAnonymous = response.isAnonymous;
+
+      // Store in localStorage since the cookie is HttpOnly and can't be read by JS
+      if (this.sessionId) {
+        localStorage.setItem('d4d_session_id', this.sessionId);
+      }
 
       console.log('✓ Neue Session erstellt:', this.sessionId);
     } catch (error) {
@@ -186,14 +192,77 @@ export class SessionService {
       this.isAnonymous = false;
       console.log('✓ User mit Session verknüpft');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fehler beim Verknüpfen des Users:', error);
+
+      // Session existiert nicht mehr (z.B. nach Backend-Neustart)
+      if (error.status === 404) {
+        console.log(
+          '🔄 Session nicht gefunden, erstelle neue Session mit bestehenden Daten...'
+        );
+
+        // Speichere aktuelle Daten
+        const currentOffers = [...this.offers];
+        const currentDemands = [...this.demands];
+
+        // Lösche alte Session-ID
+        localStorage.removeItem('d4d_session_id');
+        this.sessionId = null;
+
+        // Erstelle neue Session
+        await this.createSession();
+
+        // Schreibe Daten in neue Session
+        if (
+          this.sessionId &&
+          (currentOffers.length > 0 || currentDemands.length > 0)
+        ) {
+          this.offers = currentOffers;
+          this.demands = currentDemands;
+          await this.saveServices(currentOffers, currentDemands);
+          console.log('✓ Daten in neue Session geschrieben:', {
+            offers: currentOffers.length,
+            demands: currentDemands.length,
+          });
+        }
+
+        // Jetzt verknüpfe neue Session mit User
+        if (this.sessionId) {
+          try {
+            await firstValueFrom(
+              this.http.post(
+                `${this.configService.getApiUrl()}/session/${
+                  this.sessionId
+                }/attach-user`,
+                { username },
+                {
+                  withCredentials: true,
+                  headers: { 'Content-Type': 'application/json' },
+                  responseType: 'text',
+                }
+              )
+            );
+
+            this.username = username;
+            this.isAnonymous = false;
+            console.log('✓ User mit neuer Session verknüpft');
+            return true;
+          } catch (retryError) {
+            console.error(
+              'Fehler beim Verknüpfen mit neuer Session:',
+              retryError
+            );
+            return false;
+          }
+        }
+      }
+
       return false;
     }
   }
 
   /**
-   * Convert session data to market entries (after login)
+   * Convert session data to market entries (after login) with intelligent merging
    */
   async convertToMarkets(): Promise<boolean> {
     if (!this.sessionId || this.isAnonymous) {
@@ -201,38 +270,107 @@ export class SessionService {
       return false;
     }
 
+    if (!this.username) {
+      console.warn('Username nicht gefunden');
+      return false;
+    }
+
     try {
-      console.log('🔄 Konvertiere Session zu Markets:', {
+      console.log('🔄 Starte intelligentes Merging:', {
         sessionId: this.sessionId,
         username: this.username,
-        offers: this.offers,
-        demands: this.demands,
+        sessionOffers: this.offers,
+        sessionDemands: this.demands,
       });
 
-      const result = await firstValueFrom(
-        this.http.post<any>(
-          `${this.configService.getApiUrl()}/session/${
-            this.sessionId
-          }/convert-to-markets`,
-          {},
+      // Check if there's anything to merge
+      if (this.offers.length === 0 && this.demands.length === 0) {
+        console.log('ℹ️ Keine Session-Services zum Mergen, überspringe');
+        return true;
+      }
+
+      // Load service types to map IDs to names
+      console.log('📥 Lade ServiceTypes für ID-zu-Name Mapping...');
+      const serviceTypes = await firstValueFrom(
+        this.http.get<any[]>(`${this.configService.getApiUrl()}/servicetype`, {
+          withCredentials: true,
+        })
+      );
+
+      console.log('📋 ServiceTypes geladen:', serviceTypes.length);
+
+      const idToNameMap = new Map<number, string>();
+      serviceTypes.forEach((st) => idToNameMap.set(st.id, st.name));
+
+      // Convert session IDs to names
+      const sessionOfferNames = this.offers
+        .map((id) => {
+          const name = idToNameMap.get(id);
+          console.log(`  Mapping Offer ID ${id} → ${name}`);
+          return name;
+        })
+        .filter((name) => name !== undefined) as string[];
+      const sessionDemandNames = this.demands
+        .map((id) => {
+          const name = idToNameMap.get(id);
+          console.log(`  Mapping Demand ID ${id} → ${name}`);
+          return name;
+        })
+        .filter((name) => name !== undefined) as string[];
+
+      console.log('🔤 IDs zu Namen konvertiert:', {
+        offerNames: sessionOfferNames,
+        demandNames: sessionDemandNames,
+      });
+
+      // Load existing user markets
+      const existingMarkets = await this.loadUserMarkets(this.username);
+
+      // Merge session services with existing markets (remove duplicates)
+      const mergedOffers = [
+        ...new Set([...existingMarkets.offers, ...sessionOfferNames]),
+      ];
+      const mergedDemands = [
+        ...new Set([...existingMarkets.demands, ...sessionDemandNames]),
+      ];
+
+      console.log('🔀 Services gemerged:', {
+        existingOffers: existingMarkets.offers,
+        sessionOffers: sessionOfferNames,
+        mergedOffers,
+        existingDemands: existingMarkets.demands,
+        sessionDemands: sessionDemandNames,
+        mergedDemands,
+      });
+
+      // Save merged services to backend
+      console.log('💾 Speichere gemergte Services...');
+      const saveResponse = await firstValueFrom(
+        this.http.post(
+          `${this.configService.getApiUrl()}/market`,
+          {
+            username: this.username,
+            offers: mergedOffers,
+            demands: mergedDemands,
+          },
           {
             withCredentials: true,
-            responseType: 'json',
+            headers: { 'Content-Type': 'application/json' },
           }
         )
       );
 
-      console.log('✓ Session zu Markets konvertiert:', result);
+      console.log('✅ Backend-Response:', saveResponse);
+      console.log('✓ Gemergte Markets erfolgreich gespeichert');
 
-      // Clear session data
+      // Clear session data (User nutzt jetzt Markets statt Session)
       this.offers = [];
       this.demands = [];
 
-      // Create new session for future use
-      await this.createSession();
+      console.log('✓ Guest-Daten erfolgreich zu User-Markets konvertiert');
       return true;
     } catch (error) {
-      console.error('❌ Fehler beim Konvertieren:', error);
+      console.error('❌ Fehler beim Merging:', error);
       return false;
     }
   }
@@ -259,6 +397,45 @@ export class SessionService {
   }
 
   /**
+   * Load existing user markets before merging
+   */
+  private async loadUserMarkets(username: string): Promise<{
+    offers: string[];
+    demands: string[];
+  }> {
+    try {
+      const markets = await firstValueFrom(
+        this.http.get<any[]>(
+          `${this.configService.getApiUrl()}/market/${encodeURIComponent(
+            username
+          )}`,
+          { withCredentials: true }
+        )
+      );
+
+      const offers = markets
+        .filter((m) => m.offer === 1)
+        .map((m) => m.serviceType?.name)
+        .filter((name) => name !== undefined);
+
+      const demands = markets
+        .filter((m) => m.offer === 0)
+        .map((m) => m.serviceType?.name)
+        .filter((name) => name !== undefined);
+
+      console.log('📥 Bestehende User-Markets geladen:', {
+        offers,
+        demands,
+      });
+
+      return { offers, demands };
+    } catch (error) {
+      console.error('Fehler beim Laden der User-Markets:', error);
+      return { offers: [], demands: [] };
+    }
+  }
+
+  /**
    * Delete session
    */
   async deleteSession(): Promise<void> {
@@ -279,6 +456,9 @@ export class SessionService {
       this.isAnonymous = true;
       this.offers = [];
       this.demands = [];
+
+      // Remove from localStorage
+      localStorage.removeItem('d4d_session_id');
 
       console.log('✓ Session gelöscht');
     } catch (error) {

@@ -289,6 +289,7 @@
         <div class="col">
           <div
             class="card h-100 border-start border-4"
+            [attr.data-match-id]="item.id"
             [class.border-primary]="isOffer(item)"
             [class.border-info]="!isOffer(item)"
           >
@@ -318,7 +319,7 @@
 
               @if (item.description) {
               <p class="card-text text-truncate mb-3">{{ item.description }}</p>
-              } @if (isOffer(item) && getRating(item) > 0) {
+              } @if (isOffer(item)) { @if (getRating(item) > 0) {
               <div class="mb-3">
                 <small class="text-muted">Bewertung:</small>
                 <div class="d-flex align-items-center gap-1">
@@ -334,7 +335,11 @@
                   >
                 </div>
               </div>
-              } @if (isOffer(item) && isLoggedIn) {
+              } @else {
+              <div class="mb-3">
+                <small class="text-muted">Noch keine Bewertungen</small>
+              </div>
+              } } @if (isOffer(item) && isLoggedIn) {
               <button
                 class="btn btn-primary w-100"
                 [disabled]="sendingRequest === item.id"

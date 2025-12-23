@@ -204,6 +204,7 @@
               <div class="col">
                 <div
                   class="card h-100 border-start border-4"
+                  [attr.data-match-id]="match.id"
                   [class.border-primary]="match.isOffer"
                   [class.border-info]="!match.isOffer"
                   [class.border-warning]="match.isPerfectMatch"
@@ -228,8 +229,16 @@
                       </span>
                       }
                     </div>
-                    <h6 class="card-title">{{ match.serviceTypeName }}</h6>
-                    <p class="card-text text-muted small">
+                    <h6
+                      class="card-title text-truncate"
+                      title="{{ match.serviceTypeName }}"
+                    >
+                      {{ match.serviceTypeName }}
+                    </h6>
+                    <p
+                      class="card-text text-muted small text-truncate"
+                      title="{{ match.username }}"
+                    >
                       {{ match.username }}
                     </p>
                     @if (match.isOffer && match.rating !== null && match.rating
@@ -267,6 +276,7 @@
           <div class="col">
             <div
               class="card h-100"
+              [attr.data-match-id]="match.id"
               [class.border-primary]="match.isOffer"
               [class.border-info]="!match.isOffer"
               [class.border-warning]="match.isPerfectMatch"
@@ -284,8 +294,17 @@
                     {{ match.isOffer ? "A" : "N" }}
                   </span>
                 </div>
-                <h6 class="card-title small mb-1">{{ match.username }}</h6>
-                <p class="card-text text-muted" style="font-size: 0.75rem">
+                <h6
+                  class="card-title small mb-1 text-truncate"
+                  title="{{ match.username }}"
+                >
+                  {{ match.username }}
+                </h6>
+                <p
+                  class="card-text text-muted text-truncate"
+                  style="font-size: 0.75rem"
+                  title="{{ match.serviceTypeName }}"
+                >
                   {{ match.serviceTypeName }}
                 </p>
                 @if (match.isOffer && match.rating !== null && match.rating > 0)

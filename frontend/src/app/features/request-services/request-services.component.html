@@ -23,52 +23,53 @@
           </h2>
 
           @if (loading) {
-            <div class="text-center py-5">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Lädt...</span>
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Lädt...</span>
+            </div>
+          </div>
+          } @else if (error) {
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {{ error }}
+          </div>
+          } @else {
+          <div class="uniform-grid mb-4">
+            @for (service of serviceTypes; track service.id) {
+            <div class="uniform-grid-item">
+              <div
+                class="service-checkbox form-check p-3 rounded border"
+                [class.selected]="isSelected(service.id)"
+                (click)="toggleService(service.id)"
+              >
+                <input
+                  class="form-check-input me-2"
+                  type="checkbox"
+                  [id]="'service-' + service.id"
+                  [checked]="isSelected(service.id)"
+                  (click)="$event.stopPropagation()"
+                />
+                <label class="form-check-label" [for]="'service-' + service.id">
+                  {{ service.name }}
+                </label>
               </div>
             </div>
-          } @else if (error) {
-            <div class="alert alert-danger">
-              <i class="fas fa-exclamation-circle me-2"></i>
-              {{ error }}
-            </div>
-          } @else {
-            <div class="row g-3 mb-4">
-              @for (service of serviceTypes; track service.id) {
-                <div class="col-sm-6 col-md-4 col-lg-3">
-                  <div 
-                    class="service-checkbox form-check p-3 rounded border"
-                    [class.selected]="isSelected(service.id)"
-                    (click)="toggleService(service.id)">
-                    <input 
-                      class="form-check-input me-2" 
-                      type="checkbox" 
-                      [id]="'service-' + service.id"
-                      [checked]="isSelected(service.id)"
-                      (click)="$event.stopPropagation()">
-                    <label class="form-check-label" [for]="'service-' + service.id">
-                      {{ service.name }}
-                    </label>
-                  </div>
-                </div>
-              }
-            </div>
+            }
+          </div>
 
-            <div class="text-center pt-3">
-              <button 
-                class="btn btn-primary btn-lg px-5"
-                [disabled]="selectedDemands.length === 0 || submitting"
-                (click)="submitDemands()">
-                @if (submitting) {
-                  <span class="spinner-border spinner-border-sm me-2"></span>
-                  Speichere...
-                } @else {
-                  <i class="fas fa-check-circle me-2"></i>
-                  Nachfragen speichern
-                }
-              </button>
-            </div>
+          <div class="text-center pt-3">
+            <button
+              class="btn btn-primary btn-lg px-5"
+              [disabled]="selectedDemands.length === 0 || submitting"
+              (click)="submitDemands()"
+            >
+              @if (submitting) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Speichere... } @else {
+              <i class="fas fa-check-circle me-2"></i>
+              Nachfragen speichern }
+            </button>
+          </div>
           }
         </div>
       </div>

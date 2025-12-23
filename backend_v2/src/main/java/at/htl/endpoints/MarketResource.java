@@ -52,7 +52,14 @@ public class MarketResource {
     public Response getMarketsByUsername(
             @PathParam("username") String username
     ) {
-        List<Market> markets = marketRepository.list("user.name = ?1", username);
+        User user = userRepository.findByPupilIdOrName(username);
+        
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Benutzer nicht gefunden").build();
+        }
+        
+        List<Market> markets = marketRepository.list("user.id = ?1", user.getId());
 
         if (markets.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -64,7 +71,13 @@ public class MarketResource {
     @POST
     @Transactional
     public Response createMarkets(MarketDto marketDto) {
-        User user = userRepository.find("name", marketDto.username()).firstResult();
+        User user = userRepository.findByPupilIdOrName(marketDto.username());
+        
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Benutzer nicht gefunden")
+                    .build();
+        }
 
         List<Market> offers = marketRepository
                 .find("user.id = ?1 and offer = 1", user.getId()).list();

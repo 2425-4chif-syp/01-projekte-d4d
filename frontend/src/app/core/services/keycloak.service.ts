@@ -71,16 +71,11 @@ export class KeycloakService {
       // Sync with backend if authenticated (but don't fail if not)
       if (this.keycloak.authenticated) {
         try {
-          await this.syncWithBackend(this.keycloak.token);
-
-          // Convert guest session to user markets after successful login
-          if (this.sessionService) {
-            const username = this.keycloak.tokenParsed?.preferred_username;
-            if (username) {
-              await this.sessionService.attachUser(username);
-              await this.sessionService.convertToMarkets();
-              console.log('✓ Guest-Session zu User-Markets konvertiert');
-            }
+          // Only sync on first login, not on every page reload
+          const alreadySynced = sessionStorage.getItem('backendSynced');
+          if (!alreadySynced) {
+            await this.syncWithBackend(this.keycloak.token);
+            sessionStorage.setItem('backendSynced', 'true');
           }
         } catch (error) {
           console.warn('Backend sync failed, continuing as guest:', error);
@@ -105,6 +100,10 @@ export class KeycloakService {
 
   // login (exakt wie in Vorlage)
   async login(): Promise<void> {
+    // Save current URL and scroll position for redirect after login
+    sessionStorage.setItem('preLoginUrl', window.location.href);
+    sessionStorage.setItem('preLoginScrollY', window.scrollY.toString());
+
     await this.keycloak.login();
     console.log('token:', this.store.token);
   }
@@ -137,6 +136,9 @@ export class KeycloakService {
     localStorage.removeItem('guestOffers');
     localStorage.removeItem('guestDemands');
     localStorage.clear(); // Clear all localStorage
+
+    // Clear sync flag
+    sessionStorage.removeItem('backendSynced');
 
     // Notify observers
     this.notifyObservers();
@@ -174,13 +176,36 @@ export class KeycloakService {
     return this.store.tokenParsed;
   }
 
-  async getCurrentUser(): Promise<string | null> {
-    // Check if authenticated via Keycloak
+  /**
+   * Get current user ID (preferred_username/pupilId) for backend communication
+   */
+  async getCurrentUserId(): Promise<string | null> {
     if (
       this.keycloak?.authenticated &&
       this.keycloak?.tokenParsed?.preferred_username
     ) {
       return this.keycloak.tokenParsed.preferred_username;
+    }
+    return null;
+  }
+
+  /**
+   * Get current user display name (full name)
+   */
+  async getCurrentUserDisplayName(): Promise<string | null> {
+    if (this.keycloak?.authenticated && this.keycloak?.tokenParsed?.name) {
+      return this.keycloak.tokenParsed.name;
+    }
+    return null;
+  }
+
+  /**
+   * Get current user (for backward compatibility - returns display name)
+   */
+  async getCurrentUser(): Promise<string | null> {
+    // Check if authenticated via Keycloak - return display name
+    if (this.keycloak?.authenticated && this.keycloak?.tokenParsed?.name) {
+      return this.keycloak.tokenParsed.name;
     }
 
     // Fallback: Check backend for session-based user
@@ -228,21 +253,29 @@ export class KeycloakService {
         )
       );
 
-      console.log('Keycloak login successful, user:', response);
-
-      // Convert guest session data to user markets (using inject to avoid circular dependency)
-      const sessionService = inject(
-        (await import('./session.service')).SessionService
+      console.log(
+        'Keycloak login successful, user:',
+        this.keycloak?.tokenParsed?.name
       );
-      const username = this.keycloak?.tokenParsed?.preferred_username;
 
-      if (username && sessionService) {
+      // Convert guest session data to user markets (use the injected sessionService)
+      const userId = this.keycloak?.tokenParsed?.preferred_username; // pupilId for backend
+
+      if (userId && this.sessionService) {
         console.log('🔄 Attempting to convert session to markets...');
-        await sessionService.attachUser(username);
-        const success = await sessionService.convertToMarkets();
+        await this.sessionService.attachUser(userId);
+        const success = await this.sessionService.convertToMarkets();
         if (success) {
           console.log('✓ Guest-Daten erfolgreich zu User-Markets konvertiert');
+
+          // Notify observers that login is complete (trigger data refresh in components)
+          this.notifyObservers();
+
+          // Trigger custom event for components to reload data
+          window.dispatchEvent(new CustomEvent('user-logged-in'));
         }
+      } else {
+        console.warn('⚠️ SessionService nicht verfügbar oder kein Username');
       }
     } catch (error: any) {
       console.error('Backend sync failed:', error);
@@ -268,7 +301,7 @@ export class KeycloakService {
   }
 
   isAdmin(): boolean {
-    const username = this.keycloak?.tokenParsed?.preferred_username;
-    return username === 'Admin' || this.hasRole('admin');
+    const userId = this.keycloak?.tokenParsed?.preferred_username;
+    return userId === 'Admin' || this.hasRole('admin');
   }
 }

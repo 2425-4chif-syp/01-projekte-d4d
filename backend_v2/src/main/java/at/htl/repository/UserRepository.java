@@ -15,4 +15,25 @@ public class UserRepository implements PanacheRepository<User> {
     public User getActiveUser() {
         return activeUser;
     }
+    
+    /**
+     * Findet einen User anhand von pupilId oder name
+     * @param identifier pupilId oder name
+     * @return User oder null
+     */
+    public User findByPupilIdOrName(String identifier) {
+        if (identifier == null || identifier.isEmpty()) {
+            return null;
+        }
+        
+        // Zuerst nach pupilId suchen (eindeutig)
+        User user = find("pupilId", identifier).firstResult();
+        
+        // Falls nicht gefunden, nach name suchen
+        if (user == null) {
+            user = find("name", identifier).firstResult();
+        }
+        
+        return user;
+    }
 }

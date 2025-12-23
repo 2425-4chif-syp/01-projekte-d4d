@@ -158,7 +158,7 @@ public class SessionResource {
         }
         
         String username = data.get("username");
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
         
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)

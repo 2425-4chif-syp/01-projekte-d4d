@@ -60,6 +60,12 @@ export class MarketplaceComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+
+    // Reload data after login
+    window.addEventListener('user-logged-in', () => {
+      console.log('🔄 User logged in, reloading marketplace...');
+      this.loadData();
+    });
   }
 
   async loadData() {
@@ -316,6 +322,9 @@ export class MarketplaceComponent implements OnInit {
 
   openRequestModal(item: MarketItem) {
     if (!this.isOffer(item)) return;
+
+    // Save card ID for scroll restoration after login
+    sessionStorage.setItem('scrollToMatchId', item.id.toString());
 
     this.selectedItem = item;
     this.showRequestModal = true;

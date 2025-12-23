@@ -34,7 +34,7 @@ public class ServiceResource {
     public Response getServicesByUser(
             @PathParam("username") String username
     ) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
 
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -54,7 +54,7 @@ public class ServiceResource {
     public Response getPerfectMatches(
             @PathParam("username") String username
     ) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
 
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -116,7 +116,7 @@ public class ServiceResource {
     public Response getRelevantServicesForUser(
             @PathParam("username") String username
     ) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
 
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND).build();

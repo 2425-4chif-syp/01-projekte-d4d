@@ -44,6 +44,13 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   async ngOnInit() {
     await this.loadActiveUser();
     this.startPeriodicUpdates();
+
+    // Reload data after login
+    window.addEventListener('user-logged-in', async () => {
+      console.log('🔄 User logged in, reloading chats...');
+      await this.loadActiveUser();
+      this.startPeriodicUpdates();
+    });
   }
 
   ngOnDestroy() {

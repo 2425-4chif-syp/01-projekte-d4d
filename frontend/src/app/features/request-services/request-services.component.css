@@ -1,26 +1,161 @@
+/* Modern Service Selection Page */
+.service-selection-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInDown 0.6s ease;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.page-header p {
+  font-size: 1.125rem;
+  color: var(--gray-600);
+}
+
+/* ==================== UNIFORM GRID (Bootstrap + CSS Grid) ==================== */
+
+/* Grid Container - Responsive UniformGrid wie WPF */
+.uniform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Grid Items - Alle gleich groß */
+.uniform-grid-item {
+  display: flex;
+  min-height: 80px;
+}
+
+.uniform-grid-item .service-checkbox {
+  width: 100%;
+  height: 100%;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive Breakpoints */
+@media (min-width: 576px) {
+  .uniform-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .uniform-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .uniform-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* ==================== SERVICE CHECKBOX STYLES ==================== */
+
+/* Service Card */
+.service-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 3px solid transparent;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  height: 120px; /* Fixe Höhe */
+  display: flex;
+  align-items: center;
+}
+
+.service-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #06b6d4, #2563eb);
+  transform: scaleX(0);
+  transition: transform var(--transition-base);
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.service-card:hover::before {
+  transform: scaleX(1);
+}
+
+.service-card.selected {
+  border-color: var(--accent-color);
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.05) 0%,
+    rgba(37, 99, 235, 0.05) 100%
+  );
+  box-shadow: var(--shadow-md);
+}
+
+.service-card.selected::before {
+  transform: scaleX(1);
+}
+
 .service-checkbox {
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: #f8f9fa;
   user-select: none;
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  height: 80px; /* Fixe Höhe für alle Boxen */
+  display: flex;
+  align-items: center;
 }
 
 .service-checkbox:hover {
   background-color: #e8f2ff;
-  border-color: var(--primary-color) !important;
+  border-color: var(--accent-color) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(48, 102, 190, 0.1);
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.1);
 }
 
 .service-checkbox.selected {
-  background: linear-gradient(135deg, rgba(48, 102, 190, 0.1) 0%, rgba(130, 217, 252, 0.15) 100%);
-  border-color: var(--primary-color) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.1) 0%,
+    rgba(37, 99, 235, 0.15) 100%
+  );
+  border-color: var(--accent-color) !important;
   border-width: 2px !important;
 }
 
 .service-checkbox input[type="checkbox"] {
   cursor: pointer;
-  accent-color: var(--primary-color);
+  accent-color: var(--accent-color);
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .service-checkbox label {
@@ -28,4 +163,107 @@
   margin-bottom: 0;
   font-weight: 500;
   width: 100%;
+}
+
+/* Action Bar */
+.action-bar {
+  position: sticky;
+  bottom: 1rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  animation: slideUp 0.4s ease;
+}
+
+.btn-submit {
+  background: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--accent-dark) 100%
+  );
+  color: white;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading State */
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
 }

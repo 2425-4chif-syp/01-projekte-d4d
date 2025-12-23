@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { MatchService } from '../../core/services/match.service';
 import { MarketService } from '../../core/services/market.service';
 import { ServiceTypeService } from '../../core/services/service-type.service';
@@ -76,10 +77,19 @@ export class UserMatchesComponent implements OnInit {
     ) {
       this.viewMode = savedViewMode as ViewMode;
     }
+
+    // Load filter state from localStorage
+    this.loadFilterState();
   }
 
   ngOnInit() {
     this.loadData();
+
+    // Listen for login event to reload data without page refresh
+    window.addEventListener('user-logged-in', () => {
+      console.log('🔄 User logged in, reloading matches...');
+      this.loadData();
+    });
   }
 
   async loadData() {
@@ -145,6 +155,7 @@ export class UserMatchesComponent implements OnInit {
       }));
 
       this.allMatches = matchesArray;
+      await this.loadRatingsForMatches();
       this.filterMatches();
       this.loading = false;
     } catch (err: any) {
@@ -155,20 +166,31 @@ export class UserMatchesComponent implements OnInit {
 
   private async loadUserMatches(username: string) {
     try {
+      console.log('📊 Lade Matches für User:', username);
+
       // Load perfect matches
-      const perfectMatches =
-        (await this.matchService.getPerfectMatches(username).toPromise()) || [];
+      const perfectMatches = await firstValueFrom(
+        this.matchService.getPerfectMatches(username)
+      ).catch((err) => {
+        console.error('Fehler beim Laden der Perfect Matches:', err);
+        return [];
+      });
 
       // Load regular matches
-      const regularMatches =
-        (await this.matchService.getRelevantMatches(username).toPromise()) ||
-        [];
+      const regularMatches = await firstValueFrom(
+        this.matchService.getRelevantMatches(username)
+      ).catch((err) => {
+        console.error('Fehler beim Laden der Regular Matches:', err);
+        return [];
+      });
 
-      // Process matches
-      const allRawMatches = [...regularMatches];
+      console.log('📦 Backend Matches:', {
+        perfect: perfectMatches,
+        regular: regularMatches,
+      });
 
-      // Map to Match interface
-      this.allMatches = allRawMatches.map((match) => ({
+      // Map regular matches to Match interface
+      const mappedRegularMatches = regularMatches.map((match: any) => ({
         id: match.id,
         username: match.username || match.user?.name || 'Unbekannt',
         serviceTypeName:
@@ -181,8 +203,8 @@ export class UserMatchesComponent implements OnInit {
         marketId: match.id,
       }));
 
-      // Add perfect matches
-      const mappedPerfectMatches = perfectMatches.map((match) => ({
+      // Map perfect matches
+      const mappedPerfectMatches = perfectMatches.map((match: any) => ({
         id: match.id,
         username: match.username || match.user?.name || 'Unbekannt',
         serviceTypeName:
@@ -195,7 +217,10 @@ export class UserMatchesComponent implements OnInit {
         marketId: match.id,
       }));
 
-      this.allMatches = [...mappedPerfectMatches, ...this.allMatches];
+      // Combine all matches (perfect first)
+      this.allMatches = [...mappedPerfectMatches, ...mappedRegularMatches];
+
+      console.log('✅ Matches gemappt:', this.allMatches);
 
       // Load ratings for all matches
       await this.loadRatingsForMatches();
@@ -205,7 +230,7 @@ export class UserMatchesComponent implements OnInit {
 
       this.loading = false;
     } catch (error) {
-      console.error('Error loading matches:', error);
+      console.error('❌ Error loading matches:', error);
       this.loading = false;
     }
   }
@@ -217,9 +242,9 @@ export class UserMatchesComponent implements OnInit {
     // Load user ratings
     const ratingPromises = usernames.map(async (username) => {
       try {
-        const stats = await this.matchService
-          .getUserRating(username)
-          .toPromise();
+        const stats = await firstValueFrom(
+          this.matchService.getUserRating(username)
+        );
         return {
           username,
           rating: stats?.averageRating || 0,
@@ -245,6 +270,9 @@ export class UserMatchesComponent implements OnInit {
   }
 
   filterMatches() {
+    // Save filter state to localStorage
+    this.saveFilterState();
+
     let filtered = [...this.allMatches];
 
     // Text filter
@@ -406,6 +434,37 @@ export class UserMatchesComponent implements OnInit {
     this.filterMatches();
   }
 
+  private loadFilterState() {
+    try {
+      const savedFilters = localStorage.getItem('matchesFilters');
+      if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        this.searchText = filters.searchText || '';
+        this.selectedServiceType = filters.selectedServiceType || 'all';
+        this.offerFilter = filters.offerFilter || 'all';
+        this.ratingFilter = filters.ratingFilter || 'all';
+        this.sortOption = filters.sortOption || 'rating-desc';
+      }
+    } catch (error) {
+      console.error('Error loading filter state:', error);
+    }
+  }
+
+  private saveFilterState() {
+    try {
+      const filters = {
+        searchText: this.searchText,
+        selectedServiceType: this.selectedServiceType,
+        offerFilter: this.offerFilter,
+        ratingFilter: this.ratingFilter,
+        sortOption: this.sortOption,
+      };
+      localStorage.setItem('matchesFilters', JSON.stringify(filters));
+    } catch (error) {
+      console.error('Error saving filter state:', error);
+    }
+  }
+
   changePage(page: number) {
     if (page < 1 || page > this.totalPages) return;
     this.currentPage = page;
@@ -434,6 +493,9 @@ export class UserMatchesComponent implements OnInit {
 
   openRequestModal(match: Match) {
     if (!match.isOffer) return;
+
+    // Save card ID for scroll restoration after login
+    sessionStorage.setItem('scrollToMatchId', match.id.toString());
 
     this.selectedMatch = match;
     this.showModal = true;
