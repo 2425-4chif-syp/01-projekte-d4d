@@ -1,0 +1,261 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <!-- Main Calendar -->
+    <div class="col-lg-8">
+      <div class="card shadow-lg border-0 rounded-4">
+        <!-- Calendar Header -->
+        <div class="card-header bg-primary text-white rounded-top-4 py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-light btn-sm" (click)="previousMonth()">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="text-center">
+              <h4 class="mb-0 fw-bold">{{ monthNames[currentMonth] }} {{ currentYear }}</h4>
+            </div>
+            <button class="btn btn-light btn-sm" (click)="nextMonth()">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+          <div class="text-center mt-2">
+            <button class="btn btn-outline-light btn-sm" (click)="goToToday()">
+              <i class="bi bi-calendar-check me-1"></i> Heute
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div class="card-body p-0">
+          <!-- Weekday Headers -->
+          <div class="calendar-grid weekday-header">
+            @for (day of weekDays; track day) {
+              <div class="calendar-cell text-center py-2 fw-bold text-muted border-bottom">
+                {{ day }}
+              </div>
+            }
+          </div>
+
+          <!-- Calendar Days -->
+          <div class="calendar-grid">
+            @for (day of calendarDays; track day.date) {
+              <div 
+                class="calendar-cell p-2 border"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="day.isToday"
+              >
+                <div class="day-number" [class.text-primary]="day.isToday">
+                  {{ day.dayNumber }}
+                </div>
+                <div class="day-appointments">
+                  @for (apt of day.appointments.slice(0, 2); track apt.id) {
+                    <div 
+                      class="appointment-badge"
+                      [style.background-color]="getStatusColor(apt.status)"
+                      (click)="openAppointmentDetail(apt)"
+                      title="{{ apt.title }}"
+                    >
+                      {{ formatTime(apt.startTime) }} {{ apt.title | slice:0:10 }}...
+                    </div>
+                  }
+                  @if (day.appointments.length > 2) {
+                    <div class="more-badge text-muted">
+                      +{{ day.appointments.length - 2 }} mehr
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Pending Appointments -->
+      @if (pendingAppointments.length > 0) {
+        <div class="card shadow border-0 rounded-4 mb-4">
+          <div class="card-header bg-warning text-dark rounded-top-4">
+            <h5 class="mb-0">
+              <i class="bi bi-clock-history me-2"></i>
+              Ausstehende Anfragen
+              <span class="badge bg-dark ms-2">{{ pendingAppointments.length }}</span>
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            @for (apt of pendingAppointments; track apt.id) {
+              <div class="appointment-item p-3 border-bottom" (click)="openAppointmentDetail(apt)">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h6 class="mb-1 fw-bold">{{ apt.title }}</h6>
+                    <small class="text-muted">
+                      <i class="bi bi-person me-1"></i>{{ getOtherParticipant(apt) }}
+                    </small>
+                  </div>
+                  <span class="badge" [style.background-color]="getStatusColor(apt.status)">
+                    {{ getStatusLabel(apt.status) }}
+                  </span>
+                </div>
+                <div class="mt-2">
+                  <small class="text-dark">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    {{ formatDateTime(apt.startTime) }}
+                  </small>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Upcoming Appointments -->
+      <div class="card shadow border-0 rounded-4">
+        <div class="card-header bg-success text-white rounded-top-4">
+          <h5 class="mb-0">
+            <i class="bi bi-calendar-check me-2"></i>
+            Kommende Termine
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          @if (upcomingAppointments.length === 0) {
+            <div class="text-center p-4 text-muted">
+              <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+              Keine anstehenden Termine
+            </div>
+          }
+          @for (apt of upcomingAppointments; track apt.id) {
+            <div class="appointment-item p-3 border-bottom" (click)="openAppointmentDetail(apt)">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1 fw-bold">{{ apt.title }}</h6>
+                  <small class="text-muted">
+                    <i class="bi bi-person me-1"></i>{{ getOtherParticipant(apt) }}
+                  </small>
+                </div>
+              </div>
+              <div class="mt-2">
+                <small class="text-success fw-bold">
+                  <i class="bi bi-clock me-1"></i>
+                  {{ formatDateTime(apt.startTime) }}
+                </small>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="card shadow border-0 rounded-4 mt-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Legende</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge" style="background-color: #f59e0b;">Ausstehend</span>
+            <span class="badge" style="background-color: #10b981;">Bestätigt</span>
+            <span class="badge" style="background-color: #ef4444;">Abgelehnt</span>
+            <span class="badge" style="background-color: #6b7280;">Storniert</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Detail Modal -->
+@if (showDetailModal && selectedAppointment) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">{{ selectedAppointment.title }}</h5>
+          <button type="button" class="btn-close" (click)="closeDetailModal()"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Status Badge -->
+          <div class="mb-3">
+            <span class="badge fs-6" [style.background-color]="getStatusColor(selectedAppointment.status)">
+              {{ getStatusLabel(selectedAppointment.status) }}
+            </span>
+          </div>
+
+          <!-- Details -->
+          <div class="detail-list">
+            <div class="detail-item">
+              <i class="bi bi-calendar-event text-primary"></i>
+              <div>
+                <small class="text-muted">Datum & Zeit</small>
+                <div class="fw-bold">{{ formatDateTime(selectedAppointment.startTime) }}</div>
+                <div class="text-muted">bis {{ formatTime(selectedAppointment.endTime) }}</div>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <i class="bi bi-person text-primary"></i>
+              <div>
+                <small class="text-muted">Mit</small>
+                <div class="fw-bold">{{ getOtherParticipant(selectedAppointment) }}</div>
+              </div>
+            </div>
+
+            @if (selectedAppointment.serviceTypeName) {
+              <div class="detail-item">
+                <i class="bi bi-book text-primary"></i>
+                <div>
+                  <small class="text-muted">Fach</small>
+                  <div class="fw-bold">{{ selectedAppointment.serviceTypeName }}</div>
+                </div>
+              </div>
+            }
+
+            @if (selectedAppointment.location) {
+              <div class="detail-item">
+                <i class="bi bi-geo-alt text-primary"></i>
+                <div>
+                  <small class="text-muted">Ort</small>
+                  <div class="fw-bold">{{ selectedAppointment.location }}</div>
+                </div>
+              </div>
+            }
+
+            @if (selectedAppointment.description) {
+              <div class="detail-item">
+                <i class="bi bi-card-text text-primary"></i>
+                <div>
+                  <small class="text-muted">Beschreibung</small>
+                  <div>{{ selectedAppointment.description }}</div>
+                </div>
+              </div>
+            }
+
+            @if (selectedAppointment.notes) {
+              <div class="detail-item">
+                <i class="bi bi-sticky text-primary"></i>
+                <div>
+                  <small class="text-muted">Notizen</small>
+                  <div>{{ selectedAppointment.notes }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="modal-footer border-0 pt-0">
+          @if (selectedAppointment.status === 'PENDING' && !isProposer(selectedAppointment)) {
+            <button class="btn btn-success" (click)="confirmAppointment(selectedAppointment)">
+              <i class="bi bi-check-lg me-1"></i> Bestätigen
+            </button>
+            <button class="btn btn-danger" (click)="rejectAppointment(selectedAppointment)">
+              <i class="bi bi-x-lg me-1"></i> Ablehnen
+            </button>
+          }
+          @if (selectedAppointment.status === 'CONFIRMED') {
+            <button class="btn btn-outline-danger" (click)="cancelAppointment(selectedAppointment)">
+              <i class="bi bi-x-circle me-1"></i> Stornieren
+            </button>
+          }
+          <button class="btn btn-secondary" (click)="closeDetailModal()">Schließen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

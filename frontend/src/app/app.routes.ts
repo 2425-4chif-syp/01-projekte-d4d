@@ -6,6 +6,7 @@ import { ChatsComponent } from './features/chats/chats.component';
 import { UserMatchesComponent } from './features/user-matches/user-matches.component';
 import { InboxComponent } from './features/inbox/inbox.component';
 import { MarketplaceComponent } from './features/marketplace/marketplace.component';
+import { CalendarComponent } from './features/calendar/calendar.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
@@ -23,6 +24,11 @@ export const routes: Routes = [
   {
     path: 'inbox',
     component: InboxComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'calendar',
+    component: CalendarComponent,
     canActivate: [authGuard],
   },
   { path: '**', redirectTo: '' },

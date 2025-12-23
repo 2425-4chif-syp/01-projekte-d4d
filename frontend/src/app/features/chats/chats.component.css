@@ -545,3 +545,65 @@
   max-width: 80%;
   border: 1px solid #fcd34d;
 }
+
+/* Appointment Button in Header */
+.btn-appointment {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  border: 2px solid #059669 !important;
+}
+
+.btn-appointment:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-1px);
+}
+
+/* Appointment Card in Chat */
+.appointment-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #22c55e;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-bottom-left-radius: 0.25rem;
+}
+
+.message-wrapper.user .appointment-card.my-appointment {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #3b82f6;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.appointment-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.my-appointment .appointment-card-header {
+  color: #1e40af;
+}
+
+.appointment-card-header i {
+  font-size: 1.25rem;
+}
+
+.appointment-card-body {
+  color: #1f2937;
+}
+
+.appointment-actions {
+  margin-top: 0.75rem;
+}
+
+.appointment-card-footer {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: right;
+}

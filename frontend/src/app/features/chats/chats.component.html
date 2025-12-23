@@ -77,6 +77,9 @@
             </div>
           </div>
           <div class="d-flex gap-2">
+            <button class="btn btn-icon btn-appointment" title="Termin vorschlagen" (click)="openAppointmentModal()">
+              <i class="bi bi-calendar-plus"></i>
+            </button>
             <button class="btn btn-icon" title="Search in chat">
               <i class="bi bi-search"></i>
             </button>
@@ -92,6 +95,37 @@
             @if (isSystemMessage(msg)) {
               <div class="system-message">
                 {{ getSystemMessageContent(msg) }}
+              </div>
+            } @else if (isAppointmentMessage(msg)) {
+              <!-- Appointment Card - aligned like a message -->
+              <div class="message-wrapper" [class.user]="isCurrentUser(msg)" [class.other]="!isCurrentUser(msg)">
+                <div class="message-sender">
+                  {{ isCurrentUser(msg) ? 'Du' : selectedChat.user2Username }}
+                </div>
+                <div class="appointment-card" [class.my-appointment]="isCurrentUser(msg)">
+                  <div class="appointment-card-header">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Terminvorschlag</span>
+                  </div>
+                  <div class="appointment-card-body">
+                    <p class="mb-2">{{ getAppointmentContent(msg) }}</p>
+                    @if (!isCurrentUser(msg)) {
+                      <div class="appointment-actions">
+                        <button class="btn btn-sm btn-success me-2" (click)="confirmAppointment(getAppointmentId(msg)!)">
+                          <i class="bi bi-check-lg me-1"></i> Bestätigen
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="rejectAppointment(getAppointmentId(msg)!)">
+                          <i class="bi bi-x-lg me-1"></i> Ablehnen
+                        </button>
+                      </div>
+                    } @else {
+                      <small class="text-muted">Warte auf Bestätigung...</small>
+                    }
+                  </div>
+                  <div class="appointment-card-footer">
+                    <span>{{ msg.time | date:'HH:mm' }}</span>
+                  </div>
+                </div>
               </div>
             } @else {
               <div class="message-wrapper" [class.user]="isCurrentUser(msg)" [class.other]="!isCurrentUser(msg)">
@@ -202,6 +236,100 @@
               </div>
             }
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Appointment Modal -->
+@if (showAppointmentModal) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0 rounded-4">
+        <div class="modal-header bg-primary text-white rounded-top-4">
+          <h5 class="modal-title fw-bold">
+            <i class="bi bi-calendar-plus me-2"></i>
+            Termin vorschlagen
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeAppointmentModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-4">
+            Schlage <strong>{{ selectedChat?.user2Username }}</strong> einen Termin vor.
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Titel *</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="appointmentTitle"
+              placeholder="z.B. Mathe Nachhilfe"
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Datum *</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              [(ngModel)]="appointmentDate"
+            >
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold">Von *</label>
+              <input 
+                type="time" 
+                class="form-control" 
+                [(ngModel)]="appointmentStartTime"
+              >
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">Bis *</label>
+              <input 
+                type="time" 
+                class="form-control" 
+                [(ngModel)]="appointmentEndTime"
+              >
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Ort</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="appointmentLocation"
+              placeholder="z.B. Online, Bibliothek, ..."
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notizen</label>
+            <textarea 
+              class="form-control" 
+              rows="2"
+              [(ngModel)]="appointmentNotes"
+              placeholder="Zusätzliche Informationen..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary" (click)="closeAppointmentModal()">Abbrechen</button>
+          <button 
+            class="btn btn-primary" 
+            (click)="createAppointment()"
+            [disabled]="creatingAppointment || !appointmentDate || !appointmentStartTime || !appointmentEndTime"
+          >
+            @if (creatingAppointment) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            <i class="bi bi-send me-1"></i> Vorschlagen
+          </button>
         </div>
       </div>
     </div>

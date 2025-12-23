@@ -133,6 +133,14 @@
   <div class="profile-section">
     <button
       class="inbox-icon-btn"
+      [class.active]="isActive('calendar')"
+      (click)="navigateTo('calendar')"
+      title="Kalender"
+    >
+      <i class="fas fa-calendar-alt"></i>
+    </button>
+    <button
+      class="inbox-icon-btn"
       (click)="navigateTo('inbox')"
       title="Postfach"
     >

@@ -9,7 +9,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../core/services/chat.service';
+import { AppointmentService } from '../../core/services/appointment.service';
 import { Chat, ChatMessage, ChatUser } from '../../core/models/chat.model';
+import { Appointment, AppointmentCreate } from '../../core/models/appointment.model';
 import { interval, Subscription } from 'rxjs';
 
 @Component({
@@ -43,10 +45,23 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   loading = true;
   submitting = false;
 
+  // Appointment Modal
+  showAppointmentModal = false;
+  appointmentTitle = '';
+  appointmentDate = '';
+  appointmentStartTime = '';
+  appointmentEndTime = '';
+  appointmentLocation = '';
+  appointmentNotes = '';
+  creatingAppointment = false;
+
   private updateSubscription?: Subscription;
   private shouldScrollToBottom = false;
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private appointmentService: AppointmentService
+  ) {}
 
   async ngOnInit() {
     await this.loadActiveUser();
@@ -465,8 +480,121 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     return !!message.message && message.message.startsWith('<<<SYSTEM>>>');
   }
 
+  isAppointmentMessage(message: ChatMessage): boolean {
+    return !!message.message && message.message.startsWith('<<<APPOINTMENT:');
+  }
+
+  getAppointmentId(message: ChatMessage): number | null {
+    if (!message.message) return null;
+    const match = message.message.match(/<<<APPOINTMENT:(\d+)>>>/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  getAppointmentContent(message: ChatMessage): string {
+    if (!message.message) return '';
+    return message.message.replace(/<<<APPOINTMENT:\d+>>>/, '').trim();
+  }
+
   getSystemMessageContent(message: ChatMessage): string {
     return message.message ? message.message.replace('<<<SYSTEM>>>', '').trim() : '';
+  }
+
+  // Appointment Modal Functions
+  openAppointmentModal() {
+    if (!this.selectedChat) return;
+    
+    this.showAppointmentModal = true;
+    this.appointmentTitle = 'Nachhilfetermin';
+    this.appointmentDate = '';
+    this.appointmentStartTime = '';
+    this.appointmentEndTime = '';
+    this.appointmentLocation = 'Online';
+    this.appointmentNotes = '';
+    
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    this.appointmentDate = tomorrow.toISOString().split('T')[0];
+    
+    // Set default times
+    this.appointmentStartTime = '14:00';
+    this.appointmentEndTime = '15:00';
+  }
+
+  closeAppointmentModal() {
+    this.showAppointmentModal = false;
+  }
+
+  createAppointment() {
+    if (!this.selectedChat || !this.currentUser) return;
+    
+    if (!this.appointmentDate || !this.appointmentStartTime || !this.appointmentEndTime) {
+      alert('Bitte fülle alle Pflichtfelder aus');
+      return;
+    }
+
+    this.creatingAppointment = true;
+
+    const startDateTime = `${this.appointmentDate}T${this.appointmentStartTime}:00`;
+    const endDateTime = `${this.appointmentDate}T${this.appointmentEndTime}:00`;
+
+    const appointment: AppointmentCreate = {
+      proposerUsername: this.currentUser,
+      recipientUsername: this.selectedChat.user2Username,
+      title: this.appointmentTitle || 'Nachhilfetermin',
+      startTime: startDateTime,
+      endTime: endDateTime,
+      location: this.appointmentLocation,
+      notes: this.appointmentNotes
+    };
+
+    this.appointmentService.createAppointment(appointment).subscribe({
+      next: () => {
+        this.creatingAppointment = false;
+        this.closeAppointmentModal();
+        // Reload messages to show the appointment
+        if (this.currentChatId) {
+          this.loadMessagesForChat(this.currentChatId);
+        }
+      },
+      error: (err) => {
+        this.creatingAppointment = false;
+        console.error('Error creating appointment:', err);
+        if (err.status === 409) {
+          alert('Terminkonflikt: Ein Teilnehmer hat zu dieser Zeit bereits einen Termin.');
+        } else {
+          alert('Fehler beim Erstellen des Termins');
+        }
+      }
+    });
+  }
+
+  confirmAppointment(appointmentId: number) {
+    this.appointmentService.confirmAppointment(appointmentId).subscribe({
+      next: () => {
+        if (this.currentChatId) {
+          this.loadMessagesForChat(this.currentChatId);
+        }
+      },
+      error: (err) => {
+        console.error('Error confirming:', err);
+        alert('Fehler beim Bestätigen des Termins');
+      }
+    });
+  }
+
+  rejectAppointment(appointmentId: number) {
+    this.appointmentService.rejectAppointment(appointmentId).subscribe({
+      next: () => {
+        if (this.currentChatId) {
+          this.loadMessagesForChat(this.currentChatId);
+        }
+      },
+      error: (err) => {
+        console.error('Error rejecting:', err);
+        alert('Fehler beim Ablehnen des Termins');
+      }
+    });
   }
 
   getMessageAge(message: ChatMessage): number {
