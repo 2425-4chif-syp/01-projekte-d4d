@@ -34,27 +34,38 @@ body {
   flex-direction: column;
 }
 
-/* Chatliste (links) – hier bleibt die Scroll-Funktion */
+/* Chatliste (links) – mit flexbox für feste Header und scrollbare Liste */
 .chat-list {
   width: 30%;
   background-color: #ffffff;
   padding: 10px;
   border-right: 1px solid var(--border-color);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Verhindert Scrollen der gesamten Liste */
+  height: 100%;
 }
 
 .chat-list h3 {
   margin-top: 0;
   margin-bottom: 10px;
   color: var(--text-color);
+  flex-shrink: 0; /* Header bleibt fix */
 }
 
 /* WhatsApp-ähnliche Suchleiste */
 .search-container {
   position: relative;
   margin-bottom: 15px;
+  flex-shrink: 0; /* Suchfeld bleibt fix */
+}
+
+/* Chat-Items Container mit Scroll */
+#chatItems {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Wichtig für flex-Scroll */
 }
 
 .search-container i {
@@ -279,21 +290,25 @@ body {
 }
 
 /* Custom Scrollbar */
-.chat-list::-webkit-scrollbar, .chat-messages::-webkit-scrollbar {
+#chatItems::-webkit-scrollbar, 
+.chat-messages::-webkit-scrollbar {
   width: 6px;
 }
 
-.chat-list::-webkit-scrollbar-track, .chat-messages::-webkit-scrollbar-track {
+#chatItems::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 10px;
 }
 
-.chat-list::-webkit-scrollbar-thumb, .chat-messages::-webkit-scrollbar-thumb {
+#chatItems::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
   background: #bbb;
   border-radius: 10px;
 }
 
-.chat-list::-webkit-scrollbar-thumb:hover, .chat-messages::-webkit-scrollbar-thumb:hover {
+#chatItems::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color);
 }
 

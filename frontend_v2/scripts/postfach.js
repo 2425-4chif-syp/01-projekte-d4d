@@ -357,9 +357,7 @@ function setupViewToggle() {
         });
     });
 }            displayRequests(currentFilter);
-        });
-    });
-}
+
 
 /**
  * Show notification message

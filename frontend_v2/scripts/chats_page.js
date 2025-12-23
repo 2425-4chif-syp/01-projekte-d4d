@@ -1,69 +1,37 @@
 import { API_URL } from "./config.js";
+import { sessionManager } from "./session-manager.js";
 
 let currentChatId = null;
 let currentUser = null;
+let currentUserId = null;
 let chats = [];
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   console.log("Chat: DOM geladen");
-  loadActiveUser();
+  await loadActiveUser();
   setupEventListeners();
   startPeriodicChatUpdates(); // NEU: Starte automatische Aktualisierung
 });
 
-// Lade aktiven Benutzer
-function loadActiveUser() {
-  fetch(`${API_URL}/user`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Fehler beim Abrufen des aktiven Benutzers");
-      }
-      return response.text();
-    })
-    .then((responseText) => {
-      try {
-        const responseJson = JSON.parse(responseText);
-        currentUser = responseJson.username || null;
-      } catch (e) {
-        currentUser =
-          responseText && responseText.trim() !== "" ? responseText : null;
-      }
-
-      if (currentUser) {
-        console.log("Chat: Aktiver Benutzer geladen:", currentUser);
-        updateNavbarUser();
-        loadRealChats();
-      } else {
-        console.log("Chat: Kein aktiver Benutzer, zeige Info");
-        showNoUserMessage();
-      }
-    })
-    .catch((error) => {
-      console.error("Chat: API nicht verfügbar, verwende localStorage:", error);
-      const savedUser = localStorage.getItem("activeUser");
-      if (savedUser) {
-        currentUser = savedUser;
-        console.log("Chat: Aktiver Benutzer aus localStorage:", currentUser);
-        updateNavbarUser();
-        loadRealChats();
-      } else {
-        showNoUserMessage();
-      }
-    });
-}
-
-// Update Navbar mit aktuellem User
-function updateNavbarUser() {
-  const activeUserDisplay = document.getElementById("activeUserDisplay");
-  const navUsernameInput = document.getElementById("navUsername");
-
-  if (activeUserDisplay && currentUser) {
-    activeUserDisplay.textContent = currentUser;
-    activeUserDisplay.classList.add("user-active");
-  }
-
-  if (navUsernameInput && currentUser) {
-    navUsernameInput.value = currentUser;
+// Lade aktiven Benutzer aus Keycloak-Session
+async function loadActiveUser() {
+  try {
+    const session = await sessionManager.getSession();
+    
+    if (session && session.user) {
+      currentUser = session.user.fullname || session.user.username || "Unbekannt";
+      currentUserId = session.user.id;
+      console.log("Chat: Aktiver Benutzer aus Session:", currentUser, "ID:", currentUserId);
+      
+      // Lade nur existierende Konversationen (mit Nachrichten)
+      await loadExistingChats();
+    } else {
+      console.log("Chat: Keine aktive Session gefunden");
+      showNoUserMessage();
+    }
+  } catch (error) {
+    console.error("Chat: Fehler beim Laden der Session:", error);
+    showNoUserMessage();
   }
 }
 
@@ -71,278 +39,165 @@ function showNoUserMessage() {
   const chatList = document.getElementById("chatItems");
   if (chatList) {
     chatList.innerHTML =
-      '<div class="no-contacts">Bitte melden Sie sich zuerst an.<br><small>Geben Sie einen Benutzernamen in die obere Suchleiste ein und drücken Enter.</small></div>';
+      '<div class="no-contacts">Bitte melden Sie sich zuerst an.<br><small>Sie müssen bei Keycloak angemeldet sein.</small></div>';
   }
 }
 
-// Lade echte Chats aus dem Backend mit Fallback
-async function loadRealChats() {
-  if (!currentUser) {
-    showNoUserMessage();
+// Zeige leere Kontaktliste (Microsoft Teams-Stil)
+function showEmptyContactList() {
+  const chatList = document.getElementById("chatItems");
+  if (chatList) {
+    chatList.innerHTML =
+      '<div class="no-contacts"><i class="fas fa-search"></i><p>Suchen Sie nach Kontakten</p><small>Geben Sie einen Namen ein, um Chats zu finden</small></div>';
+  }
+}
+
+// Lade echte Chats aus dem Backend - NUR FÜR EXISTIERENDE UNTERHALTUNGEN
+async function loadExistingChats() {
+  if (!currentUser || !currentUserId) {
+    showEmptyContactList();
     return;
   }
 
-  console.log("Chat: Lade echte Chats für Benutzer:", currentUser);
+  console.log("Chat: Lade existierende Chats für Benutzer:", currentUser);
 
   try {
-    // 1. Versuche Chat-Endpunkte zu laden
-    const contactsResponse = await fetch(`${API_URL}/chatentry/users`);
+    // Lade nur Chats mit bereits existierenden Nachrichten
+    const response = await fetch(`${API_URL}/chatentry/conversations/${currentUserId}`);
 
-    if (!contactsResponse.ok) {
-      throw new Error(`API Error: ${contactsResponse.status}`);
-    }
-
-    const contacts = await contactsResponse.json();
-    console.log(
-      "Chat: Benutzer von API erhalten:",
-      contacts.length,
-      "Benutzer"
-    );
-
-    if (contacts.length === 0) {
-      showFallbackChats();
+    if (!response.ok) {
+      console.log("Chat: Noch keine existierenden Konversationen");
+      showEmptyContactList();
       return;
     }
 
-    // 2. Erstelle Chat-Objekte für alle Kontakte
-    // WICHTIG: Prüfe für Chats ob Nachrichten existieren (mit Batch-Verarbeitung)
-    const currentUserId = await getCurrentUserId();
-    const filteredContacts = contacts.filter(
-      (contact) => contact.name !== currentUser
-    );
+    const conversations = await response.json();
+    console.log("Chat: Existierende Konversationen:", conversations.length);
 
-    console.log("Chat: Starte Laden von", filteredContacts.length, "Chats...");
-
-    // Verarbeite Chats in Batches von 50 gleichzeitig (Performance)
-    const batchSize = 50;
-    chats = [];
-
-    for (let i = 0; i < filteredContacts.length; i += batchSize) {
-      const batch = filteredContacts.slice(i, i + batchSize);
-      console.log(
-        `Chat: Verarbeite Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
-          filteredContacts.length / batchSize
-        )} (${batch.length} Chats)`
-      );
-
-      const batchPromises = batch.map(async (contact) => {
-        try {
-          // Prüfe ob es bereits Nachrichten gibt
-          const messagesResponse = await fetch(
-            `${API_URL}/chatentry/${currentUserId}/${contact.id}`
-          );
-
-          let lastMessage = "Neue Unterhaltung starten";
-          let lastUpdate = new Date().toISOString();
-
-          if (messagesResponse.ok) {
-            const messages = await messagesResponse.json();
-            if (messages.length > 0) {
-              const lastMsg = messages[messages.length - 1];
-              lastMessage = lastMsg.message || "Nachricht";
-              lastMessage =
-                lastMessage.length > 50
-                  ? lastMessage.substring(0, 50) + "..."
-                  : lastMessage;
-              lastUpdate = lastMsg.time || new Date().toISOString();
-            }
-          } else if (messagesResponse.status === 404) {
-            // 404 ist normal für neue Chats ohne Nachrichten - keine Fehlerausgabe
-          }
-
-          // KORRIGIERT: Extrahiere Namen korrekt (falls contact.name ein Objekt ist)
-          const contactName =
-            typeof contact.name === "object" && contact.name !== null
-              ? contact.name.username ||
-                contact.name.name ||
-                String(contact.name)
-              : contact.name || "Unbekannt";
-
-          return {
-            id: contact.id,
-            user1Username: currentUser,
-            user2Username: contactName,
-            lastMessage: lastMessage,
-            lastUpdate: lastUpdate,
-            isAdmin: contactName.toLowerCase() === "admin",
-          };
-        } catch (error) {
-          // KORRIGIERT: Extrahiere Namen korrekt (falls contact.name ein Objekt ist)
-          const contactName =
-            typeof contact.name === "object" && contact.name !== null
-              ? contact.name.username ||
-                contact.name.name ||
-                String(contact.name)
-              : contact.name || "Unbekannt";
-
-          console.debug(
-            "Chat: Fehler beim Prüfen von",
-            contactName,
-            ":",
-            error
-          );
-          return {
-            id: contact.id,
-            user1Username: currentUser,
-            user2Username: contactName,
-            lastMessage: "Neue Unterhaltung starten",
-            lastUpdate: new Date().toISOString(),
-            isAdmin: contactName.toLowerCase() === "admin",
-          };
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      chats.push(...batchResults);
-
-      // Rendere nach jedem Batch, damit User nicht zu lange warten muss
-      if (i === 0) {
-        renderChatList();
-      }
+    if (conversations.length === 0) {
+      showEmptyContactList();
+      return;
     }
 
-    console.log(
-      "Chat: Alle Chats geladen mit Nachrichtenstatus:",
-      chats.length
-    );
+    // Erstelle Chat-Objekte für existierende Konversationen
+    chats = conversations.map(conv => ({
+      id: conv.userId,
+      user1Username: currentUser,
+      user2Username: conv.username,
+      lastMessage: conv.lastMessage || "Keine Nachricht",
+      lastUpdate: conv.lastUpdate || new Date().toISOString(),
+      isAdmin: false,
+    }));
+
+    renderChatList();
+    console.log("Chat: Existierende Konversationen geladen:", chats.length);
+  } catch (error) {
+    console.error("Chat: Fehler beim Laden existierender Chats:", error);
+    showEmptyContactList();
+  }
+}
+
+// Suche nach Benutzern (Teams-Stil)
+async function searchUsers(searchTerm) {
+  if (!searchTerm || searchTerm.length < 2) {
+    // Bei leerer Suche: zeige existierende Chats
+    await loadExistingChats();
+    return;
+  }
+
+  console.log("Chat: Suche nach Benutzern:", searchTerm);
+
+  try {
+    const response = await fetch(`${API_URL}/chatentry/users`);
+    
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    const allUsers = await response.json();
+    
+    // Filtere Benutzer nach Suchbegriff (case-insensitive)
+    const filteredUsers = allUsers.filter(user => {
+      const userName = user.name || "";
+      return userName.toLowerCase().includes(searchTerm.toLowerCase()) && 
+             userName !== currentUser; // Schließe aktuellen User aus
+    });
+
+    console.log("Chat: Gefundene Benutzer:", filteredUsers.length);
+
+    // Erstelle Chat-Objekte für gefundene Benutzer
+    chats = await Promise.all(filteredUsers.map(async (user) => {
+      try {
+        // Prüfe ob es bereits Nachrichten gibt
+        const messagesResponse = await fetch(
+          `${API_URL}/chatentry/${currentUserId}/${user.id}`
+        );
+
+        let lastMessage = "Neue Unterhaltung starten";
+        let lastUpdate = new Date().toISOString();
+
+        if (messagesResponse.ok) {
+          const messages = await messagesResponse.json();
+          if (messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            lastMessage = lastMsg.message || "Nachricht";
+            lastMessage =
+              lastMessage.length > 50
+                ? lastMessage.substring(0, 50) + "..."
+                : lastMessage;
+            lastUpdate = lastMsg.time || new Date().toISOString();
+          }
+        }
+
+        return {
+          id: user.id,
+          user1Username: currentUser,
+          user2Username: user.name,
+          lastMessage: lastMessage,
+          lastUpdate: lastUpdate,
+          isAdmin: false,
+        };
+      } catch (error) {
+        console.debug("Chat: Fehler beim Prüfen von", user.name, ":", error);
+        return {
+          id: user.id,
+          user1Username: currentUser,
+          user2Username: user.name,
+          lastMessage: "Neue Unterhaltung starten",
+          lastUpdate: new Date().toISOString(),
+          isAdmin: false,
+        };
+      }
+    }));
 
     if (chats.length === 0) {
-      showFallbackChats();
+      const chatList = document.getElementById("chatItems");
+      if (chatList) {
+        chatList.innerHTML = '<div class="no-contacts">Keine Benutzer gefunden</div>';
+      }
     } else {
       renderChatList();
-      showMessage(`${chats.length} Chats geladen`, "success");
     }
   } catch (error) {
-    console.error("Chat: Fehler beim Laden der echten Chats:", error);
-    showMessage("Backend nicht verfügbar - zeige Demo-Chats", "warning");
-    showFallbackChats();
+    console.error("Chat: Fehler bei der Benutzersuche:", error);
+    showMessage("Fehler bei der Benutzersuche", "error");
   }
-}
-
-// Stelle sicher, dass ein Admin-Chat existiert
-async function ensureAdminChat() {
-  try {
-    // Prüfe ob der aktuelle Benutzer der Admin ist
-    if (currentUser && currentUser.toLowerCase() === "admin") {
-      console.log("Chat: Aktueller Benutzer ist Admin - kein Admin-Chat nötig");
-      return; // Admin chattet nicht mit sich selbst
-    }
-
-    // Prüfe ob Admin bereits in den Chats ist
-    let adminChat = chats.find((chat) => {
-      if (!chat || !chat.user2Username) return false;
-      return chat.isAdmin || chat.user2Username.toLowerCase() === "admin";
-    });
-
-    if (!adminChat) {
-      // Erstelle Admin-Chat wenn er nicht existiert
-      console.log("Chat: Erstelle Admin-Chat");
-
-      adminChat = {
-        id: "admin-chat",
-        user1Username: currentUser,
-        user2Username: "Admin",
-        lastMessage: "Hallo, schreibe mir wenn du Hilfe brauchst.",
-        lastUpdate: new Date().toISOString(),
-        isAdmin: true,
-        isPinned: true,
-      };
-
-      // Füge Admin-Chat an den Anfang hinzu
-      chats.unshift(adminChat);
-    } else {
-      // Markiere existierenden Admin-Chat als gepinnt
-      adminChat.isPinned = true;
-      adminChat.isAdmin = true;
-
-      // Wenn Admin-Chat keine Nachricht hat, setze Willkommensnachricht
-      if (
-        !adminChat.lastMessage ||
-        adminChat.lastMessage === "Starten Sie eine Unterhaltung"
-      ) {
-        adminChat.lastMessage = "Hallo, schreibe mir wenn du Hilfe brauchst.";
-        adminChat.lastUpdate = new Date().toISOString();
-      }
-    }
-  } catch (error) {
-    console.error("Chat: Fehler in ensureAdminChat:", error);
-  }
-}
-
-// Fallback: Zeige Demo-Chats wenn Backend nicht verfügbar
-function showFallbackChats() {
-  console.log("Chat: Zeige Fallback-Chats für:", currentUser);
-
-  chats = [];
-
-  // ADMIN-CHAT NUR WENN AKTUELLER BENUTZER NICHT ADMIN IST
-  if (currentUser && currentUser.toLowerCase() !== "admin") {
-    chats.push({
-      id: "admin-chat",
-      user1Username: currentUser,
-      user2Username: "Admin",
-      lastMessage: "Hallo, schreibe mir wenn du Hilfe brauchst.",
-      lastUpdate: new Date().toISOString(),
-      isAdmin: true,
-      isPinned: true,
-    });
-  }
-
-  // Reguläre Demo-Chats hinzufügen
-  chats.push(
-    {
-      id: "demo-1",
-      user1Username: currentUser,
-      user2Username: "Anna Berghuber",
-      lastMessage: "Starten Sie eine Unterhaltung",
-      lastUpdate: new Date().toISOString(),
-    },
-    {
-      id: "demo-2",
-      user1Username: "Tom Steinmann",
-      user2Username: currentUser,
-      lastMessage: "Starten Sie eine Unterhaltung",
-      lastUpdate: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "demo-3",
-      user1Username: currentUser,
-      user2Username: "Lena Waldschmidt",
-      lastMessage: "Starten Sie eine Unterhaltung",
-      lastUpdate: new Date(Date.now() - 7200000).toISOString(),
-    },
-    {
-      id: "demo-4",
-      user1Username: "Robert Steinhuber",
-      user2Username: currentUser,
-      lastMessage: "Starten Sie eine Unterhaltung",
-      lastUpdate: new Date(Date.now() - 10800000).toISOString(),
-    }
-  );
-
-  renderChatList();
-  showMessage("Demo-Chats geladen (Backend nicht verfügbar)", "info");
 }
 
 // Event Listeners
 function setupEventListeners() {
-  // Navbar-Suchfeld (für Anmeldung)
-  const navUsernameInput = document.getElementById("navUsername");
-  if (navUsernameInput) {
-    navUsernameInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        const username = this.value.trim();
-        if (username) {
-          setActiveUser(username);
-        }
-      }
-    });
-  }
-
-  // Chat-Suchfeld (für Personensuche)
+  // Chat-Suchfeld (für Personensuche - Teams-Stil)
   const searchInput = document.getElementById("searchInput");
   if (searchInput) {
-    searchInput.addEventListener("input", filterContacts);
+    searchInput.addEventListener("input", function() {
+      const searchTerm = this.value.trim();
+      if (searchTerm.length >= 2) {
+        searchUsers(searchTerm);
+      } else if (searchTerm.length === 0) {
+        // Bei leerer Suche: zeige existierende Chats
+        loadExistingChats();
+      }
+    });
   }
 
   // Chat-Form
@@ -360,74 +215,7 @@ function setupEventListeners() {
 }
 
 // Setze aktiven Benutzer - KORRIGIERT MIT BENUTZER-VALIDIERUNG
-async function setActiveUser(username) {
-  console.log("Chat: Setze aktiven Benutzer:", username);
-
-  try {
-    // 1. ERST PRÜFEN OB BENUTZER EXISTIERT
-    const usersResponse = await fetch(`${API_URL}/chatentry/users`);
-
-    if (usersResponse.ok) {
-      const users = await usersResponse.json();
-      const userExists = users.some((user) => user.name === username);
-
-      if (!userExists) {
-        console.error("Chat: Benutzer existiert nicht:", username);
-        showMessage(`Fehler: Benutzer "${username}" existiert nicht!`, "error");
-
-        // Eingabefeld leeren
-        const navUsernameInput = document.getElementById("navUsername");
-        if (navUsernameInput) {
-          navUsernameInput.value = "";
-        }
-        return;
-      }
-
-      console.log("Chat: Benutzer existiert, setze als aktiv:", username);
-    } else {
-      console.warn("Chat: Kann Benutzerliste nicht laden, verwende Fallback");
-      // Bei API-Fehler trotzdem weitermachen (Fallback-Verhalten)
-    }
-
-    // 2. BENUTZER ALS AKTIV SETZEN (nur wenn er existiert oder API nicht verfügbar)
-    const response = await fetch(`${API_URL}/user`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username: username }),
-    });
-
-    if (response.ok) {
-      currentUser = username;
-      localStorage.setItem("activeUser", username);
-      updateNavbarUser();
-      loadRealChats();
-      showMessage(`Erfolgreich angemeldet als ${username}`, "success");
-    } else {
-      throw new Error(
-        `Fehler beim Setzen von ${username} als aktiven Benutzer`
-      );
-    }
-  } catch (error) {
-    console.error("Chat: API Fehler beim Anmelden:", error);
-
-    // FALLBACK NUR BEI VERBINDUNGSFEHLERN, NICHT BEI UNGÜLTIGEN BENUTZERN
-    if (error.message && error.message.includes("existiert nicht")) {
-      // Fehler bereits behandelt, nichts mehr tun
-      return;
-    }
-
-    // Bei anderen Fehlern (Verbindung, etc.) trotzdem anmelden
-    currentUser = username;
-    localStorage.setItem("activeUser", username);
-    updateNavbarUser();
-    loadRealChats();
-    showMessage(`${username} gesetzt (API nicht verfügbar)`, "warning");
-  }
-}
-
-// Rendere Chat-Liste mit Kategorien und Admin-Chat - KORRIGIERT FÜR BESSERE SORTIERUNG
+// Rendere Chat-Liste (sortiert nach Aktivität)
 function renderChatList() {
   const chatList = document.getElementById("chatItems");
   if (!chatList) {
@@ -442,85 +230,20 @@ function renderChatList() {
     return;
   }
 
-  // Teile Chats in Kategorien auf
-  const adminChats = chats.filter((chat) => chat.isAdmin || chat.isPinned);
-  const regularChats = chats.filter((chat) => !chat.isAdmin && !chat.isPinned);
+  // Sortiere Chats nach letzter Aktivität (neueste zuerst)
+  const sortedChats = [...chats].sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
-  const activeChats = regularChats.filter(
-    (chat) =>
-      chat.lastMessage &&
-      chat.lastMessage !== "Starten Sie eine Unterhaltung" &&
-      chat.lastMessage !== "Neue Unterhaltung starten" &&
-      chat.lastMessage.trim() !== ""
-  );
+  console.log(`Chat: Rendere ${sortedChats.length} Chats`);
 
-  const newChats = regularChats.filter(
-    (chat) =>
-      !chat.lastMessage ||
-      chat.lastMessage === "Starten Sie eine Unterhaltung" ||
-      chat.lastMessage === "Neue Unterhaltung starten" ||
-      chat.lastMessage.trim() === ""
-  );
+  sortedChats.forEach((chat) => {
+    renderChatItem(chat, chatList);
+  });
 
-  // KORRIGIERT: Sortiere Admin-Chats auch nach letzter Aktivität (neueste zuerst)
-  adminChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
-
-  // KORRIGIERT: Sortiere aktive Chats nach letzter Aktivität (neueste zuerst)
-  activeChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
-
-  // KORRIGIERT: Sortiere auch neue Chats nach Erstellungszeit (neueste zuerst)
-  newChats.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
-
-  console.log(
-    `Chat: Rendere ${adminChats.length} Admin, ${activeChats.length} aktive und ${newChats.length} neue Chats`
-  );
-
-  // 1. ADMIN-CHAT GANZ OBEN (angepinnt und nach Aktivität sortiert)
-  if (adminChats.length > 0) {
-    const adminCategoryHeader = document.createElement("div");
-    adminCategoryHeader.className = "chat-category admin-category";
-    adminCategoryHeader.innerHTML = '<i class="fas fa-crown"></i> Support';
-    chatList.appendChild(adminCategoryHeader);
-
-    adminChats.forEach((chat) => {
-      renderChatItem(chat, chatList, true);
-    });
-  }
-
-  // 2. Kürzliche Chats (neueste zuerst)
-  if (activeChats.length > 0) {
-    const activeCategoryHeader = document.createElement("div");
-    activeCategoryHeader.className = "chat-category";
-    activeCategoryHeader.innerHTML =
-      '<i class="fas fa-clock"></i> Kürzliche Chats';
-    chatList.appendChild(activeCategoryHeader);
-
-    activeChats.forEach((chat) => {
-      renderChatItem(chat, chatList);
-    });
-  }
-
-  // 3. Neue Chats (neueste zuerst)
-  if (newChats.length > 0) {
-    const newCategoryHeader = document.createElement("div");
-    newCategoryHeader.className = "chat-category";
-    newCategoryHeader.innerHTML =
-      '<i class="fas fa-plus-circle"></i> Neue Chats';
-    chatList.appendChild(newCategoryHeader);
-
-    newChats.forEach((chat) => {
-      renderChatItem(chat, chatList);
-    });
-  }
-
-  console.log(
-    `Chat: ${adminChats.length} Admin, ${activeChats.length} aktive und ${newChats.length} neue Chats gerendert`
-  );
+  console.log(`Chat: ${sortedChats.length} Chats gerendert`);
 }
 
 // Hilfsfunktion: Einzelnen Chat-Item rendern
-function renderChatItem(chat, container, isAdmin = false) {
-  // KORRIGIERT: Stelle sicher dass otherUser ein String ist
+function renderChatItem(chat, container) {
   let otherUser =
     chat.user1Username === currentUser
       ? chat.user2Username
@@ -534,25 +257,20 @@ function renderChatItem(chat, container, isAdmin = false) {
   const firstLetter = otherUser.charAt(0).toUpperCase();
 
   const chatItem = document.createElement("div");
-  chatItem.className = `chat-item ${isAdmin ? "admin-chat" : ""}`;
+  chatItem.className = "chat-item";
   chatItem.setAttribute("data-chat-id", chat.id);
 
   // Bestimme ob Chat aktiv ist (hat Nachrichten)
   const hasMessages =
     chat.lastMessage &&
     chat.lastMessage !== "Starten Sie eine Unterhaltung" &&
+    chat.lastMessage !== "Neue Unterhaltung starten" &&
     chat.lastMessage.trim() !== "";
 
-  // Admin bekommt spezielle Krone im Avatar
-  const avatarContent = isAdmin ? '<i class="fas fa-crown"></i>' : firstLetter;
-  const avatarClass = isAdmin ? "chat-avatar admin-avatar" : "chat-avatar";
-
   chatItem.innerHTML = `
-        <div class="${avatarClass}">${avatarContent}</div>
+        <div class="chat-avatar">${firstLetter}</div>
         <div class="chat-details">
-            <div class="chat-name ${isAdmin ? "admin-name" : ""}">${escapeHtml(
-    otherUser
-  )}</div>
+            <div class="chat-name">${escapeHtml(otherUser)}</div>
             <div class="chat-last-message ${
               hasMessages ? "has-messages" : "no-messages"
             }">${escapeHtml(
@@ -564,9 +282,7 @@ function renderChatItem(chat, container, isAdmin = false) {
               hasMessages ? formatTime(chat.lastUpdate) : ""
             }</div>
             ${
-              isAdmin
-                ? '<div class="chat-indicator admin"></div>'
-                : hasMessages
+              hasMessages
                 ? '<div class="chat-indicator active"></div>'
                 : '<div class="chat-indicator new"></div>'
             }
@@ -597,24 +313,14 @@ function selectChat(chatId, otherUser) {
   loadMessagesForChat(chatId);
 }
 
-// Lade Nachrichten für einen Chat - KORRIGIERT
+// Lade Nachrichten für einen Chat
 async function loadMessagesForChat(chatId) {
-  if (!chatId || !currentUser) return;
+  if (!chatId || !currentUserId) return;
 
   console.log("Chat: Lade Nachrichten für Chat ID:", chatId);
 
-  // Prüfe ob es ein Demo-Chat oder Admin-Chat ist
-  if (
-    typeof chatId === "string" &&
-    (chatId.startsWith("demo-") || chatId === "admin-chat")
-  ) {
-    showEmptyChat();
-    return;
-  }
-
   try {
     // Versuche echte Nachrichten zu laden
-    const currentUserId = await getCurrentUserId();
     const response = await fetch(
       `${API_URL}/chatentry/${currentUserId}/${chatId}`
     );
@@ -635,7 +341,7 @@ async function loadMessagesForChat(chatId) {
               : lastMessage;
           chat.lastUpdate = lastMsg.time || new Date().toISOString();
 
-          // Chat-Liste neu rendern um die Kategorie zu aktualisieren
+          // Chat-Liste neu rendern
           renderChatList();
           // Aktiven Chat wieder markieren
           setTimeout(() => {
@@ -706,25 +412,13 @@ function renderRealMessages(messages) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Sende Nachricht - HAUPTFUNKTION KORRIGIERT
+// Sende Nachricht
 async function sendMessage(message) {
-  if (!message || !currentChatId || !currentUser) return;
+  if (!message || !currentChatId || !currentUserId) return;
 
   console.log("Chat: Sende Nachricht:", message, "an Chat:", currentChatId);
 
-  // Prüfe ob es ein Demo-Chat oder Admin-Chat ist
-  if (
-    typeof currentChatId === "string" &&
-    (currentChatId.startsWith("demo-") || currentChatId === "admin-chat")
-  ) {
-    sendDemoMessage(message);
-    return;
-  }
-
   try {
-    const currentUserId = await getCurrentUserId();
-
-    // KORRIGIERT: Verwende die richtige Chat-ID als Empfänger-ID
     const receiverId = currentChatId;
 
     console.log(
@@ -762,8 +456,7 @@ async function sendMessage(message) {
     }
   } catch (error) {
     console.error("Chat: Fehler beim Senden:", error);
-    showMessage("Fehler beim Senden - verwende Demo-Modus", "warning");
-    sendDemoMessage(message);
+    showMessage("Fehler beim Senden der Nachricht", "error");
   }
 }
 
@@ -827,99 +520,7 @@ function addMessageToChat(message, isCurrentUser = true) {
   }
 }
 
-// Demo-Nachricht senden (Fallback)
-function sendDemoMessage(message) {
-  const chatMessages = document.getElementById("chatMessages");
-  if (!chatMessages || !currentChatId) return;
-
-  // Entferne "leerer Chat" Info falls vorhanden
-  const emptyInfo = chatMessages.querySelector(".empty-chat-info");
-  if (emptyInfo) {
-    emptyInfo.remove();
-  }
-
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message user";
-  messageDiv.setAttribute("data-message-id", `demo-${Date.now()}`);
-
-  const now = new Date();
-  const time =
-    now.getHours() + ":" + now.getMinutes().toString().padStart(2, "0");
-
-  messageDiv.innerHTML = `
-        <div class="message-sender">${escapeHtml(currentUser)}</div>
-        <div>${escapeHtml(message)}</div>
-        <div class="message-status">
-            <span class="message-time">${time}</span>
-            <div class="read-status status-sending"><i class="fas fa-clock"></i></div>
-        </div>
-    `;
-
-  chatMessages.appendChild(messageDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-
-  // Chat-Liste aktualisieren
-  updateChatListAfterMessage(message);
-
-  // Status-Updates simulieren
-  setTimeout(() => {
-    const statusElement = messageDiv.querySelector(".read-status");
-    if (statusElement) {
-      statusElement.className = "read-status status-delivered";
-      statusElement.innerHTML = '<i class="fas fa-check"></i>';
-    }
-  }, 1000);
-
-  setTimeout(() => {
-    const statusElement = messageDiv.querySelector(".read-status");
-    if (statusElement) {
-      statusElement.className = "read-status status-read";
-      statusElement.innerHTML = '<i class="fas fa-check-double"></i>';
-    }
-  }, 3000);
-
-  // ADMIN-SPEZIFISCHE BEHANDLUNG - Nur Antwort wenn es NICHT der Admin-Chat ist
-  if (currentChatId !== "admin-chat") {
-    // Automatische Demo-Antwort nach 2 Sekunden für normale Chats
-    setTimeout(() => {
-      const otherUser = getOtherUserFromChat(currentChatId);
-      const responseMessages = [
-        "Das ist interessant!",
-        "Verstehe, danke für die Info.",
-        "Können wir uns morgen treffen?",
-        "Ja, das passt mir gut.",
-        "Super, freue mich darauf!",
-      ];
-
-      const randomResponse =
-        responseMessages[Math.floor(Math.random() * responseMessages.length)];
-
-      const responseDiv = document.createElement("div");
-      responseDiv.className = "message other";
-
-      const responseTime =
-        now.getHours() +
-        ":" +
-        (now.getMinutes() + 1).toString().padStart(2, "0");
-
-      responseDiv.innerHTML = `
-                <div class="message-sender">${escapeHtml(otherUser)}</div>
-                <div>${escapeHtml(randomResponse)}</div>
-                <div class="message-status">
-                    <span class="message-time">${responseTime}</span>
-                </div>
-            `;
-
-      chatMessages.appendChild(responseDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-
-      // Auch nach der Antwort Chat-Liste aktualisieren
-      updateChatListAfterMessage(randomResponse);
-    }, 2000);
-  }
-}
-
-// Hilfsfunktion: Chat-Liste nach Nachricht aktualisieren - ERWEITERT FÜR ADMIN-UPDATES
+// Hilfsfunktion: Chat-Liste nach Nachricht aktualisieren
 function updateChatListAfterMessage(message) {
   const chat = chats.find((c) => c.id === currentChatId);
   if (chat) {
@@ -928,21 +529,16 @@ function updateChatListAfterMessage(message) {
       message.length > 50 ? message.substring(0, 50) + "..." : message;
     chat.lastUpdate = new Date().toISOString();
 
-    // WICHTIG: Entferne Chat aus aktueller Position und füge an den Anfang
+    // Entferne Chat aus aktueller Position und füge an den Anfang
     const index = chats.indexOf(chat);
     if (index > -1) {
       chats.splice(index, 1);
     }
 
-    // Admin-Chats bleiben Admin-Chats, aber werden auch nach vorne geschoben
-    if (chat.isAdmin || chat.isPinned) {
-      console.log("Chat: Admin-Chat aktualisiert - wird an die Spitze gesetzt");
-    }
-
     // Füge den aktualisierten Chat an den Anfang der Liste
     chats.unshift(chat);
 
-    // Chat-Liste sofort neu rendern (wird jetzt in "Kürzliche Chats" sein)
+    // Chat-Liste sofort neu rendern
     renderChatList();
 
     // Aktiven Chat wieder markieren
@@ -964,7 +560,7 @@ function startPeriodicChatUpdates() {
 
   // Überprüfe alle 10 Sekunden ob neue Nachrichten da sind
   setInterval(async () => {
-    if (!currentUser) {
+    if (!currentUserId) {
       console.debug("Chat: Kein aktiver Benutzer - überspringe Aktualisierung");
       return;
     }
@@ -975,18 +571,10 @@ function startPeriodicChatUpdates() {
     );
 
     try {
-      const currentUserId = await getCurrentUserId();
       let hasUpdates = false;
 
       // TEIL 1: Prüfe bestehende aktive Chats auf Updates
       const activeChatsToCheck = chats.filter((chat) => {
-        // Überspringe Demo-Chats
-        if (
-          typeof chat.id === "string" &&
-          (chat.id.startsWith("demo-") || chat.id === "admin-chat")
-        ) {
-          return false;
-        }
         // Nur Chats mit echten Nachrichten prüfen
         return (
           chat.lastMessage &&
@@ -1048,15 +636,8 @@ function startPeriodicChatUpdates() {
         }
       }
 
-      // TEIL 2: Prüfe auch NEUE Chats (für Admin - wenn jemand zum ersten Mal schreibt)
+      // TEIL 2: Prüfe auch NEUE Chats (wenn jemand zum ersten Mal schreibt)
       const newChatsToCheck = chats.filter((chat) => {
-        // Überspringe Demo-Chats
-        if (
-          typeof chat.id === "string" &&
-          (chat.id.startsWith("demo-") || chat.id === "admin-chat")
-        ) {
-          return false;
-        }
         // Nur Chats OHNE Nachrichten prüfen
         return (
           !chat.lastMessage ||
@@ -1157,23 +738,6 @@ function startPeriodicChatUpdates() {
 }
 
 // Such-Funktionalität für Kontakte
-function filterContacts() {
-  const searchTerm =
-    document.getElementById("searchInput")?.value?.toLowerCase() || "";
-  const chatItems = document.querySelectorAll(".chat-item");
-
-  chatItems.forEach((item) => {
-    const chatNameElement = item.querySelector(".chat-name");
-    const chatName = chatNameElement?.textContent?.toLowerCase() || "";
-
-    if (chatName.includes(searchTerm)) {
-      item.style.display = "flex";
-    } else {
-      item.style.display = "none";
-    }
-  });
-}
-
 // Hilfsfunktion: Anderen Benutzer aus Chat ermitteln
 function getOtherUserFromChat(chatId) {
   const chat = chats.find((c) => c.id === chatId);
@@ -1183,21 +747,6 @@ function getOtherUserFromChat(chatId) {
       : chat.user1Username;
   }
   return "Unbekannt";
-}
-
-// Hilfsfunktion: Aktuelle Benutzer-ID ermitteln mit Fallback
-async function getCurrentUserId() {
-  try {
-    const usersResponse = await fetch(`${API_URL}/chatentry/users`);
-    if (usersResponse.ok) {
-      const users = await usersResponse.json();
-      const user = users.find((u) => u.name === currentUser);
-      return user ? user.id : 1;
-    }
-  } catch (error) {
-    console.error("Chat: Fehler beim Ermitteln der User-ID:", error);
-  }
-  return 1; // Fallback
 }
 
 // Hilfsfunktionen für UI

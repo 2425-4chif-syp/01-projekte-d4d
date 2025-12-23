@@ -2,10 +2,12 @@ package at.htl.endpoints;
 
 import at.htl.endpoints.dto.ServiceRequestCreateDto;
 import at.htl.endpoints.dto.ServiceRequestResponseDto;
+import at.htl.entity.ChatEntry;
 import at.htl.entity.Market;
 import at.htl.entity.Service;
 import at.htl.entity.ServiceRequest;
 import at.htl.entity.User;
+import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.MarketRepository;
 import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceRequestRepository;
@@ -41,6 +43,9 @@ public class ServiceRequestResource {
 
     @Inject
     ServiceRepository serviceRepository;
+
+    @Inject
+    ChatEntryRepository chatEntryRepository;
 
     @Inject
     NotificationService notificationService;
@@ -225,6 +230,14 @@ public class ServiceRequestResource {
         Service service = new Service(providerMarket, clientMarket);
         service.setStatus("ACTIVE");
         serviceRepository.persist(service);
+
+        // Create System Chat Message
+        ChatEntry systemMsg = new ChatEntry();
+        systemMsg.setSender(request.getReceiver()); // Provider (who accepted)
+        systemMsg.setReceiver(request.getSender()); // Client (who requested)
+        systemMsg.setMessage("<<<SYSTEM>>> Service bestätigt! Ihr könnt nun hier Details besprechen und Termine vereinbaren.");
+        systemMsg.setTime(new java.sql.Timestamp(System.currentTimeMillis()));
+        chatEntryRepository.persist(systemMsg);
 
         // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an den Schüler (sender)
         User sender = request.getSender();

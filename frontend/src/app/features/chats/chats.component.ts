@@ -30,8 +30,15 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   currentUserId: number | null = null;
   currentChatId: string | number | null = null;
   currentChatTitle = '';
+  selectedChat: Chat | null = null;
 
   searchTerm = '';
+  newChatSearchTerm = '';
+  showNewChatSearch = false;
+  showNewChatModal = false;
+  allUsers: ChatUser[] = [];
+  foundUsers: ChatUser[] = [];
+
   messageText = '';
   loading = true;
   submitting = false;
@@ -92,6 +99,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     try {
       this.chatService.getAllUsers().subscribe({
         next: async (users) => {
+          this.allUsers = users; // Store all users for search
           const currentUserObj = users.find((u) => u.name === this.currentUser);
           if (currentUserObj) {
             this.currentUserId = currentUserObj.id;
@@ -110,48 +118,32 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
                   .getMessagesForChat(this.currentUserId, user.id)
                   .toPromise();
 
-                let lastMessage = 'Neue Unterhaltung starten';
-                let lastUpdate = new Date().toISOString();
-
                 if (messages && messages.length > 0) {
                   const lastMsg = messages[messages.length - 1];
-                  lastMessage = lastMsg.message || 'Nachricht';
+                  let lastMessage = lastMsg.message || 'Nachricht';
                   lastMessage =
                     lastMessage.length > 50
                       ? lastMessage.substring(0, 50) + '...'
                       : lastMessage;
-                  lastUpdate = lastMsg.time || new Date().toISOString();
+                  let lastUpdate = lastMsg.time || new Date().toISOString();
+
+                  const userName =
+                    typeof user.name === 'object'
+                      ? (user.name as any).username || String(user.name)
+                      : user.name;
+
+                  this.chats.push({
+                    id: user.id,
+                    user1Username: this.currentUser || '',
+                    user2Username: userName,
+                    lastMessage: lastMessage,
+                    lastUpdate: lastUpdate,
+                    isAdmin: userName.toLowerCase() === 'admin',
+                    isPinned: userName.toLowerCase() === 'admin',
+                  });
                 }
-
-                const userName =
-                  typeof user.name === 'object'
-                    ? (user.name as any).username || String(user.name)
-                    : user.name;
-
-                this.chats.push({
-                  id: user.id,
-                  user1Username: this.currentUser || '',
-                  user2Username: userName,
-                  lastMessage: lastMessage,
-                  lastUpdate: lastUpdate,
-                  isAdmin: userName.toLowerCase() === 'admin',
-                  isPinned: userName.toLowerCase() === 'admin',
-                });
               } catch (err) {
-                const userName =
-                  typeof user.name === 'object'
-                    ? (user.name as any).username || String(user.name)
-                    : user.name;
-
-                this.chats.push({
-                  id: user.id,
-                  user1Username: this.currentUser || '',
-                  user2Username: userName,
-                  lastMessage: 'Neue Unterhaltung starten',
-                  lastUpdate: new Date().toISOString(),
-                  isAdmin: userName.toLowerCase() === 'admin',
-                  isPinned: userName.toLowerCase() === 'admin',
-                });
+                // Ignore errors, just don't add the chat
               }
             }
           }
@@ -171,6 +163,70 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  openNewChatModal() {
+    this.showNewChatModal = true;
+    this.newChatSearchTerm = '';
+    this.foundUsers = [];
+    // Focus input after a short delay to allow rendering
+    setTimeout(() => {
+      const input = document.getElementById('newChatInput');
+      if (input) input.focus();
+    }, 100);
+  }
+
+  closeNewChatModal() {
+    this.showNewChatModal = false;
+    this.newChatSearchTerm = '';
+    this.foundUsers = [];
+  }
+
+  searchNewUsers() {
+    if (!this.newChatSearchTerm.trim()) {
+      this.foundUsers = [];
+      return;
+    }
+
+    const term = this.newChatSearchTerm.toLowerCase();
+    this.foundUsers = this.allUsers.filter(user => {
+      const userName = typeof user.name === 'object'
+        ? (user.name as any).username || String(user.name)
+        : user.name;
+      
+      // Filter out current user and users already in chat list
+      const isCurrentUser = userName === this.currentUser;
+      const alreadyInChat = this.chats.some(chat => chat.id === user.id);
+      
+      return !isCurrentUser && !alreadyInChat && userName.toLowerCase().includes(term);
+    });
+  }
+
+  startNewChat(user: ChatUser) {
+    const userName = typeof user.name === 'object'
+      ? (user.name as any).username || String(user.name)
+      : user.name;
+
+    // Check if chat already exists (shouldn't happen due to filter, but safety check)
+    let chat = this.chats.find(c => c.id === user.id);
+
+    if (!chat) {
+      // Create new temporary chat object
+      chat = {
+        id: user.id,
+        user1Username: this.currentUser || '',
+        user2Username: userName,
+        lastMessage: 'Neue Unterhaltung starten',
+        lastUpdate: new Date().toISOString(),
+        isAdmin: userName.toLowerCase() === 'admin',
+        isPinned: false
+      };
+      this.chats.unshift(chat);
+      this.filteredChats = [...this.chats];
+    }
+
+    this.selectChat(chat);
+    this.closeNewChatModal();
+  }
+
   sortChats() {
     this.chats.sort((a, b) => {
       // Admin/Pinned zuerst
@@ -186,6 +242,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   selectChat(chat: Chat) {
     this.currentChatId = chat.id;
+    this.selectedChat = chat;
     this.currentChatTitle = `Chat mit ${chat.user2Username}`;
     this.loadMessagesForChat(chat.id);
   }
@@ -225,8 +282,10 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  sendMessage(event: Event) {
-    event.preventDefault();
+  sendMessage(event?: Event) {
+    if (event) {
+      event.preventDefault();
+    }
 
     if (
       !this.messageText.trim() ||
@@ -356,8 +415,10 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     );
   }
 
-  getInitial(username: string): string {
-    return username ? username.charAt(0).toUpperCase() : '?';
+  getInitial(username: any): string {
+    if (!username) return '?';
+    const name = typeof username === 'object' ? (username.username || username.name || '') : username;
+    return name ? name.charAt(0).toUpperCase() : '?';
   }
 
   hasMessages(chat: Chat): boolean {
@@ -393,7 +454,19 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   isCurrentUser(message: ChatMessage): boolean {
+    // Prefer ID check if available
+    if (this.currentUserId && message.sender?.id) {
+      return Number(message.sender.id) === Number(this.currentUserId);
+    }
     return message.sender?.name === this.currentUser;
+  }
+
+  isSystemMessage(message: ChatMessage): boolean {
+    return !!message.message && message.message.startsWith('<<<SYSTEM>>>');
+  }
+
+  getSystemMessageContent(message: ChatMessage): string {
+    return message.message ? message.message.replace('<<<SYSTEM>>>', '').trim() : '';
   }
 
   getMessageAge(message: ChatMessage): number {

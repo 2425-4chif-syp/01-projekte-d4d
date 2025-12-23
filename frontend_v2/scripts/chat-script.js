@@ -1,4 +1,4 @@
-import { API_URL } from './config.js';
+import { API_URL, WS_URL } from './config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM-Elemente referenzieren
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             socket.close();
         }
 
-        const wsUrl = API_URL.replace(/^http/, 'ws') + `/chat/${currentUserId}`;
+        const wsUrl = `${WS_URL}/chat/${currentUserId}`;
         console.log('Verbinde zu WebSocket:', wsUrl);
 
         socket = new WebSocket(wsUrl);
