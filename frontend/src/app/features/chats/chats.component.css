@@ -607,3 +607,42 @@
   color: #6b7280;
   text-align: right;
 }
+
+/* Appointment Status Badges */
+.appointment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.appointment-status-badge.confirmed {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
+}
+
+.appointment-status-badge.rejected {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+/* Appointment Card Status Styling */
+.appointment-card.confirmed {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #22c55e;
+}
+
+.appointment-card.rejected {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  border-color: #ef4444;
+  opacity: 0.8;
+}
+
+.appointment-card.rejected .appointment-card-header {
+  color: #991b1b;
+}

@@ -55,6 +55,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   appointmentNotes = '';
   creatingAppointment = false;
 
+  // Track appointment statuses
+  appointmentStatuses: Map<number, string> = new Map();
+
   private updateSubscription?: Subscription;
   private shouldScrollToBottom = false;
 
@@ -273,6 +276,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
             this.messages = messages;
             this.shouldScrollToBottom = true;
 
+            // Load appointment statuses for appointment messages
+            this.loadAppointmentStatuses(messages);
+
             // Update chat object
             const chat = this.chats.find((c) => c.id === chatId);
             if (chat && messages.length > 0) {
@@ -295,6 +301,30 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     } catch (err) {
       this.messages = [];
     }
+  }
+
+  loadAppointmentStatuses(messages: ChatMessage[]) {
+    // Find all appointment messages and load their statuses
+    for (const msg of messages) {
+      if (this.isAppointmentMessage(msg)) {
+        const appointmentId = this.getAppointmentId(msg);
+        if (appointmentId && !this.appointmentStatuses.has(appointmentId)) {
+          this.appointmentService.getAppointmentDetail(appointmentId).subscribe({
+            next: (appointment) => {
+              this.appointmentStatuses.set(appointmentId, appointment.status);
+            },
+            error: () => {
+              // If appointment not found, assume it's still pending
+              this.appointmentStatuses.set(appointmentId, 'PENDING');
+            }
+          });
+        }
+      }
+    }
+  }
+
+  getAppointmentStatus(appointmentId: number): string {
+    return this.appointmentStatuses.get(appointmentId) || 'PENDING';
   }
 
   sendMessage(event?: Event) {
@@ -572,6 +602,8 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   confirmAppointment(appointmentId: number) {
     this.appointmentService.confirmAppointment(appointmentId).subscribe({
       next: () => {
+        // Update status in local map immediately
+        this.appointmentStatuses.set(appointmentId, 'CONFIRMED');
         if (this.currentChatId) {
           this.loadMessagesForChat(this.currentChatId);
         }
@@ -586,6 +618,8 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   rejectAppointment(appointmentId: number) {
     this.appointmentService.rejectAppointment(appointmentId).subscribe({
       next: () => {
+        // Update status in local map immediately
+        this.appointmentStatuses.set(appointmentId, 'REJECTED');
         if (this.currentChatId) {
           this.loadMessagesForChat(this.currentChatId);
         }

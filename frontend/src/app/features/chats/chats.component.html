@@ -102,14 +102,26 @@
                 <div class="message-sender">
                   {{ isCurrentUser(msg) ? 'Du' : selectedChat.user2Username }}
                 </div>
-                <div class="appointment-card" [class.my-appointment]="isCurrentUser(msg)">
+                <div class="appointment-card" 
+                     [class.my-appointment]="isCurrentUser(msg)"
+                     [class.confirmed]="getAppointmentStatus(getAppointmentId(msg)!) === 'CONFIRMED'"
+                     [class.rejected]="getAppointmentStatus(getAppointmentId(msg)!) === 'REJECTED'">
                   <div class="appointment-card-header">
                     <i class="bi bi-calendar-event"></i>
                     <span>Terminvorschlag</span>
                   </div>
                   <div class="appointment-card-body">
                     <p class="mb-2">{{ getAppointmentContent(msg) }}</p>
-                    @if (!isCurrentUser(msg)) {
+                    
+                    @if (getAppointmentStatus(getAppointmentId(msg)!) === 'CONFIRMED') {
+                      <div class="appointment-status-badge confirmed">
+                        <i class="bi bi-check-circle-fill me-1"></i> Bestätigt
+                      </div>
+                    } @else if (getAppointmentStatus(getAppointmentId(msg)!) === 'REJECTED') {
+                      <div class="appointment-status-badge rejected">
+                        <i class="bi bi-x-circle-fill me-1"></i> Abgelehnt
+                      </div>
+                    } @else if (!isCurrentUser(msg)) {
                       <div class="appointment-actions">
                         <button class="btn btn-sm btn-success me-2" (click)="confirmAppointment(getAppointmentId(msg)!)">
                           <i class="bi bi-check-lg me-1"></i> Bestätigen

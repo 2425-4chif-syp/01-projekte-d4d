@@ -10,6 +10,7 @@ import at.htl.repository.AppointmentRepository;
 import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.ServiceTypeRepository;
 import at.htl.repository.UserRepository;
+import at.htl.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -44,6 +45,9 @@ public class AppointmentResource {
 
     @Inject
     ChatEntryRepository chatEntryRepository;
+
+    @Inject
+    NotificationService notificationService;
 
     /**
      * POST /appointments
@@ -159,6 +163,13 @@ public class AppointmentResource {
 
         LOG.info("Created appointment: " + appointment.getId() + " between " + 
                  proposer.getName() + " and " + recipient.getName());
+
+        // Send email notification to recipient about the new request
+        try {
+            notificationService.sendAppointmentRequest(appointment);
+        } catch (Exception e) {
+            LOG.error("Failed to send appointment request email: " + e.getMessage(), e);
+        }
 
         return Response.status(Response.Status.CREATED)
                 .entity(AppointmentDto.fromEntity(appointment))
@@ -284,6 +295,13 @@ public class AppointmentResource {
 
         LOG.info("Appointment confirmed: " + id);
 
+        // Send confirmation emails to BOTH participants with ICS download link
+        try {
+            notificationService.sendAppointmentConfirmation(appointment);
+        } catch (Exception e) {
+            LOG.error("Failed to send confirmation emails: " + e.getMessage(), e);
+        }
+
         return Response.ok(AppointmentDto.fromEntity(appointment)).build();
     }
 
@@ -327,6 +345,13 @@ public class AppointmentResource {
         chatEntryRepository.persist(notification);
 
         LOG.info("Appointment rejected: " + id);
+
+        // Send rejection notification email to proposer
+        try {
+            notificationService.sendAppointmentRejection(appointment);
+        } catch (Exception e) {
+            LOG.error("Failed to send rejection email: " + e.getMessage(), e);
+        }
 
         return Response.ok(AppointmentDto.fromEntity(appointment)).build();
     }
