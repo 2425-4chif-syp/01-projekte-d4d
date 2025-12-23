@@ -52,6 +52,13 @@ public class ReviewResource {
                     .entity("Service mit ID " + ratingRequest.getServiceId() + " nicht gefunden")
                     .build();
         }
+
+        // Check if service is completed
+        if (!"COMPLETED".equals(service.getStatus())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Service muss abgeschlossen sein, um bewertet zu werden")
+                    .build();
+        }
         
         if (service.getMarketProvider() == null || service.getMarketProvider().getUser() == null) {
             return Response.status(Response.Status.BAD_REQUEST)

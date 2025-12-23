@@ -53,4 +53,18 @@ export class MatchService {
       marketId
     });
   }
+
+  // Get completed services count between two users
+  getCompletedServicesCount(username1: string, username2: string): Observable<{ completedCount: number }> {
+    return this.http.get<{ completedCount: number }>(
+      `${this.apiUrl}/market/completed-count/${encodeURIComponent(username1)}/${encodeURIComponent(username2)}`
+    );
+  }
+
+  // Get completed services count between two users for a specific service type
+  getCompletedServicesCountByType(username1: string, username2: string, serviceTypeId: number): Observable<{ completedCount: number }> {
+    return this.http.get<{ completedCount: number }>(
+      `${this.apiUrl}/market/completed-services-count/${encodeURIComponent(username1)}/${encodeURIComponent(username2)}/${serviceTypeId}`
+    );
+  }
 }

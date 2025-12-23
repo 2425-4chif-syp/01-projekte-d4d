@@ -19,6 +19,9 @@ export class AppComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
+    // Register scroll restoration listener FIRST (before any events are triggered)
+    this.setupScrollRestoration();
+
     // Initialize session first (guest or logged-in)
     await this.sessionService.init();
 
@@ -33,9 +36,6 @@ export class AppComponent implements OnInit {
     if (this.keycloakService.isAuthenticated()) {
       console.log('User authenticated after Keycloak init');
     }
-
-    // Global scroll restoration after login (works on all pages)
-    this.setupScrollRestoration();
   }
 
   private setupScrollRestoration() {
@@ -47,23 +47,45 @@ export class AppComponent implements OnInit {
         const savedMatchId = sessionStorage.getItem('scrollToMatchId');
         const savedScrollY = sessionStorage.getItem('preLoginScrollY');
 
+        console.log('📍 Scroll restoration check:', { savedMatchId, savedScrollY });
+
         // Priority 1: Scroll to specific card (if user clicked on card before login)
         if (savedMatchId) {
+          console.log('🔍 Looking for card with data-match-id:', savedMatchId);
           const cardElement = document.querySelector(
             `[data-match-id="${savedMatchId}"]`
           );
 
-          if (cardElement) {
-            cardElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            });
+          console.log('📌 Card element found:', cardElement);
 
-            // Highlight card briefly
-            cardElement.classList.add('highlight-card');
+          if (cardElement) {
+            console.log('✅ Scrolling to card...');
+            
+            // Smooth scroll with better timing
             setTimeout(() => {
-              cardElement.classList.remove('highlight-card');
-            }, 5000);
+              cardElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+              });
+            }, 50);
+
+            // Highlight card with improved animation
+            setTimeout(() => {
+              console.log('✨ Adding highlight-card class...');
+              cardElement.classList.add('highlight-card');
+              setTimeout(() => {
+                cardElement.classList.remove('highlight-card');
+              }, 1000); // 1 iteration × 1s = 1s
+            }, 400);
+
+            // Auto-open the request modal after highlighting completes
+            setTimeout(() => {
+              // Trigger click on the card to open modal
+              console.log('🖱️ Triggering click on card...');
+              (cardElement as HTMLElement).click();
+            }, 1500);
+          } else {
+            console.warn('⚠️ Card element not found!');
           }
 
           // Clean up
@@ -72,13 +94,16 @@ export class AppComponent implements OnInit {
         }
         // Priority 2: Restore scroll position (if user logged in without clicking card)
         else if (savedScrollY) {
+          console.log('📜 Restoring scroll position to:', savedScrollY);
           window.scrollTo({
             top: parseInt(savedScrollY),
             behavior: 'smooth',
           });
           sessionStorage.removeItem('preLoginScrollY');
+        } else {
+          console.log('ℹ️ No scroll restoration needed');
         }
-      }, 800); // Wait for components to finish loading
+      }, 1500); // Increased timeout to ensure data is loaded
     });
   }
 }

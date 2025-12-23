@@ -76,6 +76,10 @@ export class KeycloakService {
           if (!alreadySynced) {
             await this.syncWithBackend(this.keycloak.token);
             sessionStorage.setItem('backendSynced', 'true');
+          } else {
+            // User already synced, but still trigger event for scroll restoration
+            console.log('🔄 User already synced, triggering user-logged-in event');
+            window.dispatchEvent(new CustomEvent('user-logged-in'));
           }
         } catch (error) {
           console.warn('Backend sync failed, continuing as guest:', error);
@@ -267,15 +271,20 @@ export class KeycloakService {
         const success = await this.sessionService.convertToMarkets();
         if (success) {
           console.log('✓ Guest-Daten erfolgreich zu User-Markets konvertiert');
-
-          // Notify observers that login is complete (trigger data refresh in components)
-          this.notifyObservers();
-
-          // Trigger custom event for components to reload data
-          window.dispatchEvent(new CustomEvent('user-logged-in'));
+        } else {
+          console.log('ℹ️ Keine Guest-Daten zum Konvertieren vorhanden');
         }
+
+        // Notify observers that login is complete (trigger data refresh in components)
+        this.notifyObservers();
+
+        // ALWAYS trigger custom event for components to reload data (even without guest data)
+        window.dispatchEvent(new CustomEvent('user-logged-in'));
       } else {
         console.warn('⚠️ SessionService nicht verfügbar oder kein Username');
+        
+        // Still trigger event even if session service unavailable
+        window.dispatchEvent(new CustomEvent('user-logged-in'));
       }
     } catch (error: any) {
       console.error('Backend sync failed:', error);

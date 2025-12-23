@@ -161,4 +161,61 @@ public class MarketResource {
         }
         return Response.status(Response.Status.CREATED).build();
     }
+
+    @GET
+    @Path("/completed-count/{username1}/{username2}")
+    @Transactional
+    public Response getCompletedServicesCount(
+            @PathParam("username1") String username1,
+            @PathParam("username2") String username2
+    ) {
+        User user1 = userRepository.findByPupilIdOrName(username1);
+        User user2 = userRepository.findByPupilIdOrName(username2);
+        
+        if (user1 == null || user2 == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Benutzer nicht gefunden").build();
+        }
+        
+        // Count completed services between these two users (in both directions)
+        long count = serviceRepository.count(
+            "(marketProvider.user.id = ?1 AND marketClient.user.id = ?2 AND status = 'COMPLETED') OR " +
+            "(marketProvider.user.id = ?2 AND marketClient.user.id = ?1 AND status = 'COMPLETED')",
+            user1.getId(), user2.getId()
+        );
+        
+        return Response.ok()
+                .entity("{\"completedCount\": " + count + "}")
+                .build();
+    }
+
+    @GET
+    @Path("/completed-services-count/{username1}/{username2}/{serviceTypeId}")
+    @Transactional
+    public Response getCompletedServicesCountByType(
+            @PathParam("username1") String username1,
+            @PathParam("username2") String username2,
+            @PathParam("serviceTypeId") Long serviceTypeId
+    ) {
+        User user1 = userRepository.findByPupilIdOrName(username1);
+        User user2 = userRepository.findByPupilIdOrName(username2);
+        
+        if (user1 == null || user2 == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Benutzer nicht gefunden").build();
+        }
+        
+        // Count completed services between these two users for a specific service type
+        long count = serviceRepository.count(
+            "((marketProvider.user.id = ?1 AND marketClient.user.id = ?2) OR " +
+            "(marketProvider.user.id = ?2 AND marketClient.user.id = ?1)) AND " +
+            "status = 'COMPLETED' AND " +
+            "(marketProvider.serviceType.id = ?3 OR marketClient.serviceType.id = ?3)",
+            user1.getId(), user2.getId(), serviceTypeId
+        );
+        
+        return Response.ok()
+                .entity("{\"completedCount\": " + count + "}")
+                .build();
+    }
 }

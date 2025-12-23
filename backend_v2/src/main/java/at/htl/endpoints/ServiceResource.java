@@ -5,6 +5,7 @@ import at.htl.entity.Service;
 import at.htl.entity.User;
 import at.htl.repository.MarketRepository;
 import at.htl.repository.ServiceRepository;
+import at.htl.repository.ServiceRequestRepository;
 import at.htl.repository.UserRepository;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -27,6 +28,8 @@ public class ServiceResource {
     UserRepository userRepository;
     @Inject
     MarketRepository marketRepository;
+    @Inject
+    ServiceRequestRepository serviceRequestRepository;
 
     @GET
     @Path("/{username}")
@@ -104,6 +107,12 @@ public class ServiceResource {
             enrichedMatch.put("typeId", serviceType.get("id"));
             enrichedMatch.put("providerId", userMap.get("id"));
             
+            // Check if user has already sent a request or has active service
+            Long marketId = ((Number) match.get("id")).longValue();
+            User provider = userRepository.findById(((Number) userMap.get("id")).longValue());
+            enrichedMatch.put("hasActiveRequest", serviceRequestRepository.requestExists(user, provider, marketId));
+            enrichedMatch.put("hasActiveTutoring", serviceRepository.hasActiveService(user, provider, marketId));
+            
             enrichedMatches.add(enrichedMatch);
         }
         
@@ -158,6 +167,12 @@ public class ServiceResource {
             enrichedMatch.put("username", userMap.get("name"));
             enrichedMatch.put("typeId", serviceType.get("id"));
             enrichedMatch.put("providerId", userMap.get("id"));
+            
+            // Check if user has already sent a request or has active service
+            Long marketId = ((Number) match.get("id")).longValue();
+            User provider = userRepository.findById(((Number) userMap.get("id")).longValue());
+            enrichedMatch.put("hasActiveRequest", serviceRequestRepository.requestExists(user, provider, marketId));
+            enrichedMatch.put("hasActiveTutoring", serviceRepository.hasActiveService(user, provider, marketId));
             
             enrichedMatches.add(enrichedMatch);
         }

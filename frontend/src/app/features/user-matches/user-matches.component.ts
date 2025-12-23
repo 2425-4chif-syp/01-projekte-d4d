@@ -55,6 +55,7 @@ export class UserMatchesComponent implements OnInit {
   submitting = false;
   modalMessage = '';
   modalMessageType: 'success' | 'error' = 'success';
+  isUserLoggedIn = false;
 
   // Helper for template
   Math = Math;
@@ -83,11 +84,15 @@ export class UserMatchesComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Scroll to top when component loads
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
     this.loadData();
 
     // Listen for login event to reload data without page refresh
     window.addEventListener('user-logged-in', () => {
       console.log('🔄 User logged in, reloading matches...');
+      this.isUserLoggedIn = true; // User is now logged in
       this.loadData();
     });
   }
@@ -105,6 +110,9 @@ export class UserMatchesComponent implements OnInit {
 
       // Get current user from backend
       const username = await this.getCurrentUser();
+
+      // Set isUserLoggedIn based on actual login status
+      this.isUserLoggedIn = !!(username && username !== 'Gast-Modus');
 
       if (username && username !== 'Gast-Modus') {
         await this.loadUserMatches(username);
@@ -150,8 +158,11 @@ export class UserMatchesComponent implements OnInit {
         typeId: match.serviceType?.id || 0,
         providerId: match.user?.id || 0,
         rating: match.rating || null,
+        userRating: null,
         isPerfectMatch: match.isPerfectMatch || false,
         marketId: match.id,
+        hasActiveRequest: match.hasActiveRequest || false,
+        hasActiveTutoring: match.hasActiveTutoring || false,
       }));
 
       this.allMatches = matchesArray;
@@ -199,8 +210,11 @@ export class UserMatchesComponent implements OnInit {
         typeId: match.typeId || match.serviceType?.id,
         providerId: match.providerId || match.user?.id,
         rating: null,
+        userRating: null,
         isPerfectMatch: false,
         marketId: match.id,
+        hasActiveRequest: match.hasActiveRequest || false,
+        hasActiveTutoring: match.hasActiveTutoring || false,
       }));
 
       // Map perfect matches
@@ -213,8 +227,11 @@ export class UserMatchesComponent implements OnInit {
         typeId: match.typeId || match.serviceType?.id,
         providerId: match.providerId || match.user?.id,
         rating: null,
+        userRating: null,
         isPerfectMatch: true,
         marketId: match.id,
+        hasActiveRequest: match.hasActiveRequest || false,
+        hasActiveTutoring: match.hasActiveTutoring || false,
       }));
 
       // Combine all matches (perfect first)
@@ -236,37 +253,62 @@ export class UserMatchesComponent implements OnInit {
   }
 
   private async loadRatingsForMatches() {
-    // Get unique usernames
-    const usernames = [...new Set(this.allMatches.map((m) => m.username))];
+    const currentUsername = await this.keycloakService.getCurrentUserId();
+    
+    // Load ratings for each match individually
+    const ratingPromises = this.allMatches.map(async (match) => {
+      // Load completed services count for specific service type
+      if (currentUsername && match.typeId) {
+        try {
+          const completedData = await firstValueFrom(
+            this.matchService.getCompletedServicesCountByType(currentUsername, match.username, match.typeId)
+          );
+          match.completedCount = completedData?.completedCount || 0;
+        } catch {
+          match.completedCount = 0;
+        }
+      } else {
+        match.completedCount = 0;
+      }
 
-    // Load user ratings
-    const ratingPromises = usernames.map(async (username) => {
+      // Only load ratings for offers
+      if (!match.isOffer) {
+        match.rating = null;
+        match.userRating = null;
+        match.reviewCount = 0;
+        return;
+      }
+
       try {
-        const stats = await firstValueFrom(
-          this.matchService.getUserRating(username)
+        // Load user-wide rating (for header)
+        const userStats = await firstValueFrom(
+          this.matchService.getUserRating(match.username)
         );
-        return {
-          username,
-          rating: stats?.averageRating || 0,
-          count: stats?.totalReviews || 0,
-        };
+        match.userRating = userStats?.averageRating || 0;
+        match.reviewCount = userStats?.totalReviews || 0;
       } catch {
-        return { username, rating: 0, count: 0 };
+        match.userRating = 0;
+        match.reviewCount = 0;
+      }
+
+      // Check if typeId and providerId are defined for type-specific rating
+      if (!match.typeId || !match.providerId) {
+        match.rating = 0;
+        return;
+      }
+
+      try {
+        // Load type-specific rating (for card body)
+        const typeStats = await firstValueFrom(
+          this.matchService.getTypeProviderRating(match.typeId, match.providerId)
+        );
+        match.rating = typeStats?.averageRating || 0;
+      } catch {
+        match.rating = 0;
       }
     });
 
-    const ratings = await Promise.all(ratingPromises);
-    const ratingMap = new Map(
-      ratings.map((r) => [r.username, { rating: r.rating, count: r.count }])
-    );
-
-    // Set ratings on matches
-    this.allMatches.forEach((match) => {
-      const userRating = ratingMap.get(match.username);
-      if (userRating) {
-        match.rating = userRating.rating;
-      }
-    });
+    await Promise.all(ratingPromises);
   }
 
   filterMatches() {
@@ -363,13 +405,14 @@ export class UserMatchesComponent implements OnInit {
     this.groupedMatches = Array.from(groups.entries()).map(
       ([username, matches]) => {
         const isPerfectMatch = matches.some((m) => m.isPerfectMatch);
-        const userRating = matches[0].rating || 0;
+        const userRating = matches[0].userRating || 0;
+        const reviewCount = matches[0].reviewCount || 0;
 
         return {
           username,
           matches,
           userRating,
-          reviewCount: 0, // Could be loaded separately
+          reviewCount,
           isPerfectMatch,
         };
       }
@@ -480,7 +523,7 @@ export class UserMatchesComponent implements OnInit {
   }
 
   nextCard() {
-    if (this.currentCardIndex < this.paginatedMatches.length - 1) {
+    if (this.currentCardIndex < this.filteredMatches.length - 1) {
       this.currentCardIndex++;
     }
   }
@@ -493,9 +536,12 @@ export class UserMatchesComponent implements OnInit {
 
   openRequestModal(match: Match) {
     if (!match.isOffer) return;
+    // Prevent opening if already requested or has active tutoring
+    if (match.hasActiveRequest || match.hasActiveTutoring) return;
 
-    // Save card ID for scroll restoration after login
+    // Save card ID and scroll position for restoration after login (if guest)
     sessionStorage.setItem('scrollToMatchId', match.id.toString());
+    sessionStorage.setItem('preLoginScrollY', window.scrollY.toString());
 
     this.selectedMatch = match;
     this.showModal = true;
@@ -538,9 +584,10 @@ export class UserMatchesComponent implements OnInit {
       this.modalMessage = 'Anfrage erfolgreich gesendet!';
       this.modalMessageType = 'success';
 
-      // Close modal after delay
+      // Close modal and reload data after delay
       setTimeout(() => {
         this.closeModal();
+        this.loadData(); // Reload to update status badges
       }, 1500);
     } catch (error: any) {
       console.error('Error sending request:', error);

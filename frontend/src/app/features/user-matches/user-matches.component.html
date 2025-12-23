@@ -208,9 +208,9 @@
                   [class.border-primary]="match.isOffer"
                   [class.border-info]="!match.isOffer"
                   [class.border-warning]="match.isPerfectMatch"
-                  [class.cursor-pointer]="match.isOffer"
-                  [style.cursor]="match.isOffer ? 'pointer' : 'default'"
-                  (click)="match.isOffer && openRequestModal(match)"
+                  [class.cursor-pointer]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring"
+                  [style.cursor]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
+                  (click)="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
                 >
                   <div class="card-body">
                     <div
@@ -229,6 +229,26 @@
                       </span>
                       }
                     </div>
+                    
+                    <!-- Status Badges -->
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                      @if (match.hasActiveRequest) {
+                        <span class="badge bg-info">
+                          <i class="fas fa-paper-plane"></i> Gesendet
+                        </span>
+                      }
+                      @if (match.hasActiveTutoring) {
+                        <span class="badge bg-success">
+                          <i class="fas fa-graduation-cap"></i> Aktiv
+                        </span>
+                      }
+                      @if (match.completedCount && match.completedCount > 0) {
+                        <span class="badge bg-secondary" title="Abgeschlossene Nachhilfen">
+                          <i class="fas fa-check-circle"></i> {{ match.completedCount }}x
+                        </span>
+                      }
+                    </div>
+                    
                     <h6
                       class="card-title text-truncate"
                       title="{{ match.serviceTypeName }}"
@@ -280,9 +300,9 @@
               [class.border-primary]="match.isOffer"
               [class.border-info]="!match.isOffer"
               [class.border-warning]="match.isPerfectMatch"
-              [class.cursor-pointer]="match.isOffer"
-              [style.cursor]="match.isOffer ? 'pointer' : 'default'"
-              (click)="match.isOffer && openRequestModal(match)"
+              [class.cursor-pointer]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring"
+              [style.cursor]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
+              (click)="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
             >
               <div class="card-body text-center p-3">
                 <div class="mb-2">
@@ -294,6 +314,26 @@
                     {{ match.isOffer ? "A" : "N" }}
                   </span>
                 </div>
+                
+                <!-- Status Badges -->
+                <div class="d-flex gap-1 mb-1 justify-content-center flex-wrap">
+                  @if (match.hasActiveRequest) {
+                    <span class="badge bg-info" style="font-size: 0.65rem;" title="Anfrage gesendet">
+                      <i class="fas fa-paper-plane"></i>
+                    </span>
+                  }
+                  @if (match.hasActiveTutoring) {
+                    <span class="badge bg-success" style="font-size: 0.65rem;" title="Aktive Nachhilfe">
+                      <i class="fas fa-graduation-cap"></i>
+                    </span>
+                  }
+                  @if (match.completedCount && match.completedCount > 0) {
+                    <span class="badge bg-secondary" style="font-size: 0.65rem;" title="Abgeschlossene Nachhilfen">
+                      <i class="fas fa-check-circle"></i> {{ match.completedCount }}
+                    </span>
+                  }
+                </div>
+                
                 <h6
                   class="card-title small mb-1 text-truncate"
                   title="{{ match.username }}"
@@ -321,8 +361,8 @@
         } @else {
         <!-- Card View (Tinder-Style) with Bootstrap -->
         <div class="d-flex justify-content-center">
-          @if (paginatedMatches.length > 0) { @for (match of
-          [paginatedMatches[currentCardIndex]]; track match.id) {
+          @if (filteredMatches.length > 0) { @for (match of
+          [filteredMatches[currentCardIndex]]; track match.id) {
           <div
             class="card"
             style="max-width: 500px; width: 100%"
@@ -337,18 +377,47 @@
               [class.bg-warning]="match.isPerfectMatch"
               [class.text-white]="!match.isPerfectMatch"
             >
-              @if (match.isPerfectMatch) {
-              <span class="badge bg-warning text-dark fs-6">
-                <i class="fas fa-star"></i> Perfect Match
-              </span>
-              } @else {
-              <h5 class="mb-0">{{ match.isOffer ? "Bietet an" : "Sucht" }}</h5>
-              }
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                  @if (match.isPerfectMatch) {
+                  <span class="badge bg-warning text-dark fs-6">
+                    <i class="fas fa-star"></i> Perfect Match
+                  </span>
+                  } @else {
+                  <h5 class="mb-0">{{ match.isOffer ? "Bietet an" : "Sucht" }}</h5>
+                  }
+                </div>
+                @if (match.isOffer && match.userRating !== null && match.userRating > 0) {
+                <span class="badge" [class.bg-dark]="!match.isPerfectMatch" [class.bg-warning]="match.isPerfectMatch" [class.text-dark]="match.isPerfectMatch">
+                  ⭐ {{ match.userRating.toFixed(1) }}
+                </span>
+                }
+              </div>
             </div>
             <div class="card-body text-center p-5">
               <div class="mb-4">
                 <i class="fas fa-user-circle fa-5x text-muted"></i>
               </div>
+              
+              <!-- Status Badges -->
+              <div class="d-flex gap-2 mb-3 justify-content-center flex-wrap">
+                @if (match.hasActiveRequest) {
+                  <span class="badge bg-info fs-6">
+                    <i class="fas fa-paper-plane"></i> Gesendet
+                  </span>
+                }
+                @if (match.hasActiveTutoring) {
+                  <span class="badge bg-success fs-6">
+                    <i class="fas fa-graduation-cap"></i> Aktiv
+                  </span>
+                }
+                @if (match.completedCount && match.completedCount > 0) {
+                  <span class="badge bg-secondary fs-6" title="Abgeschlossene Nachhilfen mit diesem User">
+                    <i class="fas fa-check-circle"></i> {{ match.completedCount }}x zusammen
+                  </span>
+                }
+              </div>
+              
               <h2 class="card-title mb-3">{{ match.username }}</h2>
               <h4 class="card-subtitle text-muted mb-4">
                 {{ match.serviceTypeName }}
@@ -370,10 +439,20 @@
               </div>
               } @if (match.isOffer) {
               <button
-                class="btn btn-primary btn-lg w-100"
+                class="btn btn-lg w-100"
+                [class.btn-primary]="!match.hasActiveRequest && !match.hasActiveTutoring"
+                [class.btn-secondary]="match.hasActiveRequest || match.hasActiveTutoring"
+                [disabled]="match.hasActiveRequest || match.hasActiveTutoring"
                 (click)="openRequestModal(match)"
               >
-                <i class="fas fa-paper-plane"></i> Anfrage senden
+                <i class="fas fa-paper-plane"></i> 
+                @if (match.hasActiveRequest) {
+                  Gesendet
+                } @else if (match.hasActiveTutoring) {
+                  Aktiv
+                } @else {
+                  Anfrage senden
+                }
               </button>
               }
             </div>
@@ -390,12 +469,12 @@
               <i class="fas fa-chevron-left"></i>
             </button>
             <span class="badge bg-secondary fs-6"
-              >{{ currentCardIndex + 1 }} / {{ paginatedMatches.length }}</span
+              >{{ currentCardIndex + 1 }} / {{ filteredMatches.length }}</span
             >
             <button
               class="btn btn-outline-primary"
               (click)="nextCard()"
-              [disabled]="currentCardIndex >= paginatedMatches.length - 1"
+              [disabled]="currentCardIndex >= filteredMatches.length - 1"
             >
               <i class="fas fa-chevron-right"></i>
             </button>
@@ -506,7 +585,11 @@
         >
           @if (submitting) {
           <span class="spinner-border spinner-border-sm me-2"></span>
-          } Anfrage senden
+          } @if (isUserLoggedIn) {
+            <i class="fas fa-paper-plane"></i> Anfrage senden
+          } @else {
+            <i class="fas fa-sign-in-alt"></i> Anmelden
+          }
         </button>
       </div>
     </div>

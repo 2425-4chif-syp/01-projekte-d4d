@@ -57,7 +57,69 @@ public class ActiveServiceResource {
     }
 
     /**
-     * Complete a service
+     * Confirm service completion by user
+     * PUT /services/{id}/confirm-complete/{username}
+     */
+    @PUT
+    @Path("/{id}/confirm-complete/{username}")
+    @Transactional
+    public Response confirmServiceCompletion(@PathParam("id") Long id, @PathParam("username") String username) {
+        Service service = serviceRepository.findById(id);
+        
+        if (service == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Service not found")
+                    .build();
+        }
+
+        if ("COMPLETED".equals(service.getStatus()) || "CANCELLED".equals(service.getStatus())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Service is already " + service.getStatus().toLowerCase())
+                    .build();
+        }
+
+        User user = userRepository.findByPupilIdOrName(username);
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("User not found")
+                    .build();
+        }
+
+        // Check if user is provider or client
+        boolean isProvider = service.getMarketProvider() != null && 
+                            service.getMarketProvider().getUser().getId().equals(user.getId());
+        boolean isClient = service.getMarketClient() != null && 
+                          service.getMarketClient().getUser().getId().equals(user.getId());
+
+        if (!isProvider && !isClient) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity("User is not part of this service")
+                    .build();
+        }
+
+        // Set confirmation flag
+        if (isProvider) {
+            service.setProviderConfirmed(true);
+        } else {
+            service.setClientConfirmed(true);
+        }
+
+        // Check if both confirmed
+        if (service.getProviderConfirmed() && service.getClientConfirmed()) {
+            service.setStatus("COMPLETED");
+            service.setCompletedAt(new Timestamp(System.currentTimeMillis()));
+        } else if (service.getProviderConfirmed() || service.getClientConfirmed()) {
+            // One confirmed, waiting for other
+            service.setStatus("PENDING_COMPLETION");
+        }
+
+        serviceRepository.persist(service);
+
+        return Response.ok(ServiceResponseDto.fromEntity(service)).build();
+    }
+
+    /**
+     * Complete a service (old method - kept for compatibility)
      * PUT /services/{id}/complete
      */
     @PUT

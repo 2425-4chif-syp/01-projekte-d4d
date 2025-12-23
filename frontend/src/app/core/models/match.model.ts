@@ -5,9 +5,14 @@ export interface Match {
   isOffer: boolean;
   typeId?: number;
   providerId?: number;
-  rating: number | null;
+  rating: number | null;  // Fachspezifische Bewertung
+  userRating: number | null;  // Gesamtbewertung des Users
+  reviewCount?: number;  // Anzahl der Bewertungen für den User
+  completedCount?: number;  // Anzahl der abgeschlossenen Services mit diesem User
   isPerfectMatch: boolean;
   marketId?: number;
+  hasActiveRequest?: boolean;  // Anfrage bereits geschickt
+  hasActiveTutoring?: boolean; // Aktive Nachhilfe läuft
 }
 
 export interface MatchGroup {

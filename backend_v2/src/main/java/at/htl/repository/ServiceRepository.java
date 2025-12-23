@@ -241,4 +241,17 @@ public class ServiceRepository implements PanacheRepository<Service> {
         
         return matches;
     }
+
+    /**
+     * Prüft, ob zwischen zwei Benutzern für einen bestimmten Market ein AKTIVER Service existiert
+     * (Status = ACTIVE, nicht PENDING_COMPLETION oder COMPLETED)
+     */
+    public boolean hasActiveService(User user1, User user2, Long marketId) {
+        long count = count(
+            "(marketProvider.user = ?1 AND marketClient.user = ?2 AND marketProvider.id = ?3 AND status = 'ACTIVE') OR " +
+            "(marketProvider.user = ?2 AND marketClient.user = ?1 AND marketClient.id = ?3 AND status = 'ACTIVE')",
+            user1, user2, marketId
+        );
+        return count > 0;
+    }
 }
