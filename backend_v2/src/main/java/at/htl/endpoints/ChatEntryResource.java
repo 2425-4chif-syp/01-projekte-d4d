@@ -29,6 +29,62 @@ public class ChatEntryResource {
     @Inject
     UserRepository userRepository;
 
+    /**
+     * Get all conversations with existing messages for a user.
+     * Returns only users that have exchanged at least one message with the given user.
+     */
+    @GET
+    @Path("/conversations/{userId}")
+    @Transactional
+    public Response getConversations(@PathParam("userId") Long userId) {
+        // Fetch all messages involving this user
+        List<ChatEntry> allMessages = chatEntryRepository.list(
+            "(sender.id = ?1 OR receiver.id = ?1) ORDER BY time DESC", 
+            userId
+        );
+
+        // Group by conversation partner and get last message
+        Map<Long, ChatEntry> lastMessages = new HashMap<>();
+        
+        for (ChatEntry msg : allMessages) {
+            Long partnerId = msg.getSender().getId().equals(userId) 
+                ? msg.getReceiver().getId() 
+                : msg.getSender().getId();
+            
+            // Only keep first occurrence (which is the most recent due to ORDER BY DESC)
+            if (!lastMessages.containsKey(partnerId)) {
+                lastMessages.put(partnerId, msg);
+            }
+        }
+
+        // Build response list with conversation info
+        List<Map<String, Object>> conversations = new ArrayList<>();
+        
+        for (Map.Entry<Long, ChatEntry> entry : lastMessages.entrySet()) {
+            Long partnerId = entry.getKey();
+            ChatEntry lastMsg = entry.getValue();
+            User partner = userRepository.findById(partnerId);
+            
+            if (partner != null) {
+                Map<String, Object> conv = new HashMap<>();
+                conv.put("userId", partnerId);
+                conv.put("username", partner.getName());
+                conv.put("lastMessage", lastMsg.getMessage());
+                conv.put("lastUpdate", lastMsg.getTime());
+                conversations.add(conv);
+            }
+        }
+
+        // Sort by last update (most recent first)
+        conversations.sort((a, b) -> {
+            String timeA = a.get("lastUpdate") != null ? a.get("lastUpdate").toString() : "";
+            String timeB = b.get("lastUpdate") != null ? b.get("lastUpdate").toString() : "";
+            return timeB.compareTo(timeA);
+        });
+
+        return Response.ok(conversations).build();
+    }
+
     @GET
     @Path("/overview/{userId}")
     @Transactional
@@ -118,10 +174,7 @@ public class ChatEntryResource {
         ORDER BY time ASC
         """, u_id1, u_id2);
 
-        if (chatEntries.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Keine Nachrichten zwischen den beiden Benutzern gefunden!").build();
-        }
+        // Return empty list instead of 404 - this is a normal case for new chats
         return Response.ok(chatEntries).build();
     }
 

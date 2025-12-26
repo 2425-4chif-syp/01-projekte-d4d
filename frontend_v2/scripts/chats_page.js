@@ -327,7 +327,7 @@ async function loadMessagesForChat(chatId) {
 
     if (response.ok) {
       const messages = await response.json();
-      console.log("Chat: Echte Nachrichten von API erhalten:", messages);
+      console.log("Chat: Nachrichten von API erhalten:", messages.length);
 
       // Aktualisiere Chat-Objekt mit letzter Nachricht
       if (messages.length > 0) {
@@ -350,11 +350,14 @@ async function loadMessagesForChat(chatId) {
               ?.classList.add("active");
           }, 100);
         }
+        renderRealMessages(messages);
+      } else {
+        // Leere Nachrichtenliste ist normal für neue Chats
+        console.log("Chat: Keine Nachrichten vorhanden, zeige leeren Chat");
+        showEmptyChat();
       }
-
-      renderRealMessages(messages);
     } else {
-      console.log("Chat: Keine echten Nachrichten gefunden, zeige leeren Chat");
+      console.error("Chat: Fehler beim Laden:", response.status);
       showEmptyChat();
     }
   } catch (error) {
