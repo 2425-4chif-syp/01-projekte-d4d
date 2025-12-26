@@ -1,0 +1,78 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <!-- Header -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body text-center p-5">
+          <h1 class="display-5 fw-bold text-primary mb-3">
+            <i class="fas fa-graduation-cap me-2"></i>
+            Nachhilfe suchen
+          </h1>
+          <p class="lead text-muted mb-0">
+            Wähle die Fächer aus, in denen du Unterstützung brauchst
+          </p>
+        </div>
+      </div>
+
+      <!-- Service Selection -->
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h2 class="h4 mb-4">
+            <i class="fas fa-list-check me-2"></i>
+            Verfügbare Fächer
+          </h2>
+
+          @if (loading) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Lädt...</span>
+            </div>
+          </div>
+          } @else if (error) {
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {{ error }}
+          </div>
+          } @else {
+          <div class="uniform-grid mb-4">
+            @for (service of serviceTypes; track service.id) {
+            <div class="uniform-grid-item">
+              <div
+                class="service-checkbox form-check p-3 rounded border"
+                [class.selected]="isSelected(service.id)"
+                (click)="toggleService(service.id)"
+              >
+                <input
+                  class="form-check-input me-2"
+                  type="checkbox"
+                  [id]="'service-' + service.id"
+                  [checked]="isSelected(service.id)"
+                  (click)="$event.stopPropagation()"
+                />
+                <label class="form-check-label" [for]="'service-' + service.id">
+                  {{ service.name }}
+                </label>
+              </div>
+            </div>
+            }
+          </div>
+
+          <div class="text-center pt-3">
+            <button
+              class="btn btn-primary btn-lg px-5"
+              [disabled]="selectedDemands.length === 0 || submitting"
+              (click)="submitDemands()"
+            >
+              @if (submitting) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Speichere... } @else {
+              <i class="fas fa-check-circle me-2"></i>
+              Nachfragen speichern }
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

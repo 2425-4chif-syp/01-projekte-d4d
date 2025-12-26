@@ -1,0 +1,254 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4"><i class="fas fa-briefcase"></i> Meine Services</h2>
+
+      <!-- Filter -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="btn-group" role="group">
+            <input
+              type="radio"
+              class="btn-check"
+              name="statusFilter"
+              id="filterAll"
+              [checked]="filterStatus === 'all'"
+              (change)="filterStatus = 'all'; filterServices()"
+            />
+            <label class="btn btn-outline-primary" for="filterAll">
+              <i class="fas fa-list"></i> Alle
+            </label>
+
+            <input
+              type="radio"
+              class="btn-check"
+              name="statusFilter"
+              id="filterActive"
+              [checked]="filterStatus === 'active'"
+              (change)="filterStatus = 'active'; filterServices()"
+            />
+            <label class="btn btn-outline-success" for="filterActive">
+              <i class="fas fa-play-circle"></i> Aktiv
+            </label>
+
+            <input
+              type="radio"
+              class="btn-check"
+              name="statusFilter"
+              id="filterCompleted"
+              [checked]="filterStatus === 'completed'"
+              (change)="filterStatus = 'completed'; filterServices()"
+            />
+            <label class="btn btn-outline-primary" for="filterCompleted">
+              <i class="fas fa-check-circle"></i> Abgeschlossen
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      @if (loading) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Lädt...</span>
+          </div>
+        </div>
+      }
+
+      <!-- No services -->
+      @else if (filteredServices.length === 0) {
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          @if (filterStatus === 'all') {
+            Du hast noch keine Services.
+          } @else if (filterStatus === 'active') {
+            Du hast keine aktiven Services.
+          } @else {
+            Du hast keine abgeschlossenen Services.
+          }
+        </div>
+      }
+
+      <!-- Services list -->
+      @else {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          @for (service of filteredServices; track service.id) {
+            <div class="col">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">{{ service.serviceTypeName }}</h5>
+                  <span class="badge" [class]="getStatusBadgeClass(service.status)">
+                    {{ getStatusText(service.status) }}
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                      <strong>
+                        <i class="fas fa-chalkboard-teacher text-primary"></i> Anbieter:
+                      </strong>
+                      <span>{{ service.providerName }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <strong>
+                        <i class="fas fa-user-graduate text-info"></i> Schüler:
+                      </strong>
+                      <span>{{ service.clientName }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Confirmation status -->
+                  @if (service.status === 'ACTIVE' || service.status === 'PENDING_COMPLETION') {
+                    <div class="mb-3">
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        @if (service.providerConfirmed) {
+                          <i class="fas fa-check-circle text-success"></i>
+                        } @else {
+                          <i class="far fa-circle text-muted"></i>
+                        }
+                        <span class="small">Anbieter bestätigt</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        @if (service.clientConfirmed) {
+                          <i class="fas fa-check-circle text-success"></i>
+                        } @else {
+                          <i class="far fa-circle text-muted"></i>
+                        }
+                        <span class="small">Schüler bestätigt</span>
+                      </div>
+                    </div>
+                  }
+
+                  <div class="text-muted small">
+                    <div>Erstellt: {{ service.createdAt | date:'short' }}</div>
+                    @if (service.completedAt) {
+                      <div>Abgeschlossen: {{ service.completedAt | date:'short' }}</div>
+                    }
+                  </div>
+                </div>
+                <div class="card-footer bg-white">
+                  <!-- Confirm completion button -->
+                  @if (canConfirm(service)) {
+                    <button
+                      class="btn btn-success w-100 mb-2"
+                      (click)="confirmCompletion(service)"
+                    >
+                      <i class="fas fa-check"></i> Fertigstellung bestätigen
+                    </button>
+                  }
+
+                  <!-- Review button -->
+                  @if (service.status === 'COMPLETED' && !isProvider(service) && !service.hasReviewed) {
+                    <button
+                      class="btn btn-primary w-100"
+                      (click)="openReviewModal(service)"
+                    >
+                      <i class="fas fa-star"></i> Jetzt bewerten
+                    </button>
+                  }
+
+                  <!-- Already reviewed -->
+                  @if (service.status === 'COMPLETED' && service.hasReviewed) {
+                    <div class="text-success text-center">
+                      <i class="fas fa-check-circle"></i> Bereits bewertet
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+@if (showReviewModal && selectedService) {
+  <div
+    class="modal fade show d-block"
+    tabindex="-1"
+    style="background-color: rgba(0, 0, 0, 0.5)"
+    (click)="closeReviewModal()"
+  >
+    <div
+      class="modal-dialog modal-dialog-centered"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-star"></i> Service bewerten
+          </h5>
+          <button type="button" class="btn-close" (click)="closeReviewModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <strong>Service:</strong> {{ selectedService.serviceTypeName }}
+          </div>
+          <div class="mb-3">
+            <strong>Anbieter:</strong> {{ selectedService.providerName }}
+          </div>
+
+          <!-- Star Rating -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Bewertung *</strong></label>
+            <div class="d-flex gap-2 fs-2">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <i
+                  class="fas fa-star cursor-pointer"
+                  [class.text-warning]="star <= reviewRating"
+                  [class.text-muted]="star > reviewRating"
+                  (click)="setRating(star)"
+                  style="cursor: pointer;"
+                ></i>
+              }
+            </div>
+          </div>
+
+          <!-- Comment -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Kommentar</strong></label>
+            <textarea
+              class="form-control"
+              rows="3"
+              [(ngModel)]="reviewComment"
+              placeholder="Deine Erfahrung mit diesem Service..."
+            ></textarea>
+          </div>
+
+          @if (reviewMessage) {
+            <div
+              class="alert"
+              [class.alert-success]="reviewMessageType === 'success'"
+              [class.alert-danger]="reviewMessageType === 'error'"
+            >
+              {{ reviewMessage }}
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeReviewModal()"
+            [disabled]="submittingReview"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="submitReview()"
+            [disabled]="submittingReview || reviewRating === 0"
+          >
+            @if (submittingReview) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            <i class="fas fa-paper-plane"></i> Bewertung absenden
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

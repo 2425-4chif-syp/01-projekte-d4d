@@ -1,0 +1,182 @@
+<nav class="navbar">
+  <!-- Logo -->
+  <div class="logo">
+    <button (click)="navigateToHome()" class="logo-button">
+      <i class="fas fa-handshake"></i>
+      <span>D4D</span>
+    </button>
+  </div>
+
+  <!-- Guest Navigation -->
+  @if (currentUserState === 'guest') {
+  <div class="nav-buttons">
+    <button
+      [class.active]="isActive('request-services')"
+      (click)="navigateTo('request-services')"
+    >
+      <i class="fas fa-graduation-cap"></i>
+      <span>Ich suche</span>
+    </button>
+    <button
+      [class.active]="isActive('offer-services')"
+      (click)="navigateTo('offer-services')"
+    >
+      <i class="fas fa-chalkboard-teacher"></i>
+      <span>Ich gebe</span>
+    </button>
+    <button
+      [class.active]="isActive('user-matches')"
+      (click)="navigateTo('user-matches')"
+    >
+      <i class="fas fa-heart"></i>
+      <span>Matches</span>
+    </button>
+    <button
+      [class.active]="isActive('marketplace')"
+      (click)="navigateTo('marketplace')"
+    >
+      <i class="fas fa-store"></i>
+      <span>Markt</span>
+    </button>
+  </div>
+
+  <div class="profile-section">
+    <button class="login-button" (click)="handleLogin()">
+      <i class="fas fa-sign-in-alt"></i>
+      <span>Anmelden</span>
+    </button>
+  </div>
+  }
+
+  <!-- Admin Navigation -->
+  @if (currentUserState === 'admin') {
+  <div class="nav-buttons">
+    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')">
+      <i class="fas fa-comments"></i>
+      <span>Chats</span>
+    </button>
+    <button
+      [class.active]="isActive('marketplace')"
+      (click)="navigateTo('marketplace')"
+    >
+      <i class="fas fa-store"></i>
+      <span>Marktplatz</span>
+    </button>
+  </div>
+
+  <div class="profile-section">
+    <button
+      class="inbox-icon-btn"
+      [class.has-notifications]="hasInboxNotification"
+      (click)="navigateTo('inbox')"
+      title="Postfach"
+    >
+      <i class="fas fa-inbox"></i>
+      @if (hasInboxNotification) {
+      <span class="notification-badge">
+        {{ notificationCount > 9 ? '9+' : notificationCount }}
+      </span>
+      }
+    </button>
+
+    <div class="profile-dropdown" [class.open]="isProfileMenuOpen">
+      <button class="profile-button" (click)="toggleProfileMenu($event)">
+        <i class="fas fa-user-shield"></i>
+        <span class="profile-name">Admin</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+
+      <div class="profile-menu">
+        <button class="logout-btn" (click)="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Abmelden</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- User Navigation -->
+  @if (currentUserState === 'user') {
+  <div class="nav-buttons">
+    <button
+      [class.active]="isActive('request-services')"
+      (click)="navigateTo('request-services')"
+    >
+      <i class="fas fa-graduation-cap"></i>
+      <span>Ich suche</span>
+    </button>
+    <button
+      [class.active]="isActive('offer-services')"
+      (click)="navigateTo('offer-services')"
+    >
+      <i class="fas fa-chalkboard-teacher"></i>
+      <span>Ich gebe</span>
+    </button>
+    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')">
+      <i class="fas fa-comments"></i>
+      <span>Chat</span>
+    </button>
+    <button
+      [class.active]="isActive('user-matches')"
+      (click)="navigateTo('user-matches')"
+    >
+      <i class="fas fa-heart"></i>
+      <span>Matches</span>
+    </button>
+    <button
+      [class.active]="isActive('marketplace')"
+      (click)="navigateTo('marketplace')"
+    >
+      <i class="fas fa-store"></i>
+      <span>Markt</span>
+    </button>
+    <button
+      [class.active]="isActive('my-services')"
+      (click)="navigateTo('my-services')"
+    >
+      <i class="fas fa-briefcase"></i>
+      <span>Services</span>
+    </button>
+  </div>
+
+  <div class="profile-section">
+    <button
+      class="inbox-icon-btn"
+      [class.active]="isActive('calendar')"
+      (click)="navigateTo('calendar')"
+      title="Kalender"
+    >
+      <i class="fas fa-calendar-alt"></i>
+    </button>
+    <button
+      class="inbox-icon-btn"
+      [class.has-notifications]="hasInboxNotification"
+      (click)="navigateTo('inbox')"
+      title="Postfach"
+    >
+      <i class="fas fa-inbox"></i>
+      @if (hasInboxNotification) {
+      <span class="notification-badge">
+        {{ notificationCount > 9 ? '9+' : notificationCount }}
+      </span>
+      }
+    </button>
+
+    <div class="profile-dropdown" [class.open]="isProfileMenuOpen">
+      <button class="profile-button" (click)="toggleProfileMenu($event)">
+        <i class="fas fa-user"></i>
+        <span class="profile-name">{{ currentUser || "User" }}</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+
+      <div class="profile-menu">
+        <button class="logout-btn" (click)="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Abmelden</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+</nav>

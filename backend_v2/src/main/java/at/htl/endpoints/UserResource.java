@@ -141,6 +141,30 @@ public class UserResource {
     }
 
     @POST
+    @Path("logout")
+    @Transactional
+    public Response logout(@CookieParam("d4d_session_id") String sessionId) {
+        // Delete session from database if exists
+        if (sessionId != null && !sessionId.isEmpty()) {
+            Session session = sessionRepository.findByIdOrNull(sessionId);
+            if (session != null) {
+                sessionRepository.delete(session);
+            }
+        }
+        
+        // Clear session cookie by setting maxAge to 0
+        NewCookie cookie = new NewCookie.Builder("d4d_session_id")
+                .value("")
+                .path("/")
+                .maxAge(0) // Delete cookie
+                .build();
+        
+        return Response.ok("Logged out")
+                .cookie(cookie)
+                .build();
+    }
+
+    @POST
     @Transactional
     public Response setActiveUser(@CookieParam("d4d_session_id") String sessionId, 
                                   Map<String, String> body) {
@@ -152,7 +176,7 @@ public class UserResource {
                     .build();
         }
 
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
 
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)

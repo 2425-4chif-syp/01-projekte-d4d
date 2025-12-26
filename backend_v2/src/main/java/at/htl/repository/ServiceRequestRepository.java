@@ -31,4 +31,12 @@ public class ServiceRequestRepository implements PanacheRepository<ServiceReques
         return count("sender = ?1 AND receiver = ?2 AND market.id = ?3 AND status = 'PENDING'", 
                      sender, receiver, marketId) > 0;
     }
+
+    /**
+     * Check if there's an active tutoring relationship (ACCEPTED request)
+     */
+    public boolean hasActiveTutoring(User sender, User receiver, Long marketId) {
+        return count("sender = ?1 AND receiver = ?2 AND market.id = ?3 AND status = 'ACCEPTED'",
+                     sender, receiver, marketId) > 0;
+    }
 }

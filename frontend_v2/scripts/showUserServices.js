@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   let currentFilterType = "all";
   let currentPerfectMatchUser = "all";
   let currentRatingFilter = "all";
-  let currentSortOption = "none";
+  let currentSortOption = "rating-desc";
   let currentViewMode = localStorage.getItem("matchesViewMode") || "grouped"; // grouped, compact, card
   let currentCardIndex = 0; // For card view
 
@@ -384,6 +384,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // Sort Filter
     const sortFilter = document.getElementById("sortFilter");
     if (sortFilter) {
+      // Force sync with DOM state on init
+      currentSortOption = sortFilter.value;
+      
       sortFilter.addEventListener("change", (e) => {
         currentSortOption = e.target.value;
         filterAndDisplayServices(true);
@@ -518,8 +521,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
           // Load ratings for all services
           loadRatingsForServices(allServices);
-
-          setTimeout(() => filterAndDisplayServices(), 0);
         } else {
           // Handle empty case
           const matchesContainer = document.getElementById("matchesContainer");
@@ -1339,6 +1340,18 @@ document.addEventListener("DOMContentLoaded", async function () {
         service.rating = null; // Not an offer, so no rating
       }
     }
+    
+    // Ensure sort option is correct from DOM before displaying
+    const sortFilter = document.getElementById("sortFilter");
+    if (sortFilter) {
+        // If value is empty or invalid, force rating-desc
+        if (!sortFilter.value || sortFilter.value === "none") {
+            sortFilter.value = "rating-desc";
+        }
+        currentSortOption = sortFilter.value;
+        console.log("Initial sort applied:", currentSortOption);
+    }
+
     // After all ratings are loaded, update the display
     filterAndDisplayServices();
   }
@@ -1918,14 +1931,6 @@ function createLargeCard(service, allServices) {
     const theirServiceName =
       theirSide?.serviceTypeName || service.serviceTypeName;
 
-    const ratingHTML =
-      service.isOffer && service.rating && typeof service.rating === "number"
-        ? `<div class="large-rating">
-           <div class="stars">${"⭐".repeat(Math.round(service.rating))}</div>
-           <div class="rating-value">${service.rating.toFixed(1)} / 5.0</div>
-         </div>`
-        : "";
-
     cardDiv.innerHTML = `
       <div class="large-card-header">
         <span class="perfect-match-badge large"><i class="fas fa-star"></i> Perfect Match</span>
@@ -1967,19 +1972,17 @@ function createLargeCard(service, allServices) {
           </div>
         </div>
         
-        ${ratingHTML}
+        <div class="large-rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>
       </div>
     `;
+    
+    // Load service-specific rating for Perfect Match
+    const ratingContainer = cardDiv.querySelector('.large-rating-container');
+    if (ratingContainer && service.typeId && service.providerId) {
+      loadLargeCardRating(service.typeId, service.providerId, ratingContainer);
+    }
   } else {
     // Normale Card für nicht-Perfect Matches
-    const ratingHTML =
-      service.isOffer && service.rating && typeof service.rating === "number"
-        ? `<div class="large-rating">
-           <div class="stars">${"⭐".repeat(Math.round(service.rating))}</div>
-           <div class="rating-value">${service.rating.toFixed(1)} / 5.0</div>
-         </div>`
-        : "";
-
     cardDiv.innerHTML = `
       <div class="large-card-header">
         <span class="large-badge ${
@@ -1997,12 +2000,77 @@ function createLargeCard(service, allServices) {
         </div>
         <h2 class="large-username">${service.username}</h2>
         <h3 class="large-service">${service.serviceTypeName}</h3>
-        ${ratingHTML}
+        <div class="large-rating-container"><i class="fas fa-spinner fa-spin"></i> Bewertung wird geladen...</div>
       </div>
     `;
+    
+    // Load service-specific rating for normal service
+    const ratingContainer = cardDiv.querySelector('.large-rating-container');
+    if (ratingContainer && service.typeId && service.providerId) {
+      loadLargeCardRating(service.typeId, service.providerId, ratingContainer);
+    }
   }
 
   return cardDiv;
+}
+
+// Load rating for large card view
+async function loadLargeCardRating(typeId, providerId, container) {
+  if (!typeId || !providerId || !container) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/reviews/type/${typeId}/provider/${providerId}`
+    );
+    if (response.ok) {
+      const data = await response.json();
+
+      if (data.averageRating && data.averageRating > 0) {
+        // Generate stars with half-star support
+        let starsHTML = "";
+        for (let i = 1; i <= 5; i++) {
+          if (i <= Math.floor(data.averageRating)) {
+            // Full star
+            starsHTML += '<i class="fas fa-star selected"></i>';
+          } else if (i === Math.ceil(data.averageRating) && data.averageRating % 1 !== 0) {
+            // Half star
+            starsHTML += '<i class="fas fa-star-half-alt selected"></i>';
+          } else {
+            // Empty star
+            starsHTML += '<i class="fas fa-star"></i>';
+          }
+        }
+        
+        container.innerHTML = `
+          <div class="large-rating">
+            <div class="stars">${starsHTML}</div>
+            <div class="rating-value">${data.averageRating.toFixed(1)} / 5.0 (${data.totalReviews} ${data.totalReviews === 1 ? 'Bewertung' : 'Bewertungen'})</div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="large-rating">
+            <div class="rating-no-data">Noch keine Bewertung</div>
+          </div>
+        `;
+      }
+    } else {
+      container.innerHTML = `
+        <div class="large-rating">
+          <div class="rating-no-data">Noch keine Bewertung</div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error("Fehler beim Laden der Bewertung:", error);
+    container.innerHTML = `
+      <div class="large-rating">
+        <div class="rating-no-data">Bewertung nicht verfügbar</div>
+      </div>
+    `;
+  }
 }
 
 // Helper for opening request modal from card view

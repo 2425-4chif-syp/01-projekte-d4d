@@ -16,6 +16,9 @@ public class User {
     @Column(name="u_pupil_id")
     private String pupilId;
 
+    @Column(name="u_email")
+    private String email;
+
     public User() {
 
     }
@@ -51,5 +54,13 @@ public class User {
 
     public void setPupilId(String pupilId) {
         this.pupilId = pupilId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

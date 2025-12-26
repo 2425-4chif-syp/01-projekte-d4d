@@ -2,20 +2,24 @@ package at.htl.endpoints;
 
 import at.htl.endpoints.dto.ServiceRequestCreateDto;
 import at.htl.endpoints.dto.ServiceRequestResponseDto;
+import at.htl.entity.ChatEntry;
 import at.htl.entity.Market;
 import at.htl.entity.Service;
 import at.htl.entity.ServiceRequest;
 import at.htl.entity.User;
+import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.MarketRepository;
 import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceRequestRepository;
 import at.htl.repository.UserRepository;
+import at.htl.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +29,8 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ServiceRequestResource {
+
+    private static final Logger LOG = Logger.getLogger(ServiceRequestResource.class);
 
     @Inject
     ServiceRequestRepository serviceRequestRepository;
@@ -38,6 +44,12 @@ public class ServiceRequestResource {
     @Inject
     ServiceRepository serviceRepository;
 
+    @Inject
+    ChatEntryRepository chatEntryRepository;
+
+    @Inject
+    NotificationService notificationService;
+
     /**
      * Create a new service request
      * POST /service-requests
@@ -46,7 +58,7 @@ public class ServiceRequestResource {
     @Transactional
     public Response createServiceRequest(ServiceRequestCreateDto dto) {
         // Validate sender
-        User sender = userRepository.find("name", dto.senderUsername()).firstResult();
+        User sender = userRepository.findByPupilIdOrName(dto.senderUsername());
         if (sender == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Sender user not found")
@@ -87,6 +99,40 @@ public class ServiceRequestResource {
         ServiceRequest request = new ServiceRequest(sender, receiver, market);
         serviceRequestRepository.persist(request);
 
+        // ✉️ E-MAIL 1: Sende Bestätigung an Sender dass Anfrage versendet wurde
+        if (sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+            String providerName = receiver.getName();
+            String serviceTypeName = market.getServiceType().getName();
+            
+            LOG.info("Sending request-created email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
+            
+            notificationService.sendRequestCreatedEmail(sender.getPupilId(), providerName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-created email queued for: " + sender.getName()),
+                    failure -> LOG.error("Failed to send request-created email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send email to sender: Sender has no pupilId");
+        }
+
+        // ✉️ E-MAIL 2: Sende Benachrichtigung an Provider dass er neue Anfrage erhalten hat
+        if (receiver.getPupilId() != null && !receiver.getPupilId().isBlank()) {
+            String senderName = sender.getName();
+            String serviceTypeName = market.getServiceType().getName();
+            
+            LOG.info("Sending request-received email to provider: " + receiver.getName() + " (pupilId: " + receiver.getPupilId() + ")");
+            
+            notificationService.sendRequestReceivedEmail(receiver.getPupilId(), senderName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-received email queued for: " + receiver.getName()),
+                    failure -> LOG.error("Failed to send request-received email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send email to provider: Receiver has no pupilId");
+        }
+
         return Response.status(Response.Status.CREATED)
                 .entity(ServiceRequestResponseDto.fromEntity(request))
                 .build();
@@ -100,7 +146,7 @@ public class ServiceRequestResource {
     @Path("/inbox/{username}")
     @Transactional
     public Response getInbox(@PathParam("username") String username) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("User not found")
@@ -124,7 +170,7 @@ public class ServiceRequestResource {
     @Path("/sent/{username}")
     @Transactional
     public Response getSentRequests(@PathParam("username") String username) {
-        User user = userRepository.find("name", username).firstResult();
+        User user = userRepository.findByPupilIdOrName(username);
         if (user == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("User not found")
@@ -185,6 +231,18 @@ public class ServiceRequestResource {
         service.setStatus("ACTIVE");
         serviceRepository.persist(service);
 
+        // Create System Chat Message
+        ChatEntry systemMsg = new ChatEntry();
+        systemMsg.setSender(request.getReceiver()); // Provider (who accepted)
+        systemMsg.setReceiver(request.getSender()); // Client (who requested)
+        systemMsg.setMessage("<<<SYSTEM>>> Service bestätigt! Ihr könnt nun hier Details besprechen und Termine vereinbaren.");
+        systemMsg.setTime(new java.sql.Timestamp(System.currentTimeMillis()));
+        chatEntryRepository.persist(systemMsg);
+
+        // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an BEIDE Parteien (Sender & Provider)
+        LOG.info("Sending service created notification to both parties for service: " + service.getId());
+        notificationService.sendServiceCreatedNotification(service);
+
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }
 
@@ -213,6 +271,25 @@ public class ServiceRequestResource {
         // Update status to REJECTED
         request.setStatus("REJECTED");
         serviceRequestRepository.persist(request);
+
+        // ✉️ E-MAIL: Sende Benachrichtigung an Sender dass Anfrage abgelehnt wurde
+        User sender = request.getSender();
+        User receiver = request.getReceiver();
+        if (sender != null && sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+            String providerName = receiver.getName();
+            String serviceTypeName = request.getMarket().getServiceType().getName();
+            
+            LOG.info("Sending request-rejected email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
+            
+            notificationService.sendRequestRejectedEmail(sender.getPupilId(), providerName, serviceTypeName)
+                .subscribe()
+                .with(
+                    unused -> LOG.info("Request-rejected email queued for: " + sender.getName()),
+                    failure -> LOG.error("Failed to send request-rejected email", failure)
+                );
+        } else {
+            LOG.warn("Cannot send rejection email: Sender has no pupilId");
+        }
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }

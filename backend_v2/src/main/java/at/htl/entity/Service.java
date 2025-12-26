@@ -20,7 +20,13 @@ public class Service {
     private Market marketClient;
 
     @Column(name="s_status", length=20)
-    private String status; // ACTIVE, COMPLETED, CANCELLED
+    private String status; // ACTIVE, PENDING_COMPLETION, COMPLETED, CANCELLED
+
+    @Column(name="s_provider_confirmed")
+    private Boolean providerConfirmed = false;
+
+    @Column(name="s_client_confirmed")
+    private Boolean clientConfirmed = false;
 
     @Column(name="s_created_at")
     private Timestamp createdAt;
@@ -85,5 +91,21 @@ public class Service {
 
     public void setCompletedAt(Timestamp completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Boolean getProviderConfirmed() {
+        return providerConfirmed;
+    }
+
+    public void setProviderConfirmed(Boolean providerConfirmed) {
+        this.providerConfirmed = providerConfirmed;
+    }
+
+    public Boolean getClientConfirmed() {
+        return clientConfirmed;
+    }
+
+    public void setClientConfirmed(Boolean clientConfirmed) {
+        this.clientConfirmed = clientConfirmed;
     }
 }

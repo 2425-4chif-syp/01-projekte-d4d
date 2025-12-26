@@ -26,12 +26,20 @@ services:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/db
       QUARKUS_DATASOURCE_USERNAME: app
       QUARKUS_DATASOURCE_PASSWORD: app
+      QUARKUS_PROFILE: dev
+      # Gmail SMTP Configuration
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: d4d.notification@gmail.com
+      SMTP_PASSWORD: ehzrxtbcdbdngxys
+      SMTP_FROM: d4d.notification@gmail.com
+      TEST_EMAIL: s.jelic@htl-leonding.ac.at
     networks:
       - d4d-v2-net
 
   frontend:
     build:
-      context: ./frontend_v2
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: d4d-frontend-v2
     depends_on:
@@ -44,8 +52,10 @@ services:
     container_name: nginx-reverse-proxy
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - frontend
       - backend

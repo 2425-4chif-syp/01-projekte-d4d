@@ -1,0 +1,359 @@
+<div class="container-fluid p-0 chat-container">
+  <div class="row g-0 h-100">
+    <!-- Sidebar -->
+    <div class="col-md-4 col-lg-3 chat-sidebar">
+      <!-- Sidebar Header -->
+      <div class="sidebar-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="m-0 fw-bold text-dark">Chats</h4>
+        </div>
+        
+        <!-- Search Input -->
+        <div class="search-wrapper">
+          <i class="bi bi-search search-icon"></i>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Search chats..."
+            [(ngModel)]="searchTerm"
+            (input)="filterChats()"
+          >
+        </div>
+
+        <button class="btn btn-new-chat" (click)="openNewChatModal()">
+          <i class="bi bi-plus-lg"></i> Start New Conversation
+        </button>
+      </div>
+
+      <!-- Chat List -->
+      <div class="chat-list custom-scroll">
+        @for (chat of filteredChats; track chat.id) {
+          <div class="chat-item" 
+               [class.active]="selectedChat?.id === chat.id" 
+               [class.has-unread]="chat.unreadCount && chat.unreadCount > 0"
+               (click)="selectChat(chat)">
+            <div class="chat-avatar-container">
+              <div class="chat-avatar" [class.admin-avatar]="chat.isAdmin">
+                {{ getInitial(chat.user2Username) }}
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="chat-info">
+              <div class="d-flex justify-content-between align-items-baseline">
+                <div class="chat-name" [class.fw-bold]="chat.unreadCount && chat.unreadCount > 0">
+                  {{ chat.user2Username }}
+                </div>
+                @if (chat.lastUpdate) {
+                  <div class="chat-time" [class.text-primary]="chat.unreadCount && chat.unreadCount > 0">
+                    {{ formatTime(chat.lastUpdate) }}
+                  </div>
+                }
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="chat-preview" [class.chat-preview-unread]="chat.unreadCount && chat.unreadCount > 0">
+                  {{ chat.lastMessage || 'No messages yet' }}
+                </div>
+                @if (chat.unreadCount && chat.unreadCount > 0) {
+                  <span class="unread-badge">{{ chat.unreadCount > 9 ? '9+' : chat.unreadCount }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+        @if (filteredChats.length === 0) {
+          <div class="text-center p-4 text-muted">
+            <i class="bi bi-chat-square-text fs-1 d-block mb-2"></i>
+            No conversations yet
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="col-md-8 col-lg-9 chat-main">
+      @if (selectedChat) {
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="d-flex align-items-center">
+            <div class="chat-avatar-container me-3">
+              <div class="chat-avatar" [class.admin-avatar]="selectedChat.isAdmin">
+                {{ getInitial(selectedChat.user2Username) }}
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div>
+              <h5 class="m-0 fw-bold">{{ selectedChat.user2Username }}</h5>
+              <small class="text-muted">Online</small>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-icon" title="Search in chat">
+              <i class="bi bi-search"></i>
+            </button>
+            <button class="btn btn-icon" title="More options">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages-container custom-scroll" #messagesContainer>
+          @for (msg of messages; track msg.id) {
+            @if (isSystemMessage(msg)) {
+              <div class="system-message">
+                {{ getSystemMessageContent(msg) }}
+              </div>
+            } @else if (isAppointmentMessage(msg)) {
+              <!-- Appointment Card - aligned like a message -->
+              <div class="message-wrapper" [class.user]="isCurrentUser(msg)" [class.other]="!isCurrentUser(msg)">
+                <div class="message-sender">
+                  {{ isCurrentUser(msg) ? 'Du' : selectedChat.user2Username }}
+                </div>
+                <div class="appointment-card" 
+                     [class.my-appointment]="isCurrentUser(msg)"
+                     [class.confirmed]="getAppointmentStatus(getAppointmentId(msg)!) === 'CONFIRMED'"
+                     [class.rejected]="getAppointmentStatus(getAppointmentId(msg)!) === 'REJECTED'">
+                  <div class="appointment-card-header">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Terminvorschlag</span>
+                  </div>
+                  <div class="appointment-card-body">
+                    <p class="mb-2">{{ getAppointmentContent(msg) }}</p>
+                    
+                    @if (getAppointmentStatus(getAppointmentId(msg)!) === 'CONFIRMED') {
+                      <div class="appointment-status-badge confirmed">
+                        <i class="bi bi-check-circle-fill me-1"></i> Bestätigt
+                      </div>
+                    } @else if (getAppointmentStatus(getAppointmentId(msg)!) === 'REJECTED') {
+                      <div class="appointment-status-badge rejected">
+                        <i class="bi bi-x-circle-fill me-1"></i> Abgelehnt
+                      </div>
+                    } @else if (!isCurrentUser(msg)) {
+                      <div class="appointment-actions">
+                        <button class="btn btn-sm btn-success me-2" (click)="confirmAppointment(getAppointmentId(msg)!)">
+                          <i class="bi bi-check-lg me-1"></i> Bestätigen
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="rejectAppointment(getAppointmentId(msg)!)">
+                          <i class="bi bi-x-lg me-1"></i> Ablehnen
+                        </button>
+                      </div>
+                    } @else {
+                      <small class="text-muted">Warte auf Bestätigung...</small>
+                    }
+                  </div>
+                  <div class="appointment-card-footer">
+                    <span>{{ msg.time | date:'HH:mm' }}</span>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <div class="message-wrapper" [class.user]="isCurrentUser(msg)" [class.other]="!isCurrentUser(msg)">
+                <div class="message-sender">
+                  {{ isCurrentUser(msg) ? 'You' : selectedChat.user2Username }}
+                </div>
+                <div class="message-bubble">
+                  {{ msg.message }}
+                </div>
+                <div class="message-footer">
+                  <span>{{ msg.time | date:'HH:mm' }}</span>
+                  @if (isCurrentUser(msg)) {
+                    <i class="bi bi-check2-all"></i>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+          <div class="input-wrapper">
+            <button class="btn btn-icon" title="Attach file">
+              <i class="bi bi-paperclip"></i>
+            </button>
+            <input 
+              type="text" 
+              class="chat-input" 
+              placeholder="Nachricht schreiben..." 
+              [(ngModel)]="messageText" 
+              (keyup.enter)="sendMessage()"
+            >
+            <button class="btn btn-icon btn-appointment" title="Termin vorschlagen" (click)="openAppointmentModal()">
+              <i class="bi bi-calendar-plus"></i>
+            </button>
+            <button class="btn btn-icon" title="Emoji">
+              <i class="bi bi-emoji-smile"></i>
+            </button>
+            <button 
+              class="btn btn-icon btn-send" 
+              (click)="sendMessage()" 
+              [disabled]="!messageText.trim()"
+            >
+              <i class="bi bi-send-fill"></i>
+            </button>
+          </div>
+        </div>
+      } @else {
+        <!-- Empty State -->
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="bi bi-chat-dots"></i>
+          </div>
+          <h3>Select a conversation</h3>
+          <p>Choose a chat from the sidebar or start a new one.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- New Chat Modal -->
+@if (showNewChatModal) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content shadow-lg border-0 rounded-4">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title fw-bold">New Conversation</h5>
+          <button type="button" class="btn-close" (click)="closeNewChatModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="search-wrapper mb-3">
+            <i class="bi bi-search search-icon"></i>
+            <input 
+              id="newChatInput"
+              type="text" 
+              class="search-input" 
+              placeholder="Search for users..."
+              [(ngModel)]="newChatSearchTerm"
+              (input)="searchNewUsers()"
+              autocomplete="off"
+            >
+          </div>
+          
+          <div class="user-list custom-scroll" style="max-height: 300px; overflow-y: auto;">
+            @if (newChatSearchTerm && foundUsers.length === 0) {
+              <div class="text-center p-4 text-muted">
+                <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+                No users found
+              </div>
+            } @else if (!newChatSearchTerm) {
+              <div class="text-center p-4 text-muted">
+                <i class="bi bi-search fs-1 d-block mb-2"></i>
+                Type to search for users
+              </div>
+            }
+            
+            @for (user of foundUsers; track user.id) {
+              <div class="chat-item" (click)="startNewChat(user)">
+                <div class="chat-avatar-container">
+                  <div class="chat-avatar" [class.admin-avatar]="user.name === 'admin'">
+                    {{ getInitial(user.name) }}
+                  </div>
+                </div>
+                <div class="chat-info">
+                  <div class="chat-name">{{ user.name }}</div>
+                  <div class="chat-preview text-primary">Start conversation</div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Appointment Modal -->
+@if (showAppointmentModal) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0 rounded-4">
+        <div class="modal-header bg-primary text-white rounded-top-4">
+          <h5 class="modal-title fw-bold">
+            <i class="bi bi-calendar-plus me-2"></i>
+            Termin vorschlagen
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeAppointmentModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-4">
+            Schlage <strong>{{ selectedChat?.user2Username }}</strong> einen Termin vor.
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Titel *</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="appointmentTitle"
+              placeholder="z.B. Mathe Nachhilfe"
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Datum *</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              [(ngModel)]="appointmentDate"
+            >
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold">Von *</label>
+              <input 
+                type="time" 
+                class="form-control" 
+                [(ngModel)]="appointmentStartTime"
+              >
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">Bis *</label>
+              <input 
+                type="time" 
+                class="form-control" 
+                [(ngModel)]="appointmentEndTime"
+              >
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Ort</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="appointmentLocation"
+              placeholder="z.B. Online, Bibliothek, ..."
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notizen</label>
+            <textarea 
+              class="form-control" 
+              rows="2"
+              [(ngModel)]="appointmentNotes"
+              placeholder="Zusätzliche Informationen..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary" (click)="closeAppointmentModal()">Abbrechen</button>
+          <button 
+            class="btn btn-primary" 
+            (click)="createAppointment()"
+            [disabled]="creatingAppointment || !appointmentDate || !appointmentStartTime || !appointmentEndTime"
+          >
+            @if (creatingAppointment) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            <i class="bi bi-send me-1"></i> Vorschlagen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

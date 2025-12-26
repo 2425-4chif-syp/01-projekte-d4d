@@ -1,0 +1,37 @@
+/* Minimal custom styles - most styling comes from Bootstrap */
+
+/* Active button styling for btn-group */
+.btn-group .btn.active {
+  background-color: var(--bs-primary);
+  color: white;
+  border-color: var(--bs-primary);
+}
+
+/* Nav link button styling */
+.nav-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.nav-link.active {
+  color: var(--bs-primary);
+}
+
+/* Toast animation */
+.toast {
+  opacity: 1;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

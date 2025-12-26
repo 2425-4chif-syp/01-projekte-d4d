@@ -1,0 +1,224 @@
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <!-- Header -->
+      <div class="mb-4">
+        <h1 class="d-flex align-items-center gap-2 mb-2">
+          <i class="fas fa-inbox text-primary"></i>
+          Postfach
+        </h1>
+        <p class="text-muted">
+          Verwalte deine Anfragen - eingegangen und gesendet
+        </p>
+      </div>
+
+      <!-- View Toggle -->
+      <div class="btn-group mb-4" role="group">
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          [class.active]="currentView === 'received'"
+          (click)="changeView('received')"
+        >
+          <i class="fas fa-inbox"></i> Empfangen
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary position-relative"
+          [class.active]="currentView === 'sent'"
+          (click)="changeView('sent')"
+        >
+          <i class="fas fa-paper-plane"></i> Gesendet @if (showSentNotification)
+          {
+          <span
+            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
+          >
+            <span class="visually-hidden">Neue Benachrichtigungen</span>
+          </span>
+          }
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            [class.active]="currentFilter === 'all'"
+            (click)="changeFilter('all')"
+          >
+            <i class="fas fa-list"></i> Alle
+            <span class="badge bg-secondary ms-2">{{ getCounts().all }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            [class.active]="currentFilter === 'PENDING'"
+            (click)="changeFilter('PENDING')"
+          >
+            <i class="fas fa-clock"></i> Ausstehend
+            <span class="badge bg-warning text-dark ms-2">{{
+              getCounts().PENDING
+            }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            [class.active]="currentFilter === 'ACCEPTED'"
+            (click)="changeFilter('ACCEPTED')"
+          >
+            <i class="fas fa-check-circle"></i> Akzeptiert
+            <span class="badge bg-success ms-2">{{
+              getCounts().ACCEPTED
+            }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            [class.active]="currentFilter === 'REJECTED'"
+            (click)="changeFilter('REJECTED')"
+          >
+            <i class="fas fa-times-circle"></i> Abgelehnt
+            <span class="badge bg-danger ms-2">{{ getCounts().REJECTED }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Requests List -->
+      @if (loading) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Anfragen werden geladen...</p>
+      </div>
+      } @else if (!isLoggedIn) {
+      <div class="text-center py-5">
+        <i class="fas fa-user-lock fa-4x text-muted mb-3"></i>
+        <h2>Nicht angemeldet</h2>
+        <p class="text-muted">
+          Bitte melde dich an, um deine Anfragen zu sehen.
+        </p>
+        <button class="btn btn-primary mt-3" (click)="goToHome()">
+          <i class="fas fa-sign-in-alt"></i> Zur Anmeldung
+        </button>
+      </div>
+      } @else if (displayedRequests.length === 0) {
+      <div class="text-center py-5">
+        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+        <h2>Keine Anfragen</h2>
+        <p class="text-muted">
+          Du hast noch keine @if (currentFilter !== 'all')
+          {{{ getFilterLabel() }}} Anfragen
+          {{ currentView === "received" ? "empfangen" : "gesendet" }}.
+        </p>
+      </div>
+      } @else { @for (request of displayedRequests; track request.id) {
+      <div
+        class="card mb-3 border-start border-4"
+        [class.border-warning]="request.status === 'PENDING'"
+        [class.border-success]="request.status === 'ACCEPTED'"
+        [class.border-danger]="request.status === 'REJECTED'"
+      >
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h5 class="card-title mb-1">
+                <i class="fas fa-user text-primary"></i>
+                {{
+                  currentView === "received"
+                    ? request.senderName
+                    : request.receiverName
+                }}
+              </h5>
+              <p class="card-text text-muted mb-0">
+                <i class="fas fa-book"></i>
+                {{ request.serviceTypeName }}
+              </p>
+            </div>
+            <span
+              class="badge"
+              [class.bg-warning]="request.status === 'PENDING'"
+              [class.text-dark]="request.status === 'PENDING'"
+              [class.bg-success]="request.status === 'ACCEPTED'"
+              [class.bg-danger]="request.status === 'REJECTED'"
+            >
+              @if (request.status === 'PENDING') {
+              <i class="fas fa-clock"></i> Ausstehend } @else if (request.status
+              === 'ACCEPTED') { <i class="fas fa-check-circle"></i> Akzeptiert }
+              @else if (request.status === 'REJECTED') {
+              <i class="fas fa-times-circle"></i> Abgelehnt }
+            </span>
+          </div>
+
+          <p class="text-muted small mb-3">
+            <i class="fas fa-calendar-alt"></i>
+            {{ currentView === "received" ? "Empfangen" : "Gesendet" }} am:
+            {{ formatDate(request.createdAt) }}
+          </p>
+
+          @if (currentView === 'received' && request.status === 'PENDING') {
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-success flex-fill"
+              [disabled]="processingRequest === request.id"
+              (click)="acceptRequest(request)"
+            >
+              @if (processingRequest === request.id) {
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+              ></span>
+              } @else {
+              <i class="fas fa-check"></i>
+              } Akzeptieren
+            </button>
+            <button
+              class="btn btn-danger flex-fill"
+              [disabled]="processingRequest === request.id"
+              (click)="rejectRequest(request)"
+            >
+              @if (processingRequest === request.id) {
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+              ></span>
+              } @else {
+              <i class="fas fa-times"></i>
+              } Ablehnen
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+      } }
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+@if (notification) {
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+  <div
+    class="toast show"
+    role="alert"
+    [class.bg-success]="notification.type === 'success'"
+    [class.bg-danger]="notification.type === 'error'"
+    [class.bg-info]="notification.type === 'info'"
+    [class.text-white]="notification.type !== 'info'"
+  >
+    <div class="toast-body d-flex align-items-center gap-2">
+      <i
+        class="fas"
+        [class.fa-check-circle]="notification.type === 'success'"
+        [class.fa-exclamation-circle]="notification.type === 'error'"
+        [class.fa-info-circle]="notification.type === 'info'"
+      ></i>
+      <span>{{ notification.message }}</span>
+    </div>
+  </div>
+</div>
+}
