@@ -20,6 +20,9 @@ services:
     depends_on:
       - db
     restart: on-failure
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/db
