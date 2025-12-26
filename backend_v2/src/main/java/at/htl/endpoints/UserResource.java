@@ -36,84 +36,115 @@ public class UserResource {
     @Transactional
     public Response loginKeycloak(@CookieParam("d4d_session_id") String sessionId,
                                    @HeaderParam("Authorization") String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity("No Bearer token provided")
-                    .build();
-        }
-        
-        String token = authHeader.substring(7);
-        String pupilId = null;
-        String name = null;
+        System.out.println("=== Keycloak Login Request ===");
+        System.out.println("Session ID: " + sessionId);
+        System.out.println("Auth Header: " + (authHeader != null ? "Present" : "Missing"));
         
         try {
-            // Decode JWT token (base64)
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity("Invalid JWT token format")
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                System.err.println("ERROR: No Bearer token provided");
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("No Bearer token provided")
                         .build();
             }
             
-            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+            String token = authHeader.substring(7);
+            String pupilId = null;
+            String name = null;
             
-            // Parse JSON manually (simple approach)
-            pupilId = extractJsonValue(payload, "preferred_username");
-            name = extractJsonValue(payload, "name");
-            
-        } catch (Exception e) {
-            System.err.println("Error decoding JWT: " + e.getMessage());
-            e.printStackTrace();
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Error decoding token: " + e.getMessage())
-                    .build();
-        }
-        
-        if (pupilId == null || pupilId.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("No preferred_username in token")
-                    .build();
-        }
-
-        User user = userRepository.find("pupilId", pupilId).firstResult();
-        if (user == null) {
-            user = new User();
-            user.setPupilId(pupilId);
-            user.setName(name != null ? name : pupilId);
-            userRepository.persist(user);
-        } else {
-            // Update name if changed
-            if (name != null && !name.equals(user.getName())) {
-                user.setName(name);
+            try {
+                // Decode JWT token (base64)
+                String[] parts = token.split("\\.");
+                if (parts.length < 2) {
+                    System.err.println("ERROR: Invalid JWT format - not enough parts");
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid JWT token format")
+                            .build();
+                }
+                
+                String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+                System.out.println("JWT Payload decoded successfully");
+                
+                // Parse JSON manually (simple approach)
+                pupilId = extractJsonValue(payload, "preferred_username");
+                name = extractJsonValue(payload, "name");
+                
+                System.out.println("Extracted pupilId: " + pupilId);
+                System.out.println("Extracted name: " + name);
+                
+            } catch (Exception e) {
+                System.err.println("ERROR: Exception during JWT decoding: " + e.getMessage());
+                e.printStackTrace();
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Error decoding token: " + e.getMessage())
+                        .build();
             }
-        }
+            
+            if (pupilId == null || pupilId.isEmpty()) {
+                System.err.println("ERROR: No preferred_username found in token");
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("No preferred_username in token")
+                        .build();
+            }
 
-        // Session logic
-        Session session;
-        if (sessionId == null || sessionId.isEmpty()) {
-            session = new Session(java.util.UUID.randomUUID().toString());
-            sessionRepository.persist(session);
-        } else {
-            session = sessionRepository.findByIdOrNull(sessionId);
-            if (session == null) {
+            User user = userRepository.find("pupilId", pupilId).firstResult();
+            if (user == null) {
+                System.out.println("Creating new user: " + pupilId);
+                user = new User();
+                user.setPupilId(pupilId);
+                user.setName(name != null ? name : pupilId);
+                userRepository.persist(user);
+                System.out.println("User created with ID: " + user.getId());
+            } else {
+                System.out.println("User already exists: " + user.getId());
+                // Update name if changed
+                if (name != null && !name.equals(user.getName())) {
+                    user.setName(name);
+                    System.out.println("Updated user name to: " + name);
+                }
+            }
+
+            // Session logic
+            Session session;
+            if (sessionId == null || sessionId.isEmpty()) {
                 session = new Session(java.util.UUID.randomUUID().toString());
                 sessionRepository.persist(session);
+                System.out.println("Created new session: " + session.getId());
+            } else {
+                session = sessionRepository.findByIdOrNull(sessionId);
+                if (session == null) {
+                    session = new Session(java.util.UUID.randomUUID().toString());
+                    sessionRepository.persist(session);
+                    System.out.println("Created new session (old invalid): " + session.getId());
+                } else {
+                    System.out.println("Using existing session: " + session.getId());
+                }
             }
+            
+            session.setUser(user);
+            session.setAnonymous(false);
+            sessionRepository.persist(session);
+            
+            NewCookie cookie = new NewCookie.Builder("d4d_session_id")
+                    .value(session.getId())
+                    .path("/")
+                    .maxAge(86400) // 24 Stunden
+                    .build();
+            
+            System.out.println("Login successful for user: " + user.getName());
+            System.out.println("=== End Keycloak Login ===");
+            
+            return Response.ok(user.getName())
+                    .cookie(cookie)
+                    .build();
+                    
+        } catch (Exception e) {
+            System.err.println("FATAL ERROR in loginKeycloak: " + e.getMessage());
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Internal server error: " + e.getMessage())
+                    .build();
         }
-        
-        session.setUser(user);
-        session.setAnonymous(false);
-        sessionRepository.persist(session);
-        
-        NewCookie cookie = new NewCookie.Builder("d4d_session_id")
-                .value(session.getId())
-                .path("/")
-                .maxAge(86400) // 24 Stunden
-                .build();
-        
-        return Response.ok(user.getName())
-                .cookie(cookie)
-                .build();
     }
 
     @GET
