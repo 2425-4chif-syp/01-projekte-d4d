@@ -31,27 +31,32 @@ endif::[]
 :title-slide-transition: zoom
 :title-slide-transition-speed: fast
 
-Dienstleistung für Dienstleistung
+== D4D - Dienstleistung für Dienstleistung
+
+== Was ist D4D?
+* *D4D* ermöglicht einen Austausch von Dienstleistungen
+* entweder kostenlos oder auch möglich mit Zahlung
+* aktuell Fokus auf schulischen Austausch
 
 == Projektteam
 
-* *Vlad Guran (Projektleiter)* - Chat
-* *Leon Zehetner* - Markt anzeigen (Filterfunktionen)
-* *Michael Birklbauer* - Servicetypen verwalten
-* *Stefan Jelic* - Serviceangebote
-* *Semih Yüzüak* - Bewertungen
+* *Vlad Guran*
+* *Leon Zehetner*
+* *Michael Birklbauer*
+* *Stefan Jelic*
 
-== Ziele
-
-* *Bessere schulische Leistungen*: Durch regelmäßige Hilfe sollen die Noten der teilnehmenden Schüler langfristig verbessert werden.
-* *Gemeinschaft stärken*: Die Plattform soll auch die Zusammenarbeit und den Austausch unter Schülern fördern.
-
-== Systemarchitektur
+=== Systemarchitektur
 
 [.stretch]
 image::system-architecture.png[]
 
-== ERD
+=== CLD
+
+[.stretch]
+image::CLD.png[]
+
+
+=== ERD
 
 [.stretch]
 image::er-diagram.png[]

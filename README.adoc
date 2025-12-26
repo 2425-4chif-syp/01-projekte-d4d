@@ -1,0 +1,19 @@
+= D4D
+:sectnums:
+:toc: left
+
+== Project Members
+* Vlad Guran
+* Leon Zehetner
+* Michael Birklbauer
+* Stefan Jelic
+
+== CLD
+[.stretch]
+image::asciidocs/slides/images/CLD.png[]
+
+== Scrum-Board
+https://vm81.htl-leonding.ac.at/agiles/99-426/100-1862[youtrack]
+
+== Slides
+https://2425-4chif-syp.github.io/01-projekte-d4d/slides/demo.html[Slides]

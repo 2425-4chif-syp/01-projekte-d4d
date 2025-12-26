@@ -87,8 +87,12 @@ entity "Service" as Service {
 
 }
 
+entity "ServiceRequest" as ServiceRequest {
+
+}
+
 entity "Market" as Market {
-+Offer: boolean
+
 }
 
 entity "ChatEntry" as ChatEntry {
@@ -99,14 +103,27 @@ entity "Review" as Review {
 
 }
 
+entity "Session_service_type" as Session_service_type {
+
+}
+
+entity "Session" as Session {
+
+}
+
 User <-- ChatEntry
+User <-- ServiceRequest
 Review --> Service
 ChatEntry --> User
+ServiceRequest --> User
+ServiceRequest --> Market
 TypeOfService <-- Market
 Service --> Market
 Service --> Market
 Service <--> Service
 Market --> User
+Session_service_type --> Session
+Session --> User
 @enduml
 ----
 
@@ -140,8 +157,19 @@ s_id: Integer
 --
 s_m_provider_id: Integer
 s_m_client_id: Integer
-exchangeService: Integer
-description: String
+s_status: String
+s_created_at: TimeStamp
+s_completed_at: TimeStamp
+}
+
+entity "ServiceRequest" as ServiceRequest {
+sr_id: Integer
+--
+sr_sender_id: Integer
+sr_receiver_id: Integer
+sr_market_id: Integer
+sr_status: String
+sr_created_at: TimeStamp
 }
 
 entity "Market" as Market {
@@ -169,14 +197,33 @@ r_rating: Decimal
 r_comment: String
 }
 
+entity "Session_service_type" as Session_service_type {
+sst_id: Integer
+sst_sess_id: Integer
+sst_is_offer: Integer
+}
+
+entity "Session" as Session {
+sess_id: Integer
+sess_created_at: TimeStamp
+sess_expires_at: TimeStamp
+sess_u_id: Integer
+sess_is_anonymous: boolean
+}
+
 User <-- ChatEntry
+User <-- ServiceRequest
 Review --> Service
 ChatEntry --> User
+ServiceRequest --> User
+ServiceRequest --> Market
 TypeOfService <-- Market
 Service --> Market
 Service --> Market
 Service <--> Service
 Market --> User
+Session_service_type --> Session
+Session --> User
 @enduml
 ----
 
