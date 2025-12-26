@@ -27,12 +27,12 @@ services:
       QUARKUS_DATASOURCE_USERNAME: app
       QUARKUS_DATASOURCE_PASSWORD: app
       QUARKUS_PROFILE: dev
-      # Development SMTP Configuration
-      SMTP_HOST: smtp-relay.brevo.com
+      # Gmail SMTP Configuration
+      SMTP_HOST: smtp.gmail.com
       SMTP_PORT: 587
-      SMTP_USERNAME: 9e4362001@smtp-brevo.com
-      SMTP_PASSWORD: bskigKHzj8FYe9S
-      SMTP_FROM: s.jelic@students.htl-leonding.ac.at
+      SMTP_USERNAME: d4d.notification@gmail.com
+      SMTP_PASSWORD: ehzrxtbcdbdngxys
+      SMTP_FROM: d4d.notification@gmail.com
       TEST_EMAIL: s.jelic@htl-leonding.ac.at
     networks:
       - d4d-v2-net

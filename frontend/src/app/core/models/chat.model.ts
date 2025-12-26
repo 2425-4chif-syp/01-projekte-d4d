@@ -6,6 +6,8 @@ export interface Chat {
   lastUpdate: string;
   isAdmin?: boolean;
   isPinned?: boolean;
+  unreadCount?: number;
+  lastReadTimestamp?: string;
 }
 
 export interface ChatMessage {

@@ -21,16 +21,26 @@ services:
       - db
     restart: on-failure
     environment:
+      # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/db
       QUARKUS_DATASOURCE_USERNAME: app
       QUARKUS_DATASOURCE_PASSWORD: app
-      # Brevo SMTP Configuration (from environment variables)
-      SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
+      # SMTP Configuration
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
-      SMTP_FROM: ${SMTP_FROM}
+      SMTP_FROM: ${SMTP_FROM:-d4d.notification@gmail.com}
       TEST_EMAIL: ${TEST_EMAIL}
+      # Application URLs (for links in emails)
+      APP_BASE_URL: ${APP_BASE_URL:-https://vm10.htl-leonding.ac.at}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://vm10.htl-leonding.ac.at}
+      APP_BACKEND_URL: ${APP_BACKEND_URL:-https://vm10.htl-leonding.ac.at/api}
+      # Keycloak
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-https://auth.htl-leonding.ac.at/realms/2526_5bhitm}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-frontend}
+      # CORS
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,https://localhost,https://vm10.htl-leonding.ac.at,https://auth.htl-leonding.ac.at}
     networks:
       - d4d-v2-net
 

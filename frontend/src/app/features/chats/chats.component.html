@@ -28,7 +28,10 @@
       <!-- Chat List -->
       <div class="chat-list custom-scroll">
         @for (chat of filteredChats; track chat.id) {
-          <div class="chat-item" [class.active]="selectedChat?.id === chat.id" (click)="selectChat(chat)">
+          <div class="chat-item" 
+               [class.active]="selectedChat?.id === chat.id" 
+               [class.has-unread]="chat.unreadCount && chat.unreadCount > 0"
+               (click)="selectChat(chat)">
             <div class="chat-avatar-container">
               <div class="chat-avatar" [class.admin-avatar]="chat.isAdmin">
                 {{ getInitial(chat.user2Username) }}
@@ -37,15 +40,22 @@
             </div>
             <div class="chat-info">
               <div class="d-flex justify-content-between align-items-baseline">
-                <div class="chat-name">{{ chat.user2Username }}</div>
+                <div class="chat-name" [class.fw-bold]="chat.unreadCount && chat.unreadCount > 0">
+                  {{ chat.user2Username }}
+                </div>
                 @if (chat.lastUpdate) {
-                  <div class="chat-time">{{ formatTime(chat.lastUpdate) }}</div>
+                  <div class="chat-time" [class.text-primary]="chat.unreadCount && chat.unreadCount > 0">
+                    {{ formatTime(chat.lastUpdate) }}
+                  </div>
                 }
               </div>
               <div class="d-flex justify-content-between align-items-center">
-                <div class="chat-preview">
+                <div class="chat-preview" [class.chat-preview-unread]="chat.unreadCount && chat.unreadCount > 0">
                   {{ chat.lastMessage || 'No messages yet' }}
                 </div>
+                @if (chat.unreadCount && chat.unreadCount > 0) {
+                  <span class="unread-badge">{{ chat.unreadCount > 9 ? '9+' : chat.unreadCount }}</span>
+                }
               </div>
             </div>
           </div>
@@ -77,9 +87,6 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-icon btn-appointment" title="Termin vorschlagen" (click)="openAppointmentModal()">
-              <i class="bi bi-calendar-plus"></i>
-            </button>
             <button class="btn btn-icon" title="Search in chat">
               <i class="bi bi-search"></i>
             </button>
@@ -167,10 +174,13 @@
             <input 
               type="text" 
               class="chat-input" 
-              placeholder="Type a message..." 
+              placeholder="Nachricht schreiben..." 
               [(ngModel)]="messageText" 
               (keyup.enter)="sendMessage()"
             >
+            <button class="btn btn-icon btn-appointment" title="Termin vorschlagen" (click)="openAppointmentModal()">
+              <i class="bi bi-calendar-plus"></i>
+            </button>
             <button class="btn btn-icon" title="Emoji">
               <i class="bi bi-emoji-smile"></i>
             </button>

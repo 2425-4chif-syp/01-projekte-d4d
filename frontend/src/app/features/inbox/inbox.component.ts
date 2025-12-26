@@ -121,6 +121,11 @@ export class InboxComponent implements OnInit {
       this.showSentNotification = false;
       this.markSentRequestsAsSeen();
     }
+    
+    // Mark received requests as seen when viewing received
+    if (view === 'received') {
+      this.markReceivedRequestsAsSeen();
+    }
 
     this.updateDisplay();
   }
@@ -316,5 +321,23 @@ export class InboxComponent implements OnInit {
     });
 
     localStorage.setItem('seenSentRequests', JSON.stringify(seenRequests));
+  }
+
+  private markReceivedRequestsAsSeen() {
+    if (!this.allRequests.received) return;
+
+    const seenRequestsStr = localStorage.getItem('seenReceivedRequests');
+    const seenRequests: Record<string, boolean> = seenRequestsStr
+      ? JSON.parse(seenRequestsStr)
+      : {};
+
+    // Mark all pending received requests as seen
+    this.allRequests.received.forEach((request) => {
+      if (request.status === 'PENDING') {
+        seenRequests[request.id] = true;
+      }
+    });
+
+    localStorage.setItem('seenReceivedRequests', JSON.stringify(seenRequests));
   }
 }

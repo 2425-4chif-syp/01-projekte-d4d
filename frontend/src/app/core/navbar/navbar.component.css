@@ -132,6 +132,44 @@
   animation: pulse-dot 2s infinite;
 }
 
+/* Modern Notification Badge */
+.inbox-icon-btn .notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 9px;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badge-pop 0.3s ease-out;
+}
+
+.inbox-icon-btn.has-notifications i {
+  color: white;
+}
+
+@keyframes badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 @keyframes pulse-dot {
   0%,
   100% {

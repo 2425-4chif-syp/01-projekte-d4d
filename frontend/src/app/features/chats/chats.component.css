@@ -157,6 +157,35 @@
   border-color: rgba(79, 70, 229, 0.1);
 }
 
+/* Unread Chat Item Styling */
+.chat-item.has-unread {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+  animation: unread-pulse 2s ease-in-out infinite;
+}
+
+.chat-item.has-unread:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+}
+
+.chat-item.has-unread .chat-name {
+  color: #92400e !important;
+}
+
+.chat-preview-unread {
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+@keyframes unread-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  }
+}
+
 .chat-avatar-container {
   position: relative;
   margin-right: 1rem;
@@ -225,12 +254,22 @@
 }
 
 .unread-badge {
-  background-color: var(--chat-primary);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
-  font-weight: 600;
+  font-weight: 700;
+  min-width: 22px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: badge-bounce 0.5s ease-out;
+}
+
+@keyframes badge-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 /* Messages Area */

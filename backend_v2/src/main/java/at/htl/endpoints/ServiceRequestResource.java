@@ -239,21 +239,9 @@ public class ServiceRequestResource {
         systemMsg.setTime(new java.sql.Timestamp(System.currentTimeMillis()));
         chatEntryRepository.persist(systemMsg);
 
-        // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an den Schüler (sender)
-        User sender = request.getSender();
-        if (sender != null && sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
-            LOG.info("Sending confirmation email to sender (pupilId): " + sender.getPupilId());
-            
-            // Asynchroner E-Mail-Versand - blockiert den API-Call NICHT!
-            notificationService.sendConfirmationEmail(sender.getPupilId())
-                .subscribe()
-                .with(
-                    unused -> LOG.info("Email notification queued successfully for user: " + sender.getName()),
-                    failure -> LOG.error("Failed to queue email notification for user: " + sender.getName(), failure)
-                );
-        } else {
-            LOG.warn("Cannot send email: Sender has no pupilId. User: " + (sender != null ? sender.getName() : "null"));
-        }
+        // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an BEIDE Parteien (Sender & Provider)
+        LOG.info("Sending service created notification to both parties for service: " + service.getId());
+        notificationService.sendServiceCreatedNotification(service);
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }

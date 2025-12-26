@@ -1,16 +1,20 @@
 package at.htl.endpoints;
 
 import at.htl.endpoints.dto.ServiceResponseDto;
+import at.htl.entity.ChatEntry;
 import at.htl.entity.Service;
 import at.htl.entity.User;
+import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.ServiceRepository;
 import at.htl.repository.UserRepository;
+import at.htl.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -22,11 +26,19 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ActiveServiceResource {
 
+    private static final Logger LOG = Logger.getLogger(ActiveServiceResource.class);
+
     @Inject
     ServiceRepository serviceRepository;
 
     @Inject
     UserRepository userRepository;
+
+    @Inject
+    NotificationService notificationService;
+
+    @Inject
+    ChatEntryRepository chatEntryRepository;
 
     /**
      * Get all services for a user (as provider or client)
@@ -108,9 +120,45 @@ public class ActiveServiceResource {
         if (service.getProviderConfirmed() && service.getClientConfirmed()) {
             service.setStatus("COMPLETED");
             service.setCompletedAt(new Timestamp(System.currentTimeMillis()));
+            
+            // Send completion notification to BOTH parties
+            LOG.info("Service completed - sending notifications to both parties");
+            notificationService.sendServiceCompletedNotification(service);
+            
+            // Create system chat message for completion
+            User provider = service.getMarketProvider().getUser();
+            User client = service.getMarketClient() != null ? service.getMarketClient().getUser() : null;
+            String serviceTypeName = service.getMarketProvider().getServiceType().getName();
+            
+            if (client != null) {
+                // Message from system to client (with review hint)
+                ChatEntry clientMsg = new ChatEntry();
+                clientMsg.setSender(provider);
+                clientMsg.setReceiver(client);
+                clientMsg.setMessage("<<<SYSTEM>>> 🎉 Die Nachhilfe in " + serviceTypeName + " wurde erfolgreich abgeschlossen! Vielen Dank für die Zusammenarbeit. ⭐ Vergiss nicht, eine Bewertung abzugeben!");
+                clientMsg.setTime(new Timestamp(System.currentTimeMillis()));
+                chatEntryRepository.persist(clientMsg);
+                
+                // Message from system to provider
+                ChatEntry providerMsg = new ChatEntry();
+                providerMsg.setSender(client);
+                providerMsg.setReceiver(provider);
+                providerMsg.setMessage("<<<SYSTEM>>> 🎉 Die Nachhilfe in " + serviceTypeName + " wurde erfolgreich abgeschlossen! Vielen Dank für dein Engagement. Du hast einem Mitschüler geholfen! 🌟");
+                providerMsg.setTime(new Timestamp(System.currentTimeMillis() + 1)); // +1ms to ensure order
+                chatEntryRepository.persist(providerMsg);
+            }
+            
         } else if (service.getProviderConfirmed() || service.getClientConfirmed()) {
             // One confirmed, waiting for other
             service.setStatus("PENDING_COMPLETION");
+            
+            // Send pending notification to the OTHER user (not the one who just confirmed)
+            User otherUser = isProvider 
+                ? service.getMarketClient().getUser() 
+                : service.getMarketProvider().getUser();
+            
+            LOG.info("One party confirmed - sending pending notification to: " + otherUser.getName());
+            notificationService.sendCompletionPendingNotification(service, user, otherUser);
         }
 
         serviceRepository.persist(service);

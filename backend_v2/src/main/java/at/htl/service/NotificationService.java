@@ -1,6 +1,7 @@
 package at.htl.service;
 
 import at.htl.entity.Appointment;
+import at.htl.entity.Service;
 import at.htl.entity.User;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.reactive.ReactiveMailer;
@@ -37,6 +38,12 @@ public class NotificationService {
     @ConfigProperty(name = "app.base-url")
     String baseUrl;
 
+    @ConfigProperty(name = "app.frontend.url")
+    String frontendUrl;
+
+    @ConfigProperty(name = "app.backend.url")
+    String backendUrl;
+
     @ConfigProperty(name = "app.name")
     String appName;
 
@@ -45,6 +52,199 @@ public class NotificationService {
 
     public NotificationService() {
         LOG.info("NotificationService initialized - using Keycloak for email addresses");
+    }
+
+    // ==================== SERVICE REQUEST NOTIFICATIONS ====================
+
+    /**
+     * Sendet E-Mail an den Empfänger wenn er eine neue Anfrage erhält.
+     * 
+     * @param receiver Der Provider der die Anfrage erhält
+     * @param sender Der Schüler der die Anfrage gesendet hat
+     * @param serviceTypeName Name des Fachs
+     */
+    public void sendServiceRequestReceived(User receiver, User sender, String serviceTypeName) {
+        LOG.info("Sending service request received email to: " + receiver.getName());
+        
+        String recipientEmail = getEmailForUser(receiver);
+        String subject = "🔔 Neue Nachhilfe-Anfrage von " + sender.getName();
+        
+        String htmlContent = buildBaseEmail(
+            "🔔 Neue Anfrage erhalten!",
+            "#f59e0b", "#d97706",
+            receiver.getName(),
+            String.format("<strong>%s</strong> möchte Nachhilfe in <strong>%s</strong> von dir!", sender.getName(), serviceTypeName),
+            """
+                <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #92400e;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #92400e;"><strong>👤 Schüler:</strong> %s</p>
+                </div>
+                <p style="color: #4b5563;">Gehe zur Plattform, um die Anfrage anzunehmen oder abzulehnen.</p>
+            """.formatted(serviceTypeName, sender.getName()),
+            baseUrl, "Anfrage ansehen"
+        );
+
+        sendEmail(recipientEmail, subject, htmlContent);
+    }
+
+    /**
+     * Sendet E-Mails an BEIDE Parteien wenn eine Anfrage angenommen wird und ein Service erstellt wird.
+     * 
+     * @param service Der erstellte Service
+     */
+    public void sendServiceCreatedNotification(Service service) {
+        LOG.info("Sending service created emails for service: " + service.getId());
+        
+        User provider = service.getMarketProvider().getUser();
+        User client = service.getMarketClient() != null ? service.getMarketClient().getUser() : null;
+        String serviceTypeName = service.getMarketProvider().getServiceType().getName();
+        
+        // E-Mail an den Client (Schüler der die Anfrage gesendet hat)
+        if (client != null) {
+            String recipientEmail = getEmailForUser(client);
+            String subject = "✅ Deine Nachhilfe-Anfrage wurde angenommen!";
+            
+            String htmlContent = buildBaseEmail(
+                "🎉 Anfrage angenommen!",
+                "#10b981", "#059669",
+                client.getName(),
+                String.format("<strong>%s</strong> hat deine Anfrage für <strong>%s</strong> angenommen!", provider.getName(), serviceTypeName),
+                """
+                    <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
+                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:</strong> %s</p>
+                    </div>
+                    <p style="color: #4b5563;">Du kannst jetzt über den Chat Kontakt aufnehmen und Termine vereinbaren!</p>
+                """.formatted(serviceTypeName, provider.getName()),
+                baseUrl + "/chats", "Zum Chat"
+            );
+
+            sendEmail(recipientEmail, subject, htmlContent);
+        }
+        
+        // E-Mail an den Provider (Nachhilfelehrer)
+        String providerEmail = getEmailForUser(provider);
+        String providerSubject = "✅ Du hast eine Nachhilfe-Anfrage angenommen!";
+        
+        String clientName = client != null ? client.getName() : "Ein Schüler";
+        
+        String providerHtml = buildBaseEmail(
+            "✅ Anfrage angenommen!",
+            "#10b981", "#059669",
+            provider.getName(),
+            String.format("Du hast die Anfrage von <strong>%s</strong> für <strong>%s</strong> angenommen!", clientName, serviceTypeName),
+            """
+                <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:</strong> %s</p>
+                </div>
+                <p style="color: #4b5563;">Kontaktiere deinen Schüler über den Chat, um Details zu besprechen!</p>
+            """.formatted(serviceTypeName, clientName),
+            baseUrl + "/chats", "Zum Chat"
+        );
+
+        sendEmail(providerEmail, providerSubject, providerHtml);
+    }
+
+    // ==================== SERVICE COMPLETION NOTIFICATIONS ====================
+
+    /**
+     * Sendet E-Mail an den ANDEREN User wenn einer auf "Fertigstellen" drückt.
+     * Dies ist eine Erinnerung für den anderen User, ebenfalls zu bestätigen.
+     * 
+     * @param service Der Service der fertiggestellt werden soll
+     * @param confirmedBy Der User der gerade bestätigt hat
+     * @param otherUser Der andere User der noch bestätigen muss
+     */
+    public void sendCompletionPendingNotification(Service service, User confirmedBy, User otherUser) {
+        LOG.info("Sending completion pending email to: " + otherUser.getName());
+        
+        String recipientEmail = getEmailForUser(otherUser);
+        String serviceTypeName = service.getMarketProvider().getServiceType().getName();
+        String subject = "⏳ " + confirmedBy.getName() + " hat die Nachhilfe als abgeschlossen markiert";
+        
+        String htmlContent = buildBaseEmail(
+            "⏳ Fertigstellung bestätigen",
+            "#8b5cf6", "#7c3aed",
+            otherUser.getName(),
+            String.format("<strong>%s</strong> hat die Nachhilfe in <strong>%s</strong> als abgeschlossen markiert.", confirmedBy.getName(), serviceTypeName),
+            """
+                <div style="background: #f5f3ff; border: 2px solid #8b5cf6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #5b21b6;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #5b21b6;"><strong>👤 Partner:</strong> %s</p>
+                </div>
+                <p style="color: #4b5563;">Bitte bestätige auch du die Fertigstellung, damit der Service abgeschlossen werden kann.</p>
+            """.formatted(serviceTypeName, confirmedBy.getName()),
+            baseUrl + "/showUserServices.html", "Jetzt bestätigen"
+        );
+
+        sendEmail(recipientEmail, subject, htmlContent);
+    }
+
+    /**
+     * Sendet E-Mails an BEIDE wenn der Service komplett fertiggestellt wurde.
+     * Der Client (Schüler) bekommt einen Hinweis, dass er den Provider bewerten kann.
+     * 
+     * @param service Der fertiggestellte Service
+     */
+    public void sendServiceCompletedNotification(Service service) {
+        LOG.info("Sending service completed emails for service: " + service.getId());
+        
+        User provider = service.getMarketProvider().getUser();
+        User client = service.getMarketClient() != null ? service.getMarketClient().getUser() : null;
+        String serviceTypeName = service.getMarketProvider().getServiceType().getName();
+        
+        // E-Mail an den Provider (ohne Bewertungshinweis)
+        String providerEmail = getEmailForUser(provider);
+        String providerSubject = "🎉 Nachhilfe erfolgreich abgeschlossen!";
+        
+        String clientName = client != null ? client.getName() : "Dein Schüler";
+        
+        String providerHtml = buildBaseEmail(
+            "🎉 Nachhilfe abgeschlossen!",
+            "#10b981", "#059669",
+            provider.getName(),
+            String.format("Die Nachhilfe in <strong>%s</strong> mit <strong>%s</strong> wurde erfolgreich abgeschlossen!", serviceTypeName, clientName),
+            """
+                <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #065f46;"><strong>✅ Status:</strong> Erfolgreich abgeschlossen</p>
+                </div>
+                <p style="color: #4b5563;">Vielen Dank für dein Engagement! Du hast einem Mitschüler geholfen. 🌟</p>
+            """.formatted(serviceTypeName, clientName),
+            baseUrl + "/showUserServices.html", "Meine Services ansehen"
+        );
+
+        sendEmail(providerEmail, providerSubject, providerHtml);
+        
+        // E-Mail an den Client (MIT Bewertungshinweis)
+        if (client != null) {
+            String clientEmail = getEmailForUser(client);
+            String clientSubject = "🎉 Nachhilfe erfolgreich abgeschlossen - Jetzt bewerten!";
+            
+            String clientHtml = buildBaseEmail(
+                "🎉 Nachhilfe abgeschlossen!",
+                "#10b981", "#059669",
+                client.getName(),
+                String.format("Die Nachhilfe in <strong>%s</strong> mit <strong>%s</strong> wurde erfolgreich abgeschlossen!", serviceTypeName, provider.getName()),
+                """
+                    <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
+                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:</strong> %s</p>
+                        <p style="margin: 5px 0; color: #065f46;"><strong>✅ Status:</strong> Erfolgreich abgeschlossen</p>
+                    </div>
+                    
+                    <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <p style="margin: 0; color: #92400e; font-weight: 600;">⭐ Bewerte jetzt deinen Nachhilfelehrer!</p>
+                        <p style="margin: 10px 0 0 0; color: #92400e;">Deine Bewertung hilft anderen Schülern, den passenden Nachhilfelehrer zu finden.</p>
+                    </div>
+                """.formatted(serviceTypeName, provider.getName()),
+                baseUrl + "/showUserServices.html", "Jetzt bewerten"
+            );
+
+            sendEmail(clientEmail, clientSubject, clientHtml);
+        }
     }
 
     // ==================== APPOINTMENT NOTIFICATIONS ====================
@@ -99,8 +299,10 @@ public class NotificationService {
      * Erstellt die HTML-E-Mail für die Terminbestätigung mit ICS-Download-Link.
      */
     private String buildAppointmentConfirmationEmail(Appointment appointment, User recipient, String otherUser, boolean isProposer) {
-        String icsDownloadUrl = baseUrl + "/api/appointments/" + appointment.getId() + "/ics";
-        String portalUrl = baseUrl + "/calendar";
+        // ICS-Download geht zum Backend API
+        String icsDownloadUrl = backendUrl + "/appointments/" + appointment.getId() + "/ics";
+        // Portal-Link geht zum Frontend
+        String portalUrl = frontendUrl + "/calendar";
 
         String role = isProposer ? "Dein Terminvorschlag wurde angenommen" : "Du hast den Termin bestätigt";
         
@@ -418,16 +620,16 @@ public class NotificationService {
      * Priorität: 1. User.email, 2. Keycloak, 3. Generiert aus Name
      */
     private String getEmailForUser(User user) {
-        // 1. Falls User eine E-Mail hat, diese verwenden
+        // 1. Falls User eine E-Mail hat, diese verwenden (und normalisieren)
         if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-            return user.getEmail();
+            return normalizeEmail(user.getEmail());
         }
 
         // 2. Falls pupilId vorhanden, versuche über Keycloak
         if (user.getPupilId() != null && !user.getPupilId().isEmpty()) {
             String keycloakEmail = keycloakUserService.getUserEmail(user.getPupilId());
             if (keycloakEmail != null) {
-                return keycloakEmail;
+                return normalizeEmail(keycloakEmail);
             }
         }
 
@@ -441,6 +643,75 @@ public class NotificationService {
                 .replace("ß", "ss");
 
         return normalizedName + "@" + emailDomain;
+    }
+
+    /**
+     * Normalisiert eine E-Mail-Adresse für Gmail SMTP.
+     * Ersetzt Sonderzeichen durch ASCII-Äquivalente.
+     * 
+     * @param email Die zu normalisierende E-Mail-Adresse
+     * @return Normalisierte E-Mail-Adresse
+     */
+    private String normalizeEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return email;
+        }
+        
+        return email
+            // Deutsche Umlaute
+            .replace("ä", "ae")
+            .replace("ö", "oe")
+            .replace("ü", "ue")
+            .replace("Ä", "Ae")
+            .replace("Ö", "Oe")
+            .replace("Ü", "Ue")
+            .replace("ß", "ss")
+            // Slawische Sonderzeichen
+            .replace("ć", "c")
+            .replace("č", "c")
+            .replace("ž", "z")
+            .replace("š", "s")
+            .replace("đ", "d")
+            .replace("Ć", "C")
+            .replace("Č", "C")
+            .replace("Ž", "Z")
+            .replace("Š", "S")
+            .replace("Đ", "D")
+            // Weitere diakritische Zeichen
+            .replace("á", "a")
+            .replace("à", "a")
+            .replace("â", "a")
+            .replace("é", "e")
+            .replace("è", "e")
+            .replace("ê", "e")
+            .replace("í", "i")
+            .replace("ì", "i")
+            .replace("î", "i")
+            .replace("ó", "o")
+            .replace("ò", "o")
+            .replace("ô", "o")
+            .replace("ú", "u")
+            .replace("ù", "u")
+            .replace("û", "u")
+            .replace("ñ", "n")
+            .replace("ł", "l")
+            .replace("Á", "A")
+            .replace("À", "A")
+            .replace("Â", "A")
+            .replace("É", "E")
+            .replace("È", "E")
+            .replace("Ê", "E")
+            .replace("Í", "I")
+            .replace("Ì", "I")
+            .replace("Î", "I")
+            .replace("Ó", "O")
+            .replace("Ò", "O")
+            .replace("Ô", "O")
+            .replace("Ú", "U")
+            .replace("Ù", "U")
+            .replace("Û", "U")
+            .replace("Ñ", "N")
+            .replace("Ł", "L");
     }
 
     // ==================== EXISTING SERVICE REQUEST NOTIFICATIONS ====================
@@ -654,34 +925,34 @@ public class NotificationService {
                     body {
                         font-family: Arial, sans-serif;
                         line-height: 1.6;
-                        color: ##333;
+                        color: #333;
                         max-width: 600px;
                         margin: 0 auto;
                         padding: 20px;
                     }
                     .header {
-                        background: linear-gradient(135deg, ##4facfe 0%%, ##00f2fe 100%%);
+                        background: linear-gradient(135deg, #4facfe 0%%, #00f2fe 100%%);
                         color: white;
                         padding: 20px;
                         text-align: center;
                         border-radius: 8px 8px 0 0;
                     }
                     .content {
-                        background: ##f9f9f9;
+                        background: #f9f9f9;
                         padding: 30px;
                         border-radius: 0 0 8px 8px;
                     }
                     .info-box {
                         background: white;
                         padding: 15px;
-                        border-left: 4px solid ##4facfe;
+                        border-left: 4px solid #4facfe;
                         margin: 20px 0;
                     }
                     .footer {
                         text-align: center;
                         margin-top: 20px;
                         font-size: 12px;
-                        color: ##666;
+                        color: #666;
                     }
                 </style>
             </head>
@@ -908,5 +1179,103 @@ public class NotificationService {
     public Uni<Void> sendTestEmail(String pupilId) {
         LOG.info("Sending TEST email for pupilId: " + pupilId);
         return sendConfirmationEmail(pupilId);
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    /**
+     * Sendet eine E-Mail asynchron.
+     * 
+     * @param recipientEmail Empfänger-E-Mail
+     * @param subject Betreff
+     * @param htmlContent HTML-Inhalt
+     */
+    private void sendEmail(String recipientEmail, String subject, String htmlContent) {
+        try {
+            mailer.send(Mail.withHtml(recipientEmail, subject, htmlContent).setFrom(fromEmail))
+                .onItem().invoke(() -> LOG.info("Email sent to: " + recipientEmail))
+                .onFailure().invoke(t -> LOG.error("Failed to send email to " + recipientEmail, t))
+                .subscribe().with(v -> {}, t -> LOG.error("Email send error", t));
+        } catch (Exception e) {
+            LOG.error("Failed to send email to " + recipientEmail + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Baut eine standardisierte HTML-E-Mail.
+     * 
+     * @param headerTitle Titel im Header
+     * @param gradientStart Gradient-Startfarbe (z.B. "#10b981")
+     * @param gradientEnd Gradient-Endfarbe (z.B. "#059669")
+     * @param recipientName Name des Empfängers
+     * @param introText Einleitungstext
+     * @param contentSection Haupt-Content-Section (HTML)
+     * @param buttonUrl URL für den Button
+     * @param buttonText Text auf dem Button
+     * @return HTML-String
+     */
+    private String buildBaseEmail(String headerTitle, String gradientStart, String gradientEnd,
+                                  String recipientName, String introText, String contentSection,
+                                  String buttonUrl, String buttonText) {
+        return """
+            <!DOCTYPE html>
+            <html lang="de">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                                
+                                <!-- Header -->
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, %s 0%%, %s 100%%); padding: 30px; text-align: center;">
+                                        <h1 style="color: #ffffff; margin: 0; font-size: 28px;">%s</h1>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Content -->
+                                <tr>
+                                    <td style="padding: 30px;">
+                                        <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">
+                                            Hallo <strong>%s</strong>,
+                                        </p>
+                                        <p style="font-size: 16px; color: #4b5563; margin: 0 0 20px 0;">
+                                            %s
+                                        </p>
+                                        
+                                        %s
+                                        
+                                        <p style="margin: 25px 0; text-align: center;">
+                                            <a href="%s" style="display: inline-block; background: linear-gradient(135deg, %s 0%%, %s 100%%); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                                                %s
+                                            </a>
+                                        </p>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Footer -->
+                                <tr>
+                                    <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                                        <p style="margin: 0; color: #6b7280; font-size: 14px;">%s</p>
+                                        <p style="margin: 5px 0 0 0; color: #9ca3af; font-size: 12px;">Diese E-Mail wurde automatisch generiert.</p>
+                                    </td>
+                                </tr>
+                                
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+            """.formatted(
+                gradientStart, gradientEnd, headerTitle,
+                recipientName, introText, contentSection,
+                buttonUrl, gradientStart, gradientEnd, buttonText,
+                appName
+            );
     }
 }

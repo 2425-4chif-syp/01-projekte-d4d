@@ -150,7 +150,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
                       ? (user.name as any).username || String(user.name)
                       : user.name;
 
-                  this.chats.push({
+                  const newChat: Chat = {
                     id: user.id,
                     user1Username: this.currentUser || '',
                     user2Username: userName,
@@ -158,7 +158,13 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
                     lastUpdate: lastUpdate,
                     isAdmin: userName.toLowerCase() === 'admin',
                     isPinned: userName.toLowerCase() === 'admin',
-                  });
+                    unreadCount: 0
+                  };
+                  
+                  // Calculate unread count
+                  newChat.unreadCount = this.calculateUnreadCount(newChat, messages);
+                  
+                  this.chats.push(newChat);
                 }
               } catch (err) {
                 // Ignore errors, just don't add the chat
@@ -262,7 +268,43 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.currentChatId = chat.id;
     this.selectedChat = chat;
     this.currentChatTitle = `Chat mit ${chat.user2Username}`;
+    
+    // Mark messages as read
+    this.markChatAsRead(chat);
+    
     this.loadMessagesForChat(chat.id);
+  }
+
+  private markChatAsRead(chat: Chat) {
+    // Clear unread count
+    chat.unreadCount = 0;
+    
+    // Store last read timestamp in localStorage
+    const readTimestamps = this.getReadTimestamps();
+    readTimestamps[chat.id] = new Date().toISOString();
+    localStorage.setItem('chatReadTimestamps', JSON.stringify(readTimestamps));
+  }
+
+  private getReadTimestamps(): Record<string | number, string> {
+    const stored = localStorage.getItem('chatReadTimestamps');
+    return stored ? JSON.parse(stored) : {};
+  }
+
+  private calculateUnreadCount(chat: Chat, messages: ChatMessage[]): number {
+    const readTimestamps = this.getReadTimestamps();
+    const lastRead = readTimestamps[chat.id];
+    
+    if (!lastRead) {
+      // Never opened this chat - count messages from others
+      return messages.filter(m => m.sender?.name !== this.currentUser).length;
+    }
+    
+    const lastReadTime = new Date(lastRead).getTime();
+    return messages.filter(m => {
+      if (m.sender?.name === this.currentUser) return false;
+      const msgTime = new Date(m.time).getTime();
+      return msgTime > lastReadTime;
+    }).length;
   }
 
   async loadMessagesForChat(chatId: string | number) {

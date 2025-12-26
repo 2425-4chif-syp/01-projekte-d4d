@@ -49,8 +49,8 @@ jobs:
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend_v2
-          file: ./frontend_v2/Dockerfile
+          context: ./frontend
+          file: ./frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository }}/d4d-frontend:latest
@@ -66,6 +66,26 @@ jobs:
             cd ~/d4d
             git fetch --all
             git reset --hard origin/main
+            
+            # Create .env file from GitHub Secrets
+            cat > .env << 'EOF'
+            # SMTP Configuration
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            SMTP_FROM=${{ secrets.SMTP_FROM }}
+            
+            # Application URLs
+            APP_BASE_URL=${{ secrets.APP_BASE_URL }}
+            APP_FRONTEND_URL=${{ secrets.APP_FRONTEND_URL }}
+            APP_BACKEND_URL=${{ secrets.APP_BACKEND_URL }}
+            
+            # Keycloak
+            KEYCLOAK_URL=${{ secrets.KEYCLOAK_URL }}
+            KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
+            EOF
+            
             docker compose pull
             docker compose down
             docker compose up -d

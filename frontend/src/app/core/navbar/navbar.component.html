@@ -67,12 +67,15 @@
   <div class="profile-section">
     <button
       class="inbox-icon-btn"
+      [class.has-notifications]="hasInboxNotification"
       (click)="navigateTo('inbox')"
       title="Postfach"
     >
       <i class="fas fa-inbox"></i>
       @if (hasInboxNotification) {
-      <span class="notification-dot"></span>
+      <span class="notification-badge">
+        {{ notificationCount > 9 ? '9+' : notificationCount }}
+      </span>
       }
     </button>
 
@@ -148,12 +151,15 @@
     </button>
     <button
       class="inbox-icon-btn"
+      [class.has-notifications]="hasInboxNotification"
       (click)="navigateTo('inbox')"
       title="Postfach"
     >
       <i class="fas fa-inbox"></i>
       @if (hasInboxNotification) {
-      <span class="notification-dot"></span>
+      <span class="notification-badge">
+        {{ notificationCount > 9 ? '9+' : notificationCount }}
+      </span>
       }
     </button>
 
