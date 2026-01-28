@@ -57,10 +57,10 @@ public class NotificationService {
     // ==================== SERVICE REQUEST NOTIFICATIONS ====================
 
     /**
-     * Sendet E-Mail an den Empfänger wenn er eine neue Anfrage erhält.
+     * Sendet E-Mail an den Empfänger wenn eine neue Anfrage erhalten wird.
      * 
      * @param receiver Der Provider der die Anfrage erhält
-     * @param sender Der Schüler der die Anfrage gesendet hat
+     * @param sender Die Person die die Anfrage gesendet hat
      * @param serviceTypeName Name des Fachs
      */
     public void sendServiceRequestReceived(User receiver, User sender, String serviceTypeName) {
@@ -77,7 +77,7 @@ public class NotificationService {
             """
                 <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
                     <p style="margin: 5px 0; color: #92400e;"><strong>📚 Fach:</strong> %s</p>
-                    <p style="margin: 5px 0; color: #92400e;"><strong>👤 Schüler:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #92400e;"><strong>👤 Schüler:in:</strong> %s</p>
                 </div>
                 <p style="color: #4b5563;">Gehe zur Plattform, um die Anfrage anzunehmen oder abzulehnen.</p>
             """.formatted(serviceTypeName, sender.getName()),
@@ -112,7 +112,7 @@ public class NotificationService {
                 """
                     <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
                         <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
-                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:</strong> %s</p>
+                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:in:</strong> %s</p>
                     </div>
                     <p style="color: #4b5563;">Du kannst jetzt über den Chat Kontakt aufnehmen und Termine vereinbaren!</p>
                 """.formatted(serviceTypeName, provider.getName()),
@@ -122,11 +122,11 @@ public class NotificationService {
             sendEmail(recipientEmail, subject, htmlContent);
         }
         
-        // E-Mail an den Provider (Nachhilfelehrer)
+        // E-Mail an den Provider (Nachhilfelehrer:in)
         String providerEmail = getEmailForUser(provider);
         String providerSubject = "✅ Du hast eine Nachhilfe-Anfrage angenommen!";
         
-        String clientName = client != null ? client.getName() : "Ein Schüler";
+        String clientName = client != null ? client.getName() : "Jemand";
         
         String providerHtml = buildBaseEmail(
             "✅ Anfrage angenommen!",
@@ -136,9 +136,9 @@ public class NotificationService {
             """
                 <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
                     <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
-                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:in:</strong> %s</p>
                 </div>
-                <p style="color: #4b5563;">Kontaktiere deinen Schüler über den Chat, um Details zu besprechen!</p>
+                <p style="color: #4b5563;">Kontaktiere deine:n Schüler:in über den Chat, um Details zu besprechen!</p>
             """.formatted(serviceTypeName, clientName),
             baseUrl + "/chats", "Zum Chat"
         );
@@ -198,7 +198,7 @@ public class NotificationService {
         String providerEmail = getEmailForUser(provider);
         String providerSubject = "🎉 Nachhilfe erfolgreich abgeschlossen!";
         
-        String clientName = client != null ? client.getName() : "Dein Schüler";
+        String clientName = client != null ? client.getName() : "Dein:e Schüler:in";
         
         String providerHtml = buildBaseEmail(
             "🎉 Nachhilfe abgeschlossen!",
@@ -208,10 +208,10 @@ public class NotificationService {
             """
                 <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
                     <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
-                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #065f46;"><strong>👤 Schüler:in:</strong> %s</p>
                     <p style="margin: 5px 0; color: #065f46;"><strong>✅ Status:</strong> Erfolgreich abgeschlossen</p>
                 </div>
-                <p style="color: #4b5563;">Vielen Dank für dein Engagement! Du hast einem Mitschüler geholfen. 🌟</p>
+                <p style="color: #4b5563;">Vielen Dank für dein Engagement! Du hast einer Person geholfen. 🌟</p>
             """.formatted(serviceTypeName, clientName),
             baseUrl + "/showUserServices.html", "Meine Services ansehen"
         );
@@ -231,13 +231,13 @@ public class NotificationService {
                 """
                     <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
                         <p style="margin: 5px 0; color: #065f46;"><strong>📚 Fach:</strong> %s</p>
-                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:</strong> %s</p>
+                        <p style="margin: 5px 0; color: #065f46;"><strong>👨‍🏫 Nachhilfelehrer:in:</strong> %s</p>
                         <p style="margin: 5px 0; color: #065f46;"><strong>✅ Status:</strong> Erfolgreich abgeschlossen</p>
                     </div>
                     
                     <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <p style="margin: 0; color: #92400e; font-weight: 600;">⭐ Bewerte jetzt deinen Nachhilfelehrer!</p>
-                        <p style="margin: 10px 0 0 0; color: #92400e;">Deine Bewertung hilft anderen Schülern, den passenden Nachhilfelehrer zu finden.</p>
+                        <p style="margin: 0; color: #92400e; font-weight: 600;">⭐ Bewerte jetzt deine:n Nachhilfelehrer:in!</p>
+                        <p style="margin: 10px 0 0 0; color: #92400e;">Deine Bewertung hilft anderen Schüler:innen, passende Nachhilfe zu finden.</p>
                     </div>
                 """.formatted(serviceTypeName, provider.getName()),
                 baseUrl + "/showUserServices.html", "Jetzt bewerten"
@@ -250,7 +250,7 @@ public class NotificationService {
     // ==================== APPOINTMENT NOTIFICATIONS ====================
 
     /**
-     * Sendet Terminbestätigungs-E-Mails an BEIDE Teilnehmer (Tutor und Schüler).
+     * Sendet Terminbestätigungs-E-Mails an BEIDE Teilnehmer:innen.
      * Beide E-Mails enthalten einen Link zum ICS-Download.
      * 
      * @param appointment Der bestätigte Termin
@@ -437,7 +437,7 @@ public class NotificationService {
                                             <strong>%s</strong> versendet.
                                         </p>
                                         <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px; text-align: center;">
-                                            Bei Fragen oder Problemen wende dich an deinen Lernpartner.
+                                            Bei Fragen oder Problemen wende dich an deine:n Lernpartner:in.
                                         </p>
                                     </td>
                                 </tr>
@@ -888,7 +888,7 @@ public class NotificationService {
                         Gute Nachrichten! Deine Nachhilfe-Anfrage wurde <strong>bestätigt</strong>.
                     </p>
                     <p>
-                        Der Nachhilfelehrer hat deine Anfrage angenommen. Du kannst jetzt mit der Nachhilfe starten!
+                        Deine Anfrage wurde angenommen. Du kannst jetzt mit der Nachhilfe starten!
                     </p>
                     <p>
                         <a href="http://vm10.htl-leonding.ac.at" class="button">Zur Plattform</a>
@@ -968,11 +968,11 @@ public class NotificationService {
                     
                     <div class="info-box">
                         <p><strong>📚 Fach:</strong> %s</p>
-                        <p><strong>👨‍🏫 Lehrer:</strong> %s</p>
+                        <p><strong>👨‍🏫 Nachhilfelehrer:in:</strong> %s</p>
                     </div>
                     
                     <p>
-                        Der Nachhilfelehrer wurde benachrichtigt und wird deine Anfrage prüfen.
+                        Die Person wurde benachrichtigt und wird deine Anfrage prüfen.
                     </p>
                     <p>
                         Du erhältst eine weitere E-Mail, sobald die Anfrage bestätigt wurde.
@@ -1056,7 +1056,7 @@ public class NotificationService {
                     
                     <div class="info-box">
                         <p><strong>📚 Fach:</strong> %s</p>
-                        <p><strong>👤 Schüler:</strong> %s</p>
+                        <p><strong>👤 Schüler:in:</strong> %s</p>
                     </div>
                     
                     <p>
@@ -1145,15 +1145,15 @@ public class NotificationService {
                     
                     <div class="info-box">
                         <p><strong>📚 Fach:</strong> %s</p>
-                        <p><strong>👨‍🏫 Lehrer:</strong> %s</p>
+                        <p><strong>👨‍🏫 Nachhilfelehrer:in:</strong> %s</p>
                     </div>
                     
                     <p>
-                        Aber keine Sorge! Es gibt viele andere Nachhilfelehrer auf der Plattform.
+                        Aber keine Sorge! Es gibt viele andere Angebote auf der Plattform.
                     </p>
                     
                     <p>
-                        <a href="http://vm10.htl-leonding.ac.at" class="button">Andere Lehrer finden</a>
+                        <a href="http://vm10.htl-leonding.ac.at" class="button">Andere Angebote finden</a>
                     </p>
                     
                     <p>
