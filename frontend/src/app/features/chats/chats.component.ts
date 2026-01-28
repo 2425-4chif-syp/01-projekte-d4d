@@ -10,9 +10,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../core/services/chat.service';
 import { AppointmentService } from '../../core/services/appointment.service';
+import { WebSocketService, WebSocketMessage, ConnectionStatus } from '../../core/services/websocket.service';
 import { Chat, ChatMessage, ChatUser } from '../../core/models/chat.model';
 import { Appointment, AppointmentCreate } from '../../core/models/appointment.model';
-import { interval, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-chats',
@@ -58,30 +59,39 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Track appointment statuses
   appointmentStatuses: Map<number, string> = new Map();
 
-  private updateSubscription?: Subscription;
+  // WebSocket
+  connectionStatus: ConnectionStatus = 'disconnected';
+  private wsSubscription?: Subscription;
+  private statusSubscription?: Subscription;
+
   private shouldScrollToBottom = false;
 
   constructor(
     private chatService: ChatService,
-    private appointmentService: AppointmentService
+    private appointmentService: AppointmentService,
+    private webSocketService: WebSocketService
   ) {}
 
   async ngOnInit() {
     await this.loadActiveUser();
-    this.startPeriodicUpdates();
+    this.setupWebSocket();
 
     // Reload data after login
     window.addEventListener('user-logged-in', async () => {
       console.log('🔄 User logged in, reloading chats...');
       await this.loadActiveUser();
-      this.startPeriodicUpdates();
+      this.setupWebSocket();
     });
   }
 
   ngOnDestroy() {
-    if (this.updateSubscription) {
-      this.updateSubscription.unsubscribe();
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
     }
+    if (this.statusSubscription) {
+      this.statusSubscription.unsubscribe();
+    }
+    this.webSocketService.disconnect();
   }
 
   ngAfterViewChecked() {
@@ -386,37 +396,73 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     const messageToSend = this.messageText.trim();
     this.messageText = '';
 
-    this.chatService
-      .sendMessage(
-        this.currentUserId,
+    // Check if WebSocket is connected
+    if (this.webSocketService.isConnected()) {
+      // Send via WebSocket
+      const clientMessageId = this.webSocketService.sendMessage(
         Number(this.currentChatId),
         messageToSend
-      )
-      .subscribe({
-        next: (sentMessage) => {
-          this.messages.push(sentMessage);
-          this.shouldScrollToBottom = true;
-          this.submitting = false;
+      );
 
-          // Update chat list
-          const chat = this.chats.find((c) => c.id === this.currentChatId);
-          if (chat) {
-            chat.lastMessage =
-              messageToSend.length > 50
-                ? messageToSend.substring(0, 50) + '...'
-                : messageToSend;
-            chat.lastUpdate = new Date().toISOString();
+      // Optimistically add message to UI
+      const optimisticMessage: ChatMessage & { clientMessageId?: string } = {
+        sender: { id: this.currentUserId, name: this.currentUser || '' },
+        receiver: { id: Number(this.currentChatId) },
+        message: messageToSend,
+        time: new Date().toISOString(),
+        clientMessageId: clientMessageId
+      };
+      this.messages.push(optimisticMessage);
+      this.shouldScrollToBottom = true;
+      this.submitting = false;
 
-            this.sortChats();
-            this.filterChats();
-          }
-        },
-        error: (err) => {
-          console.error('Fehler beim Senden:', err);
-          this.submitting = false;
-          alert('Fehler beim Senden der Nachricht');
-        },
-      });
+      // Update chat list
+      const chat = this.chats.find((c) => c.id === this.currentChatId);
+      if (chat) {
+        chat.lastMessage =
+          messageToSend.length > 50
+            ? messageToSend.substring(0, 50) + '...'
+            : messageToSend;
+        chat.lastUpdate = new Date().toISOString();
+
+        this.sortChats();
+        this.filterChats();
+      }
+    } else {
+      // Fallback to HTTP if WebSocket is not connected
+      console.warn('WebSocket not connected, falling back to HTTP');
+      this.chatService
+        .sendMessage(
+          this.currentUserId,
+          Number(this.currentChatId),
+          messageToSend
+        )
+        .subscribe({
+          next: (sentMessage) => {
+            this.messages.push(sentMessage);
+            this.shouldScrollToBottom = true;
+            this.submitting = false;
+
+            // Update chat list
+            const chat = this.chats.find((c) => c.id === this.currentChatId);
+            if (chat) {
+              chat.lastMessage =
+                messageToSend.length > 50
+                  ? messageToSend.substring(0, 50) + '...'
+                  : messageToSend;
+              chat.lastUpdate = new Date().toISOString();
+
+              this.sortChats();
+              this.filterChats();
+            }
+          },
+          error: (err) => {
+            console.error('Fehler beim Senden:', err);
+            this.submitting = false;
+            alert('Fehler beim Senden der Nachricht');
+          },
+        });
+    }
   }
 
   filterChats() {
@@ -430,49 +476,124 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  startPeriodicUpdates() {
-    this.updateSubscription = interval(10000).subscribe(() => {
-      if (this.currentUser && this.currentUserId) {
-        this.updateChats();
-      }
+  /**
+   * Setup WebSocket connection and message handling
+   */
+  private setupWebSocket(): void {
+    if (!this.currentUserId) {
+      console.log('No user ID, skipping WebSocket setup');
+      return;
+    }
+
+    // Subscribe to connection status
+    this.statusSubscription = this.webSocketService.status$.subscribe(status => {
+      this.connectionStatus = status;
+      console.log('WebSocket status:', status);
     });
+
+    // Subscribe to incoming messages
+    this.wsSubscription = this.webSocketService.messages$.subscribe(msg => {
+      this.handleWebSocketMessage(msg);
+    });
+
+    // Connect to WebSocket
+    this.webSocketService.connect(this.currentUserId);
   }
 
-  async updateChats() {
-    if (!this.currentUserId) return;
+  /**
+   * Handle incoming WebSocket messages
+   */
+  private handleWebSocketMessage(msg: WebSocketMessage): void {
+    if (msg.type === 'message' && msg.sender && msg.receiver) {
+      console.log('Received chat message via WebSocket:', msg);
 
-    // Update nur für aktive Chats mit Nachrichten
-    const activeChats = this.chats.filter(
-      (chat) => chat.lastMessage !== 'Neue Unterhaltung starten'
-    );
-
-    for (const chat of activeChats) {
-      try {
-        const messages = await this.chatService
-          .getMessagesForChat(this.currentUserId, Number(chat.id))
-          .toPromise();
-
-        if (messages && messages.length > 0) {
-          const lastMsg = messages[messages.length - 1];
-          const newLastUpdate = lastMsg.time || new Date().toISOString();
-
-          if (chat.lastUpdate !== newLastUpdate) {
-            chat.lastMessage =
-              lastMsg.message.length > 50
-                ? lastMsg.message.substring(0, 50) + '...'
-                : lastMsg.message;
-            chat.lastUpdate = newLastUpdate;
-
-            // Wenn aktuell geöffneter Chat, aktualisiere Nachrichten
-            if (this.currentChatId === chat.id) {
-              this.messages = messages;
-              this.shouldScrollToBottom = true;
-            }
-          }
+      // Skip if this is our own pending message (already added optimistically)
+      if (msg.clientMessageId && this.webSocketService.isPendingMessage(msg.clientMessageId)) {
+        // Update the optimistic message with server data (id, time)
+        const existingMsg = this.messages.find(m => 
+          (m as any).clientMessageId === msg.clientMessageId
+        );
+        if (existingMsg) {
+          existingMsg.id = msg.id;
+          existingMsg.time = msg.time || existingMsg.time;
         }
-      } catch (err) {
-        // Ignoriere Fehler bei Updates
+        this.webSocketService.clearPendingMessage(msg.clientMessageId);
+        return;
       }
+
+      // Determine if this message belongs to the current chat
+      const isForCurrentChat = this.currentChatId && (
+        (msg.sender.id === this.currentUserId && msg.receiver.id === Number(this.currentChatId)) ||
+        (msg.receiver.id === this.currentUserId && msg.sender.id === Number(this.currentChatId))
+      );
+
+      if (isForCurrentChat) {
+        // Add message to current chat view
+        const chatMessage: ChatMessage = {
+          id: msg.id,
+          sender: msg.sender,
+          receiver: msg.receiver,
+          message: msg.message || '',
+          time: msg.time || new Date().toISOString()
+        };
+
+        // Check for duplicates
+        const isDuplicate = this.messages.some(m => m.id === msg.id);
+        if (!isDuplicate) {
+          this.messages.push(chatMessage);
+          this.shouldScrollToBottom = true;
+        }
+      }
+
+      // Update chat list (last message preview)
+      this.updateChatListFromMessage(msg);
+    } else if (msg.type === 'error') {
+      console.error('WebSocket error:', msg.message);
+    }
+  }
+
+  /**
+   * Update chat list when a new message arrives
+   */
+  private updateChatListFromMessage(msg: WebSocketMessage): void {
+    if (!msg.sender || !msg.receiver || !this.currentUserId) return;
+
+    // Find the chat partner
+    const partnerId = msg.sender.id === this.currentUserId 
+      ? msg.receiver.id 
+      : msg.sender.id;
+    const partnerName = msg.sender.id === this.currentUserId 
+      ? msg.receiver.name 
+      : msg.sender.name;
+
+    // Find or create chat entry
+    let chat = this.chats.find(c => Number(c.id) === partnerId);
+    
+    if (chat) {
+      // Update existing chat
+      const lastMessage = msg.message || '';
+      chat.lastMessage = lastMessage.length > 50 
+        ? lastMessage.substring(0, 50) + '...' 
+        : lastMessage;
+      chat.lastUpdate = msg.time || new Date().toISOString();
+      
+      // Update unread count if not the current chat and message is from other user
+      if (this.currentChatId !== chat.id && msg.sender?.id !== this.currentUserId) {
+        chat.unreadCount = (chat.unreadCount || 0) + 1;
+      }
+    } else {
+      // Create new chat entry
+      const newChat: Chat = {
+        id: partnerId,
+        user1Username: this.currentUser || '',
+        user2Username: partnerName || 'Unknown',
+        lastMessage: msg.message || '',
+        lastUpdate: msg.time || new Date().toISOString(),
+        isAdmin: (partnerName || '').toLowerCase() === 'admin',
+        isPinned: false,
+        unreadCount: msg.sender?.id !== this.currentUserId ? 1 : 0
+      };
+      this.chats.unshift(newChat);
     }
 
     this.sortChats();

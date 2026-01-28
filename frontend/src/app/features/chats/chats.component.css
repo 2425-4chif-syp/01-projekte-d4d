@@ -685,3 +685,17 @@
 .appointment-card.rejected .appointment-card-header {
   color: #991b1b;
 }
+
+/* WebSocket Connection Status */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
