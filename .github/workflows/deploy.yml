@@ -102,5 +102,5 @@ jobs:
           APP_BACKEND_URL: ${{ secrets.APP_BACKEND_URL }}
           KEYCLOAK_URL: ${{ secrets.KEYCLOAK_URL }}
           KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
           GHCR_USER: ${{ github.actor }}
