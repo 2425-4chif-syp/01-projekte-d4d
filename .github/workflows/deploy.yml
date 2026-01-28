@@ -70,38 +70,18 @@ jobs:
             git reset --hard origin/main
             
             # Create .env file from environment variables
-            cat > .env << 'ENVFILE'
-# SMTP Configuration
-SMTP_HOST=PLACEHOLDER_SMTP_HOST
-SMTP_PORT=PLACEHOLDER_SMTP_PORT
-SMTP_USERNAME=PLACEHOLDER_SMTP_USERNAME
-SMTP_PASSWORD=PLACEHOLDER_SMTP_PASSWORD
-SMTP_FROM=PLACEHOLDER_SMTP_FROM
-
-# Application URLs
-APP_BASE_URL=PLACEHOLDER_APP_BASE_URL
-APP_FRONTEND_URL=PLACEHOLDER_APP_FRONTEND_URL
-APP_BACKEND_URL=PLACEHOLDER_APP_BACKEND_URL
-
-# Keycloak
-KEYCLOAK_URL=PLACEHOLDER_KEYCLOAK_URL
-KEYCLOAK_CLIENT_ID=PLACEHOLDER_KEYCLOAK_CLIENT_ID
-ENVFILE
+            echo "SMTP_HOST=${SMTP_HOST}" > .env
+            echo "SMTP_PORT=${SMTP_PORT}" >> .env
+            echo "SMTP_USERNAME=${SMTP_USERNAME}" >> .env
+            echo "SMTP_PASSWORD=${SMTP_PASSWORD}" >> .env
+            echo "SMTP_FROM=${SMTP_FROM}" >> .env
+            echo "APP_BASE_URL=${APP_BASE_URL}" >> .env
+            echo "APP_FRONTEND_URL=${APP_FRONTEND_URL}" >> .env
+            echo "APP_BACKEND_URL=${APP_BACKEND_URL}" >> .env
+            echo "KEYCLOAK_URL=${KEYCLOAK_URL}" >> .env
+            echo "KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}" >> .env
             
-            # Replace placeholders with actual values
-            sed -i "s|PLACEHOLDER_SMTP_HOST|${SMTP_HOST}|g" .env
-            sed -i "s|PLACEHOLDER_SMTP_PORT|${SMTP_PORT}|g" .env
-            sed -i "s|PLACEHOLDER_SMTP_USERNAME|${SMTP_USERNAME}|g" .env
-            sed -i "s|PLACEHOLDER_SMTP_PASSWORD|${SMTP_PASSWORD}|g" .env
-            sed -i "s|PLACEHOLDER_SMTP_FROM|${SMTP_FROM}|g" .env
-            sed -i "s|PLACEHOLDER_APP_BASE_URL|${APP_BASE_URL}|g" .env
-            sed -i "s|PLACEHOLDER_APP_FRONTEND_URL|${APP_FRONTEND_URL}|g" .env
-            sed -i "s|PLACEHOLDER_APP_BACKEND_URL|${APP_BACKEND_URL}|g" .env
-            sed -i "s|PLACEHOLDER_KEYCLOAK_URL|${KEYCLOAK_URL}|g" .env
-            sed -i "s|PLACEHOLDER_KEYCLOAK_CLIENT_ID|${KEYCLOAK_CLIENT_ID}|g" .env
-            
-            echo "📄 Created .env file:"
-            cat .env
+            echo "📄 Created .env file"
             
             # Login to GitHub Container Registry
             echo "🔐 Logging into GitHub Container Registry..."
