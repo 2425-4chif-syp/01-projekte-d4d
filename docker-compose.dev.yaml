@@ -16,7 +16,7 @@ services:
 
   backend:
     build:
-      context: ./backend_v2
+      context: ./backend
       dockerfile: Dockerfile
     container_name: d4d-backend-v2
     depends_on:

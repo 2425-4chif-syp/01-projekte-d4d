@@ -72,4 +72,4 @@ yarn-error.log*
 *secrets*
 
 # Database
-backend_v2/db
+backend/db
