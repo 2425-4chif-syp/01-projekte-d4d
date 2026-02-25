@@ -1,4 +1,4 @@
-= Project: D4D
+= D4D: Dienstleistung für Dienstleistung
 :revnumber: 1.0
 :revdate: {docdate}
 :revremark: SLIDEDEMO @ HTL Leonding
@@ -31,8 +31,6 @@ endif::[]
 :title-slide-transition: zoom
 :title-slide-transition-speed: fast
 
-== D4D - Dienstleistung für Dienstleistung
-
 == Was ist D4D?
 * *D4D* ermöglicht einen Austausch von Dienstleistungen
 * entweder kostenlos oder auch möglich mit Zahlung
@@ -60,3 +58,6 @@ image::CLD.png[]
 
 [.stretch]
 image::er-diagram.png[]
+
+
+== Live Demo
