@@ -32,16 +32,23 @@ endif::[]
 :title-slide-transition-speed: fast
 
 == Was ist D4D?
-* *D4D* ermöglicht einen Austausch von Dienstleistungen
-* entweder kostenlos oder auch möglich mit Zahlung
-* aktuell Fokus auf schulischen Austausch
+* *D4D* ermöglicht einen kostenlosen Austausch von Dienstleistungen
+* aktuell Fokus auf schulischen Austausch, jedoch für alle Dienstleistunge geplant (z.B. Handwerk ...)
+* Prinzip: Du hilfst mir, ich helfe dir
+
+== Warum D4D verwenden?
+* *kostenlos* – kein Geld notwendig, nur deine Zeit und Fähigkeiten
+* *Bewertungssystem* – wähle Anbieter basierend auf deren Bewertungen aus
+* *schnell & einfach* – Dienstleistungen in wenig Schritten anfragen und annehmen (mit Mail-Benachrichtigungen)
+* *Kalender-Integration* – Termine direkt in der App verwalten
+* *Handy-Synchronisation* – Termine auch in deiner Kalender-App am Handy anzeigen
 
 == Projektteam
 
-* *Vlad Guran*
 * *Leon Zehetner*
 * *Michael Birklbauer*
 * *Stefan Jelic*
+* *Vlad Guran*
 
 === Systemarchitektur
 
