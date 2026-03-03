@@ -31,10 +31,10 @@ services:
       # SMTP Configuration
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USERNAME: ${SMTP_USERNAME}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_USERNAME: "d4d.notification@gmail.com"
+      SMTP_PASSWORD: "ehzrxtbcdbdngxys"
       SMTP_FROM: ${SMTP_FROM:-d4d.notification@gmail.com}
-      TEST_EMAIL: ${TEST_EMAIL}
+      TEST_EMAIL: "s.jelic@htl-leonding.ac.at"
       # Application URLs (for links in emails)
       APP_BASE_URL: ${APP_BASE_URL:-https://vm10.htl-leonding.ac.at}
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://vm10.htl-leonding.ac.at}
