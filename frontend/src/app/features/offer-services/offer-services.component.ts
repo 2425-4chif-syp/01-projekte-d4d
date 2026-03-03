@@ -135,11 +135,6 @@ export class OfferServicesComponent implements OnInit {
   }
 
   async submitOffers() {
-    if (this.selectedOffers.length === 0 && this.initialOffers.length === 0) {
-      alert('Bitte wähle mindestens ein Fach aus');
-      return;
-    }
-
     this.submitting = true;
 
     try {

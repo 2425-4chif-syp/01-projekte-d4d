@@ -135,11 +135,6 @@ export class RequestServicesComponent implements OnInit {
   }
 
   async submitDemands() {
-    if (this.selectedDemands.length === 0 && this.initialDemands.length === 0) {
-      alert('Bitte wähle mindestens ein Fach aus');
-      return;
-    }
-
     this.submitting = true;
 
     try {

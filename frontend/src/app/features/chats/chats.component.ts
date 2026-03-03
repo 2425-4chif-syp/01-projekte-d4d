@@ -145,8 +145,6 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.loading = false;
           return;
         }
-          return;
-        }
 
         // PARALLEL LOADING with cache for instant results
         const chatObservables = filteredUsers.map((user) =>
