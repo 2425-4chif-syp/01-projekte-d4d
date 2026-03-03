@@ -396,6 +396,12 @@
     display: none;
   }
 
+  /* Keep notification indicators visible */
+  .nav-buttons button .nav-notification-dot,
+  .nav-buttons button .nav-notification-badge {
+    display: flex;
+  }
+
   .nav-buttons button {
     padding: 10px;
   }

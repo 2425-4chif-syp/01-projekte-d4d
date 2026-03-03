@@ -1,1 +1,8 @@
- wc -l /home/stefan/Desktop/01-projekte-d4d/frontend/src/app/features/chats/chats.component.css
+ git status
+ echo "Terminal test"
+ cd /home/stefan/Desktop/01-projekte-d4d/frontend && cat Dockerfile | head -20
+ cd /home/stefan/Desktop/01-projekte-d4d/frontend && wc -l src/app/features/chats/chats.component.ts
+ wc -l /home/stefan/Desktop/01-projekte-d4d/frontend/src/app/features/chats/chats.component.ts
+ cat -n /home/stefan/Desktop/01-projekte-d4d/frontend/src/app/features/chats/chats.component.ts | tail -20
+ awk 'END{print NR}' /home/stefan/Desktop/01-projekte-d4d/frontend/src/app/features/chats/chats.component.ts
+ grep -c '' /home/stefan/Desktop/01-projekte-d4d/frontend/src/app/features/chats/chats.component.ts

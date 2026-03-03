@@ -315,12 +315,25 @@ export class InboxComponent implements OnInit {
       ? JSON.parse(seenRequestsStr)
       : {};
 
+    const seenAcceptedStr = localStorage.getItem('seenAcceptedRequests');
+    const seenAccepted: Record<string, boolean> = seenAcceptedStr
+      ? JSON.parse(seenAcceptedStr)
+      : {};
+
     // Mark all current sent requests with their status as seen
     this.allRequests.sent.forEach((request) => {
       seenRequests[`${request.id}`] = request.status;
+      // Mark accepted sent requests as seen (clears chat dot for sender)
+      if (request.status === 'ACCEPTED') {
+        seenAccepted[request.id] = true;
+      }
     });
 
     localStorage.setItem('seenSentRequests', JSON.stringify(seenRequests));
+    localStorage.setItem('seenAcceptedRequests', JSON.stringify(seenAccepted));
+    
+    // Notify navbar to update chat badge
+    window.dispatchEvent(new Event('chat-read'));
   }
 
   private markReceivedRequestsAsSeen() {
