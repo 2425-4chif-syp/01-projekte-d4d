@@ -144,12 +144,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
 
       // Count unseen REJECTED sent requests (for inbox)
+      // Count unseen ACCEPTED sent requests (for chat badge - sender side)
       if (sent) {
+        const seenSentStr = localStorage.getItem('seenSentRequests');
+        const seenSent: Record<string, string> = seenSentStr ? JSON.parse(seenSentStr) : {};
         sent.forEach((req: any) => {
-          const seenSentStr = localStorage.getItem('seenSentRequests');
-          const seenSent: Record<string, string> = seenSentStr ? JSON.parse(seenSentStr) : {};
           if (req.status === 'REJECTED' && seenSent[req.id] !== req.status) {
             inboxCount++;
+          }
+          if (req.status === 'ACCEPTED' && !seenAccepted[req.id]) {
+            chatNotificationCount++;
           }
         });
       }
