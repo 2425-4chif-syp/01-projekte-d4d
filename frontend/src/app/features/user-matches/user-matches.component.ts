@@ -235,9 +235,25 @@ export class UserMatchesComponent implements OnInit {
       }));
 
       // Combine all matches (perfect first)
-      this.allMatches = [...mappedPerfectMatches, ...mappedRegularMatches];
+      const combinedMatches = [...mappedPerfectMatches, ...mappedRegularMatches];
 
-      console.log('✅ Matches gemappt:', this.allMatches);
+      // DEDUPLICATE: If perfect match exists, remove non-perfect with same (username, serviceTypeName)
+      const perfectMatchKeys = new Set(
+        mappedPerfectMatches.map(m => `${m.username}|${m.serviceTypeName}`)
+      );
+
+      this.allMatches = combinedMatches.filter(match => {
+        const matchKey = `${match.username}|${match.serviceTypeName}`;
+        // Keep if: 1) It's a perfect match, OR 2) No perfect match exists with same key
+        return match.isPerfectMatch || !perfectMatchKeys.has(matchKey);
+      });
+
+      console.log('✅ Matches gemappt und dedupliziert:', {
+        total: combinedMatches.length,
+        perfect: mappedPerfectMatches.length,
+        afterDedup: this.allMatches.length,
+        removed: combinedMatches.length - this.allMatches.length
+      });
 
       // Load ratings for all matches
       await this.loadRatingsForMatches();

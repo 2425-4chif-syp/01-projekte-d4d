@@ -109,9 +109,32 @@
   animation: badge-pop 0.3s ease-out;
 }
 
-.nav-buttons button.active .nav-notification-badge {
+/* Chat notification dot (no number) */
+.nav-notification-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  animation: pulse-dot 2s infinite;
+}
+
+.nav-buttons button.active .nav-notification-badge,
+.nav-buttons button.active .nav-notification-dot {
   border-color: white;
   background: #dc2626;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
 }
 
 /* Profile Section */

@@ -60,7 +60,7 @@
           <div class="text-center pt-3">
             <button
               class="btn btn-primary btn-lg px-5"
-              [disabled]="selectedOffers.length === 0 || submitting"
+              [disabled]="!hasChanges() || submitting"
               (click)="submitOffers()"
             >
               @if (submitting) {

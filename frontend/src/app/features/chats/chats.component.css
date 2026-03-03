@@ -15,11 +15,13 @@
 
 :host {
   display: block;
-  /* Mobile-safe height without fixed calc */
-  height: 100vh;
-  height: -webkit-fill-available; /* iOS Safari fix */
+  /* Mobile-safe height with modern viewport units */
+  height: 100vh; /* Fallback for older browsers */
+  height: 100dvh; /* Dynamic viewport height (modern browsers) */
+  height: -webkit-fill-available; /* iOS Safari */
   max-height: 100vh;
-  max-height: -webkit-fill-available; /* iOS Safari fix */
+  max-height: 100dvh;
+  max-height: -webkit-fill-available;
   overflow: hidden;
   background-color: var(--chat-bg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -28,13 +30,16 @@
   /* Use GPU acceleration */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  /* Prevent overscroll/bounce on mobile */
+  overscroll-behavior: none;
 }
 
 /* Layout & Containers */
 .chat-container {
   height: 100%;
   max-height: 100vh;
-  max-height: -webkit-fill-available; /* iOS Safari fix */
+  max-height: 100dvh;
+  max-height: -webkit-fill-available;
   background-color: var(--chat-bg);
   overflow: hidden;
 }
@@ -768,8 +773,10 @@
 /* Mobile devices (phones, portrait tablets) */
 @media (max-width: 767px) {
   :host {
-    /* Adjust for mobile viewport without navbar */
+    /* Mobile viewport with dynamic height */
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport for mobile browsers */
+    height: 100svh; /* Small viewport (with browser chrome) */
     height: -webkit-fill-available;
   }
 
@@ -777,6 +784,7 @@
     /* Stack layout on mobile if needed */
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
 
   /* Make sidebar full width on mobile or hide it when chat is open */
@@ -788,6 +796,8 @@
 
   .chat-main {
     width: 100%;
+    /* Ensure proper stacking context */
+    position: relative;
   }
 
   /* On mobile, hide sidebar when chat is selected */
@@ -807,18 +817,34 @@
   /* Adjust chat header */
   .chat-header {
     padding: 1rem;
+    /* Prevent it from being hidden */
+    flex-shrink: 0;
   }
 
   /* Messages container with safer padding */
   .messages-container {
     padding: 1rem;
-    padding-bottom: 2rem; /* Extra space for keyboard */
+    padding-bottom: 2rem; /* Extra space above input */
+    /* Ensure scrolling works */
+    flex: 1;
+    min-height: 0;
+    /* Prevent overscroll */
+    overscroll-behavior: contain;
   }
 
-  /* Input area with safe-area for home indicator */
+  /* Input area sticky at bottom with safe-area */
   .input-area {
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    /* Stick to bottom */
+    position: sticky;
+    bottom: 0;
+    /* Ensure it stays on top */
+    z-index: 100;
+    /* Prevent it from shrinking */
+    flex-shrink: 0;
+    /* White background to cover messages */
+    background-color: white;
   }
 
   .input-wrapper {
@@ -826,7 +852,7 @@
     padding: 0.5rem;
   }
 
-  /* Ensure buttons are properly sized */
+  /* Ensure buttons are properly sized for touch */
   .btn-icon {
     min-width: 44px;
     min-height: 44px;
