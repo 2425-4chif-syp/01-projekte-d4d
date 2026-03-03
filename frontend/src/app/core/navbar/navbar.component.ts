@@ -4,6 +4,7 @@ import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { Subscription, filter, interval } from 'rxjs';
 import { KeycloakService } from '../services/keycloak.service';
 import { RequestService } from '../services/request.service';
+import { ChatService } from '../services/chat.service';
 
 @Component({
   selector: 'app-navbar',
@@ -18,18 +19,25 @@ export class NavbarComponent implements OnInit, OnDestroy {
   currentPage: string = '';
   isProfileMenuOpen = false;
   hasInboxNotification = false;
+  hasChatNotification = false;
+  chatNotificationCount = 0;
 
   private routerSubscription?: Subscription;
   private keycloakSubscription?: Subscription;
   private notificationSubscription?: Subscription;
+  private chatNotificationSubscription?: Subscription;
   private currentUsername: string | null = null;
   notificationCount = 0;
-  hasUnreadMessages = false;
+  
+  // Event listeners for chat notifications
+  private chatReadListener = () => this.checkChatNotifications();
+  private chatMessageReceivedListener = () => this.checkChatNotifications();
 
   constructor(
     private router: Router,
     private keycloakService: KeycloakService,
-    private requestService: RequestService
+    private requestService: RequestService,
+    private chatService: ChatService
   ) {}
 
   async ngOnInit() {
@@ -47,14 +55,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.checkUserStatus();
     });
 
+    // Listen for chat events to refresh notifications
+    window.addEventListener('chat-read', this.chatReadListener);
+    window.addEventListener('chat-message-received', this.chatMessageReceivedListener);
+
     // Check user authentication status
     await this.checkUserStatus();
   }
 
   ngOnDestroy() {
+    
+    // Remove chat event listeners
+    window.removeEventListener('chat-read', this.chatReadListener);
+    window.removeEventListener('chat-message-received', this.chatMessageReceivedListener);
     this.routerSubscription?.unsubscribe();
     this.keycloakSubscription?.unsubscribe();
     this.notificationSubscription?.unsubscribe();
+    this.chatNotificationSubscription?.unsubscribe();
   }
 
   async checkUserStatus() {
@@ -66,14 +83,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.currentUsername = user;
         this.currentUserState = user === 'Admin' ? 'admin' : 'user';
 
-        // Check for inbox notifications if logged in
+        // Check for inbox and chat notifications if logged in
         await this.checkInboxNotifications();
+        await this.checkChatNotifications();
         this.startNotificationPolling();
+        this.startChatNotificationPolling();
       } else {
         this.currentUser = null;
         this.currentUsername = null;
         this.currentUserState = 'guest';
         this.stopNotificationPolling();
+        this.stopChatNotificationPolling();
       }
     } catch (error) {
       console.error('Error checking user status:', error);
@@ -143,6 +163,86 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.notificationSubscription) {
       this.notificationSubscription.unsubscribe();
       this.notificationSubscription = undefined;
+    }
+  }
+
+  async checkChatNotifications() {
+    if (!this.currentUsername) {
+      this.hasChatNotification = false;
+      this.chatNotificationCount = 0;
+      return;
+    }
+
+    try {
+      // Get all users to find chats
+      const users = await this.chatService.getAllUsers().toPromise();
+      const currentUser = users?.find(u => u.name === this.currentUsername);
+      
+      if (!currentUser) {
+        this.hasChatNotification = false;
+        this.chatNotificationCount = 0;
+        return;
+      }
+
+      const currentUserId = currentUser.id;
+      
+      // Get last read timestamps from localStorage
+      const readTimestampsStr = localStorage.getItem('chatReadTimestamps');
+      const readTimestamps: Record<string | number, string> = readTimestampsStr ? JSON.parse(readTimestampsStr) : {};
+
+      let unreadCount = 0;
+
+      // Check each other user for unread messages
+      const otherUsers = users?.filter(u => u.name !== this.currentUsername) || [];
+      
+      for (const otherUser of otherUsers) {
+        try {
+          const messages = await this.chatService.getMessagesForChat(currentUserId, otherUser.id).toPromise();
+          
+          if (messages && messages.length > 0) {
+            const lastReadTime = readTimestamps[otherUser.id];
+            
+            if (!lastReadTime) {
+              // Never read this chat - count all messages from other user
+              const unreadInChat = messages.filter(m => m.sender?.id !== currentUserId).length;
+              unreadCount += unreadInChat;
+            } else {
+              // Count messages after last read time from other user
+              const lastReadTimestamp = new Date(lastReadTime).getTime();
+              const unreadInChat = messages.filter(m => {
+                if (m.sender?.id === currentUserId) return false;
+                const msgTime = new Date(m.time).getTime();
+                return msgTime > lastReadTimestamp;
+              }).length;
+              unreadCount += unreadInChat;
+            }
+          }
+        } catch (err) {
+          // Ignore errors for individual chats
+        }
+      }
+
+      this.chatNotificationCount = unreadCount;
+      this.hasChatNotification = unreadCount > 0;
+    } catch (error) {
+      console.error('Error checking chat notifications:', error);
+      this.hasChatNotification = false;
+      this.chatNotificationCount = 0;
+    }
+  }
+
+  private startChatNotificationPolling() {
+    this.stopChatNotificationPolling();
+    // Poll every 15 seconds
+    this.chatNotificationSubscription = interval(15000).subscribe(() => {
+      this.checkChatNotifications();
+    });
+  }
+
+  private stopChatNotificationPolling() {
+    if (this.chatNotificationSubscription) {
+      this.chatNotificationSubscription.unsubscribe();
+      this.chatNotificationSubscription = undefined;
     }
   }
 

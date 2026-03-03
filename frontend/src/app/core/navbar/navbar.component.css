@@ -85,6 +85,35 @@
   font-size: 1.1rem;
 }
 
+/* Nav Button with Badge */
+.nav-btn-with-badge {
+  position: relative;
+}
+
+.nav-notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 9px;
+  border: 2px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badge-pop 0.3s ease-out;
+}
+
+.nav-buttons button.active .nav-notification-badge {
+  border-color: white;
+  background: #dc2626;
+}
+
 /* Profile Section */
 .profile-section {
   flex-shrink: 0;
