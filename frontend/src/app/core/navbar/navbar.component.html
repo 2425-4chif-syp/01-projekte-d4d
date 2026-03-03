@@ -51,9 +51,12 @@
   <!-- Admin Navigation -->
   @if (currentUserState === 'admin') {
   <div class="nav-buttons">
-    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')">
+    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')" class="nav-btn-with-badge">
       <i class="fas fa-comments"></i>
       <span>Chats</span>
+      @if (hasChatNotification) {
+        <span class="nav-notification-badge">{{ chatNotificationCount > 9 ? '9+' : chatNotificationCount }}</span>
+      }
     </button>
     <button
       [class.active]="isActive('marketplace')"
@@ -113,9 +116,12 @@
       <i class="fas fa-chalkboard-teacher"></i>
       <span>Ich gebe</span>
     </button>
-    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')">
+    <button [class.active]="isActive('chats')" (click)="navigateTo('chats')" class="nav-btn-with-badge">
       <i class="fas fa-comments"></i>
       <span>Chat</span>
+      @if (hasChatNotification) {
+        <span class="nav-notification-badge">{{ chatNotificationCount > 9 ? '9+' : chatNotificationCount }}</span>
+      }
     </button>
     <button
       [class.active]="isActive('user-matches')"

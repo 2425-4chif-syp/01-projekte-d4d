@@ -69,7 +69,13 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   constructor(
     private chatService: ChatService,
     private appointmentService: AppointmentService,
-    privatetupWebSocket();
+    private chatWsService: ChatWebSocketService
+  ) {}
+
+  ngOnInit() {
+    // Initial setup
+    this.loadActiveUser();
+    this.setupWebSocket();
 
     // Reload data after login
     window.addEventListener('user-logged-in', async () => {
@@ -89,11 +95,6 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
     // Disconnect WebSocket
     this.chatWsService.disconnect();
-
-  ngOnDestroy() {
-    if (this.updateSubscription) {
-      this.updateSubscription.unsubscribe();
-    }
   }
 
   ngAfterViewChecked() {
@@ -132,6 +133,11 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.allUsers = users; // Store all users for search
           const currentUserObj = users.find((u) => u.name === this.currentUser);
           if (currentUserObj) {
+            this.currentUserId = currentUserObj.id;
+          }
+          
+          // Filter out current user
+          const filteredUsers = users.filter((u) => u.name !== this.currentUser);
           
           // Use a Map to deduplicate chats by ID
           const chatMap = new Map<number, Chat>();
@@ -185,12 +191,6 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
           // Convert Map to Array
           this.chats = Array.from(chatMap.values());
-                          }
-              } catch (err) {
-                // Ignore errors, just don't add the chat
-              }
-            }
-          }
 
           this.sortChats();
           this.filteredChats = [...this.chats];
@@ -303,6 +303,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     const readTimestamps = this.getReadTimestamps();
     readTimestamps[chat.id] = new Date().toISOString();
     localStorage.setItem('chatReadTimestamps', JSON.stringify(readTimestamps));
+    
+    // Notify navbar to refresh chat notifications
+    window.dispatchEvent(new Event('chat-read'));
   }
 
   private getReadTimestamps(): Record<string | number, string> {
@@ -545,6 +548,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Update chat list preview
     this.updateChatListFromMessage(message);
+    
+    // Notify navbar to refresh chat notifications
+    window.dispatchEvent(new Event('chat-message-received'));
   }
 
   private updateChatListFromMessage(message: ChatMessage): void {
