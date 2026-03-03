@@ -123,8 +123,8 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.wsStateSubscription) {
       this.wsStateSubscription.unsubscribe();
     }
-    // Disconnect WebSocket
-    this.chatWsService.disconnect();
+    // Release WebSocket consumer (don't disconnect — navbar still uses it)
+    this.chatWsService.release();
   }
 
   ngAfterViewChecked() {
@@ -464,7 +464,8 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     const messageToSend = this.messageText.trim();
     this.messageText = '';
 
-    // Create message object
+    // Create message object with a temporary client ID for optimistic dedup
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const message: ChatMessage = {
       sender: { id: this.currentUserId, name: this.currentUser || '' },
       receiver: { id: Number(this.currentChatId), name: this.selectedChat?.user2Username || '' },
@@ -477,8 +478,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
       try {
         this.chatWsService.sendMessage(message);
         
-        // Optimistic UI update
-        this.messages.push(message);
+        // Optimistic UI update — tag with tempId so we can match the server echo
+        const optimistic: ChatMessage = { ...message, id: tempId };
+        this.messages.push(optimistic);
         this.shouldScrollToBottom = true;
         this.submitting = false;
 
@@ -587,12 +589,19 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     if (isFromMe) {
       // Echo of our own sent message from the server (now with real ID/timestamp)
-      // Replace the optimistic message we already added
+      // Replace the optimistic message (identified by temp-* id)
       const optimisticIdx = this.messages.findIndex(m =>
-        !m.id && m.message === message.message && m.sender?.id === this.currentUserId
+        m.id && String(m.id).startsWith('temp-') && m.message === message.message && m.sender?.id === this.currentUserId
       );
       if (optimisticIdx !== -1) {
         this.messages[optimisticIdx] = message;
+      } else {
+        // No optimistic match — check if already present by real ID to avoid duplicates
+        const alreadyExists = message.id && this.messages.some(m => m.id === message.id);
+        if (!alreadyExists) {
+          this.messages.push(message);
+          this.shouldScrollToBottom = true;
+        }
       }
       // Update chat list preview and return - no notification needed for own messages
       this.updateChatListFromMessage(message);
