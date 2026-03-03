@@ -16,6 +16,7 @@ import { SessionService } from '../../core/services/session.service';
 export class RequestServicesComponent implements OnInit {
   serviceTypes: ServiceType[] = [];
   selectedDemands: number[] = [];
+  initialDemands: number[] = []; // Track initial state for change detection
   loading = true;
   error = '';
   submitting = false;
@@ -84,6 +85,7 @@ export class RequestServicesComponent implements OnInit {
     try {
       const sessionDemands = this.sessionService.getDemands();
       this.selectedDemands = [...sessionDemands];
+      this.initialDemands = [...sessionDemands]; // Track initial state
       console.log('📦 Session-Demands geladen:', sessionDemands);
     } catch (err) {
       console.error('Fehler beim Laden der Session-Demands:', err);
@@ -95,9 +97,8 @@ export class RequestServicesComponent implements OnInit {
       this.serviceTypeService.getUserMarkets(username).subscribe({
         next: (markets) => {
           const demandMarkets = markets.filter((m) => m.offer === 0);
-          demandMarkets.forEach((market) => {
-            this.selectedDemands.push(market.serviceType.id);
-          });
+          this.selectedDemands = demandMarkets.map((market) => market.serviceType.id);
+          this.initialDemands = [...this.selectedDemands]; // Track initial state
         },
         error: (err) => {
           console.error('Fehler beim Laden der Märkte:', err);
@@ -121,8 +122,20 @@ export class RequestServicesComponent implements OnInit {
     }
   }
 
+  /**
+   * Check if selections have changed from initial state
+   */
+  hasChanges(): boolean {
+    if (this.selectedDemands.length !== this.initialDemands.length) {
+      return true;
+    }
+    const sortedCurrent = [...this.selectedDemands].sort();
+    const sortedInitial = [...this.initialDemands].sort();
+    return !sortedCurrent.every((val, idx) => val === sortedInitial[idx]);
+  }
+
   async submitDemands() {
-    if (this.selectedDemands.length === 0) {
+    if (this.selectedDemands.length === 0 && this.initialDemands.length === 0) {
       alert('Bitte wähle mindestens ein Fach aus');
       return;
     }
@@ -154,39 +167,33 @@ export class RequestServicesComponent implements OnInit {
             return;
           }
 
-          // Logged-in mode - save to database with intelligent merging
-          const newDemandNames = this.selectedDemands.map(
+          // Logged-in mode - REPLACE (not merge) with current selections
+          const currentDemandNames = this.selectedDemands.map(
             (id) => this.serviceTypeMap.get(id) || ''
           );
 
-          // Load existing markets and merge
+          // Load existing markets to preserve offers
           this.serviceTypeService.getUserMarkets(username).subscribe({
             next: (markets) => {
-              // Extract existing offers and demands
+              // Extract existing offers (keep these unchanged)
               const existingOffers = markets
                 .filter((m) => m.offer === 1)
                 .map((m) => m.serviceType.name);
-              const existingDemandNames = markets
-                .filter((m) => m.offer === 0)
-                .map((m) => m.serviceType.name);
 
-              // Merge demands (remove duplicates)
-              const mergedDemands = [
-                ...new Set([...existingDemandNames, ...newDemandNames]),
-              ];
-
-              console.log('🔀 Merging Demands:', {
-                existing: existingDemandNames,
-                new: newDemandNames,
-                merged: mergedDemands,
+              console.log('💾 Saving Demands (REPLACE mode):', {
+                old: this.initialDemands.map(id => this.serviceTypeMap.get(id)),
+                new: currentDemandNames,
+                offers: existingOffers,
               });
 
-              // Save merged data to database
+              // Save ONLY current demands (not merged) + keep existing offers
               this.serviceTypeService
-                .saveMarkets(username, existingOffers, mergedDemands)
+                .saveMarkets(username, existingOffers, currentDemandNames)
                 .subscribe({
                   next: () => {
                     this.submitting = false;
+                    // Update initial state after successful save
+                    this.initialDemands = [...this.selectedDemands];
                     this.router.navigate(['/user-matches']);
                   },
                   error: (err) => {
@@ -199,10 +206,11 @@ export class RequestServicesComponent implements OnInit {
             error: () => {
               // No existing markets, save new ones
               this.serviceTypeService
-                .saveMarkets(username, [], newDemandNames)
+                .saveMarkets(username, [], currentDemandNames)
                 .subscribe({
                   next: () => {
                     this.submitting = false;
+                    this.initialDemands = [...this.selectedDemands];
                     this.router.navigate(['/user-matches']);
                   },
                   error: (err) => {
