@@ -27,7 +27,7 @@
 
       <!-- Chat List -->
       <div class="chat-list custom-scroll">
-        @for (chat of filteredChats; track chat.id) {
+        @for (chat of filteredChats; track trackByChatId($index, chat)) {
           <div class="chat-item" 
                [class.active]="selectedChat?.id === chat.id" 
                [class.has-unread]="chat.unreadCount && chat.unreadCount > 0"
@@ -98,7 +98,7 @@
 
         <!-- Messages -->
         <div class="messages-container custom-scroll" #messagesContainer>
-          @for (msg of messages; track msg.id) {
+          @for (msg of messages; track trackByMessageId($index, msg)) {
             @if (isSystemMessage(msg)) {
               <div class="system-message">
                 {{ getSystemMessageContent(msg) }}
