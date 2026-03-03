@@ -5,6 +5,7 @@ import { Subscription, filter, interval } from 'rxjs';
 import { KeycloakService } from '../services/keycloak.service';
 import { RequestService } from '../services/request.service';
 import { ChatService } from '../services/chat.service';
+import { ChatWebSocketService } from '../services/chat-websocket.service';
 
 @Component({
   selector: 'app-navbar',
@@ -26,7 +27,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private keycloakSubscription?: Subscription;
   private notificationSubscription?: Subscription;
   private chatNotificationSubscription?: Subscription;
+  private wsMessageSubscription?: Subscription;
   private currentUsername: string | null = null;
+  private currentUserId: number | null = null;
   notificationCount = 0;
   
   // Event listeners for chat notifications
@@ -37,7 +40,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private router: Router,
     private keycloakService: KeycloakService,
     private requestService: RequestService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private chatWsService: ChatWebSocketService
   ) {}
 
   async ngOnInit() {
@@ -72,6 +76,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.keycloakSubscription?.unsubscribe();
     this.notificationSubscription?.unsubscribe();
     this.chatNotificationSubscription?.unsubscribe();
+    this.wsMessageSubscription?.unsubscribe();
   }
 
   async checkUserStatus() {
@@ -83,23 +88,39 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.currentUsername = user;
         this.currentUserState = user === 'Admin' ? 'admin' : 'user';
 
+        // Resolve user ID for WebSocket connection
+        await this.resolveUserId();
+
         // Check for inbox and chat notifications if logged in
         await this.checkInboxNotifications();
         await this.checkChatNotifications();
         this.startNotificationPolling();
         this.startChatNotificationPolling();
+        this.setupWebSocketListener();
       } else {
         this.currentUser = null;
         this.currentUsername = null;
         this.currentUserState = 'guest';
         this.stopNotificationPolling();
         this.stopChatNotificationPolling();
+        this.wsMessageSubscription?.unsubscribe();
       }
     } catch (error) {
       console.error('Error checking user status:', error);
       this.currentUser = null;
       this.currentUsername = null;
       this.currentUserState = 'guest';
+    }
+  }
+
+  private async resolveUserId() {
+    if (this.currentUserId || !this.currentUsername) return;
+    try {
+      const users = await this.chatService.getAllUsers(false).toPromise();
+      const me = users?.find(u => u.name === this.currentUsername);
+      if (me) this.currentUserId = me.id;
+    } catch {
+      // Will retry on next poll
     }
   }
 
@@ -181,8 +202,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private startNotificationPolling() {
     this.stopNotificationPolling();
-    // Poll every 15 seconds
-    this.notificationSubscription = interval(15000).subscribe(() => {
+    // Poll every 5 seconds for inbox notification changes
+    this.notificationSubscription = interval(5000).subscribe(() => {
       this.checkInboxNotifications();
     });
   }
@@ -270,8 +291,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private startChatNotificationPolling() {
     this.stopChatNotificationPolling();
-    // Poll every 15 seconds
-    this.chatNotificationSubscription = interval(15000).subscribe(() => {
+    // Poll every 10 seconds as fallback (WebSocket provides instant updates)
+    this.chatNotificationSubscription = interval(10000).subscribe(() => {
       this.checkChatNotifications();
     });
   }
@@ -281,6 +302,26 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.chatNotificationSubscription.unsubscribe();
       this.chatNotificationSubscription = undefined;
     }
+  }
+
+  /**
+   * Subscribe to WebSocket messages for instant chat notifications
+   */
+  private setupWebSocketListener() {
+    if (!this.currentUserId) return;
+
+    // Ensure WebSocket is connected (may already be connected by chat component)
+    this.chatWsService.connect(this.currentUserId);
+
+    // Unsubscribe previous
+    this.wsMessageSubscription?.unsubscribe();
+
+    this.wsMessageSubscription = this.chatWsService.getMessages().subscribe(message => {
+      // A message arrived via WebSocket - if it's from someone else, show red dot instantly
+      if (message.sender?.id !== this.currentUserId) {
+        this.hasChatNotification = true;
+      }
+    });
   }
 
   async handleLogin() {

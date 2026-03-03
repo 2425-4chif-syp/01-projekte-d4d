@@ -772,14 +772,9 @@
 /* Mobile devices (phones, portrait tablets) */
 @media (max-width: 767px) {
   :host {
-    /* Mobile viewport: account for wrapped navbar (~115px) */
-    height: calc(100vh - 115px); /* Fallback */
-    height: calc(100dvh - 115px); /* Dynamic viewport */
-    height: calc(100svh - 115px); /* Small viewport */
-    height: calc(-webkit-fill-available - 115px); /* iOS Safari */
-    max-height: calc(100vh - 115px);
-    max-height: calc(100dvh - 115px);
-    max-height: calc(100svh - 115px);
+    /* Use dynamic viewport height set by JS visualViewport API */
+    height: calc(var(--app-vh, 100vh) - 115px);
+    max-height: calc(var(--app-vh, 100vh) - 115px);
   }
 
   .chat-container {
@@ -1025,8 +1020,8 @@
 @supports (-webkit-touch-callout: none) {
   /* iOS-specific fixes */
   :host {
-    height: calc(-webkit-fill-available - 115px);
-    max-height: calc(-webkit-fill-available - 115px);
+    height: calc(var(--app-vh, 100vh) - 115px);
+    max-height: calc(var(--app-vh, 100vh) - 115px);
   }
 
   .chat-container {

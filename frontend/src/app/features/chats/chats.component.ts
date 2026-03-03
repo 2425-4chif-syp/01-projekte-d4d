@@ -5,6 +5,7 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
+  HostBinding,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -66,6 +67,11 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   private wsMessageSubscription?: Subscription;
   private wsStateSubscription?: Subscription;
   private shouldScrollToBottom = false;
+  private viewportHandler = () => this.updateViewportHeight();
+  private userLoggedInHandler = async () => {
+    console.log('🔄 User logged in, reloading chats...');
+    await this.loadActiveUser();
+  };
 
   constructor(
     private chatService: ChatService,
@@ -74,19 +80,30 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   ) {}
 
   ngOnInit() {
-    // Initial setup
+    // Set up dynamic viewport height for mobile (avoids URL bar overlap)
+    this.updateViewportHeight();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this.viewportHandler);
+      window.visualViewport.addEventListener('scroll', this.viewportHandler);
+    }
+    window.addEventListener('resize', this.viewportHandler);
+
+    // Initial setup - WebSocket is connected inside loadChats() after currentUserId is known
     this.loadActiveUser();
-    this.setupWebSocket();
 
     // Reload data after login
-    window.addEventListener('user-logged-in', async () => {
-      console.log('🔄 User logged in, reloading chats...');
-      await this.loadActiveUser();
-      this.setupWebSocket();
-    });
+    window.addEventListener('user-logged-in', this.userLoggedInHandler);
   }
 
   ngOnDestroy() {
+    // Clean up viewport listeners
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', this.viewportHandler);
+      window.visualViewport.removeEventListener('scroll', this.viewportHandler);
+    }
+    window.removeEventListener('resize', this.viewportHandler);
+    window.removeEventListener('user-logged-in', this.userLoggedInHandler);
+
     // Clean up WebSocket subscriptions
     if (this.wsMessageSubscription) {
       this.wsMessageSubscription.unsubscribe();
@@ -128,13 +145,15 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   async loadChats() {
     if (!this.currentUser) return;
 
-    // Use cached data for instant loading
-    this.chatService.getAllUsers(false).subscribe({
+    // Force fresh data on load
+    this.chatService.getAllUsers(true).subscribe({
       next: (users) => {
         this.allUsers = users;
         const currentUserObj = users.find((u) => u.name === this.currentUser);
         if (currentUserObj) {
           this.currentUserId = currentUserObj.id;
+          // Connect WebSocket now that we have the user ID
+          this.setupWebSocket();
         }
         
         const filteredUsers = users.filter((u) => u.name !== this.currentUser);
@@ -146,10 +165,10 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
           return;
         }
 
-        // PARALLEL LOADING with cache for instant results
+        // PARALLEL LOADING with fresh data
         const chatObservables = filteredUsers.map((user) =>
           this.chatService
-            .getMessagesForChat(this.currentUserId!, user.id, false)
+            .getMessagesForChat(this.currentUserId!, user.id, true)
             .pipe(
               map((messages) => {
                 if (!messages || messages.length === 0) {
@@ -342,8 +361,11 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     const lastRead = readTimestamps[chat.id];
     
     if (!lastRead) {
-      // Never opened this chat - count messages from others
-      return messages.filter(m => m.sender?.name !== this.currentUser).length;
+      // Never opened this chat - initialize read timestamp to now so it doesn't appear unread
+      // Only new messages arriving AFTER this point will be marked unread
+      readTimestamps[chat.id] = new Date().toISOString();
+      localStorage.setItem('chatReadTimestamps', JSON.stringify(readTimestamps));
+      return 0;
     }
     
     const lastReadTime = new Date(lastRead).getTime();
@@ -357,9 +379,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   async loadMessagesForChat(chatId: string | number) {
     if (!this.currentUserId) return;
 
-    // Use cached data with forceRefresh=false for instant loading
+    // Always load fresh messages when selecting a chat
     this.chatService
-      .getMessagesForChat(this.currentUserId, Number(chatId), false)
+      .getMessagesForChat(this.currentUserId, Number(chatId), true)
       .subscribe({
         next: (messages) => {
           this.messages = messages;
@@ -549,27 +571,44 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   private handleIncomingWebSocketMessage(message: ChatMessage): void {
     console.log('📩 Received WebSocket message:', message);
 
-    // Check if message is for current chat
-    const isForCurrentChat = 
-      (message.sender?.id === Number(this.currentChatId) && message.receiver?.id === this.currentUserId) ||
-      (message.receiver?.id === Number(this.currentChatId) && message.sender?.id === this.currentUserId);
+    const isFromMe = message.sender?.id === this.currentUserId;
 
-    if (isForCurrentChat && this.currentChatId) {
-      // Add message to current chat if not already present (dedupe by ID or time+text)
-      const isDuplicate = this.messages.some(m => 
-        (m.id && message.id && m.id === message.id) ||
-        (m.message === message.message && m.time === message.time)
+    if (isFromMe) {
+      // Echo of our own sent message from the server (now with real ID/timestamp)
+      // Replace the optimistic message we already added
+      const optimisticIdx = this.messages.findIndex(m =>
+        !m.id && m.message === message.message && m.sender?.id === this.currentUserId
       );
+      if (optimisticIdx !== -1) {
+        this.messages[optimisticIdx] = message;
+      }
+      // Update chat list preview and return - no notification needed for own messages
+      this.updateChatListFromMessage(message);
+      return;
+    }
 
+    // Message from another user
+    const isForCurrentChat = this.currentChatId &&
+      message.sender?.id === Number(this.currentChatId);
+
+    if (isForCurrentChat) {
+      // Deduplicate by ID
+      const isDuplicate = this.messages.some(m =>
+        m.id && message.id && m.id === message.id
+      );
       if (!isDuplicate) {
         this.messages.push(message);
         this.shouldScrollToBottom = true;
+        // Mark as read since chat is open
+        if (this.selectedChat) {
+          this.markChatAsRead(this.selectedChat);
+        }
       }
     }
 
     // Update chat list preview
     this.updateChatListFromMessage(message);
-    
+
     // Notify navbar to refresh chat notifications
     window.dispatchEvent(new Event('chat-message-received'));
   }
@@ -598,6 +637,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
       this.sortChats();
       this.filterChats();
+    } else if (otherUserId) {
+      // New chat from unknown user - reload chat list to include it
+      this.loadChats();
     }
   }
 
@@ -818,5 +860,10 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
         // Ignore scroll errors
       }
     }
+  }
+
+  private updateViewportHeight() {
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', `${vh}px`);
   }
 }
