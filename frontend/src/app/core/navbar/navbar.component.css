@@ -120,6 +120,18 @@
   border-radius: 50%;
   border: 2px solid #3b82f6;
   animation: pulse-dot 2s infinite;
+  /* Ensure visibility on mobile and desktop */
+  z-index: 10;
+}
+
+/* Larger dot on mobile for better visibility */
+@media (max-width: 768px) {
+  .nav-notification-dot {
+    width: 14px;
+    height: 14px;
+    top: 2px;
+    right: 2px;
+  }
 }
 
 .nav-buttons button.active .nav-notification-badge,
