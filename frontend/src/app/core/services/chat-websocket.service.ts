@@ -68,8 +68,10 @@ export class ChatWebSocketService {
     this.activeConsumers++;
     this.log(`Consumer connected (active: ${this.activeConsumers})`);
 
-    if (this.socket?.readyState === WebSocket.OPEN && this.userId === userId) {
-      this.log('Already connected, reusing existing connection');
+    // Already connected or connecting for the same user — reuse
+    if (this.socket && this.userId === userId &&
+        (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+      this.log('Already connected/connecting, reusing existing connection');
       return;
     }
 
@@ -179,6 +181,20 @@ export class ChatWebSocketService {
     if (!this.userId) {
       this.log('Cannot connect: no user ID', 'error');
       return;
+    }
+
+    // Close any existing socket to prevent orphaned connections
+    if (this.socket) {
+      try {
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onerror = null;
+        this.socket.onclose = null;
+        if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+          this.socket.close(1000, 'Replacing connection');
+        }
+      } catch (_) { /* ignore */ }
+      this.socket = null;
     }
 
     this.updateConnectionState(
