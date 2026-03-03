@@ -22,6 +22,9 @@ export class ChatWebSocketService {
   private reconnectTimeout: any = null;
   private heartbeatInterval: any = null;
 
+  // Reference counting: track how many components are actively using the connection
+  private activeConsumers = 0;
+
   // State management
   private connectionState$ = new BehaviorSubject<ConnectionState>(ConnectionState.DISCONNECTED);
   private messages$ = new Subject<ChatMessage>();
@@ -58,17 +61,21 @@ export class ChatWebSocketService {
   }
 
   /**
-   * Connect to WebSocket for a specific user
+   * Connect to WebSocket for a specific user.
+   * Multiple components can call connect() — the connection is shared.
    */
   connect(userId: number): void {
+    this.activeConsumers++;
+    this.log(`Consumer connected (active: ${this.activeConsumers})`);
+
     if (this.socket?.readyState === WebSocket.OPEN && this.userId === userId) {
-      this.log('Already connected');
+      this.log('Already connected, reusing existing connection');
       return;
     }
 
     // Close existing connection if different user
     if (this.socket && this.userId !== userId) {
-      this.disconnect();
+      this.forceDisconnect();
     }
 
     this.userId = userId;
@@ -77,11 +84,26 @@ export class ChatWebSocketService {
   }
 
   /**
-   * Disconnect from WebSocket
+   * Signal that a component no longer needs the connection.
+   * The socket stays alive as long as at least one consumer remains.
+   */
+  release(): void {
+    this.activeConsumers = Math.max(0, this.activeConsumers - 1);
+    this.log(`Consumer released (active: ${this.activeConsumers})`);
+    // Don't actually disconnect — the socket stays alive for other consumers (e.g., navbar)
+  }
+
+  /**
+   * Force disconnect — only call on logout or when truly tearing down.
    */
   disconnect(): void {
-    this.log('Disconnecting...');
+    this.log('Force disconnecting...');
+    this.forceDisconnect();
+  }
+
+  private forceDisconnect(): void {
     this.userId = null;
+    this.activeConsumers = 0;
     this.reconnectAttempts = 0;
     
     if (this.reconnectTimeout) {
@@ -244,7 +266,6 @@ export class ChatWebSocketService {
       
       // Limit cache size to prevent memory leaks
       if (this.receivedMessageIds.size > this.maxCachedMessageIds) {
-        // Remove oldest entries (convert to array, remove first, convert back)
         const idsArray = Array.from(this.receivedMessageIds);
         this.receivedMessageIds = new Set(idsArray.slice(-this.maxCachedMessageIds));
       }
@@ -300,7 +321,6 @@ export class ChatWebSocketService {
     this.heartbeatInterval = setInterval(() => {
       if (this.socket?.readyState === WebSocket.OPEN) {
         try {
-          // Send ping as a simple JSON message
           this.socket.send(JSON.stringify({ type: 'ping' }));
         } catch (error) {
           this.log('Error sending heartbeat', 'error', error);

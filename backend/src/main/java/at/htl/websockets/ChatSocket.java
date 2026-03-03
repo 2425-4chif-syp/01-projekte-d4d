@@ -54,6 +54,11 @@ public class ChatSocket {
     @Transactional
     public void onMessage(String message, @PathParam("userId") Long userId) {
         try {
+            // Ignore heartbeat/ping messages from the client
+            if (message.contains("\"type\"") && message.contains("\"ping\"")) {
+                return;
+            }
+
             // Parse message
             ChatEntry chatEntry = objectMapper.readValue(message, ChatEntry.class);
             

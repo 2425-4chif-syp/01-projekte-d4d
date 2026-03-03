@@ -60,6 +60,7 @@ body {
   color: var(--gray-800);
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Modern Card Styles */

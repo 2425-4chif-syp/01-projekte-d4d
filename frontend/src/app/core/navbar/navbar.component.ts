@@ -335,6 +335,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   async handleLogout() {
+    // Force-disconnect WebSocket on logout
+    this.chatWsService.disconnect();
     await this.keycloakService.logout();
     this.currentUser = null;
     this.currentUserState = 'guest';
