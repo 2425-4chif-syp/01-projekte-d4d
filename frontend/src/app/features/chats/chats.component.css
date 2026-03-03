@@ -489,6 +489,11 @@
   transform: translateY(-1px);
 }
 
+/* Mobile back button - hidden on desktop */
+.mobile-back-btn {
+  display: none;
+}
+
 .btn-send {
   background: var(--chat-primary);
   color: white;
@@ -781,70 +786,120 @@
   }
 
   .chat-container {
-    /* Stack layout on mobile if needed */
+    /* Convert to relative positioning for absolute child layering */
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* MOBILE TWO-STATE LAYOUT */
+  
+  /* STATE A: Chat List View (Default) */
+  .chat-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-right: none;
+    z-index: 10;
+    /* Visible by default */
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateX(0);
+  }
+
+  /* STATE B: Active Chat View */
+  .chat-main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Hidden by default, shown when mobile-chat-active */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 20;
+  }
+
+  /* When chat is active, hide list and show chat */
+  .chat-main.mobile-chat-active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .chat-main.mobile-chat-active ~ .chat-sidebar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-100%);
+  }
+
+  /* Mobile Back Button */
+  .mobile-back-btn {
+    display: flex !important;
+    margin-right: 0.5rem;
+    background-color: transparent;
+    color: var(--chat-primary);
+  }
+
+  .mobile-back-btn:hover {
+    background-color: var(--chat-primary-light);
+  }
+
+  /* Chat Layout Structure */
+  .chat-main {
+    /* Flex column: Header -> Messages -> Input */
     display: flex;
     flex-direction: column;
-    height: 100%;
-  }
-
-  /* Make sidebar full width on mobile or hide it when chat is open */
-  .chat-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 2px solid var(--chat-border);
-  }
-
-  .chat-main {
-    width: 100%;
-    /* Ensure proper stacking context */
-    position: relative;
-  }
-
-  /* On mobile, hide sidebar when chat is selected */
-  .chat-sidebar.has-active-chat {
-    display: none;
-  }
-
-  .chat-main.no-active-chat {
-    display: none;
   }
 
   /* Adjust sidebar header padding */
   .sidebar-header {
     padding: 1rem;
+    flex-shrink: 0;
   }
 
   /* Adjust chat header */
   .chat-header {
-    padding: 1rem;
-    /* Prevent it from being hidden */
+    padding: 0.75rem 1rem;
+    /* Fixed height, no shrink */
     flex-shrink: 0;
+    min-height: 60px;
   }
 
-  /* Messages container with safer padding */
+  /* Messages container - CRITICAL FIX */
   .messages-container {
+    /* Take remaining space */
+    flex: 1 1 auto;
+    min-height: 0; /* Allow flex shrinking */
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
-    padding-bottom: 2rem; /* Extra space above input */
-    /* Ensure scrolling works */
-    flex: 1;
-    min-height: 0;
-    /* Prevent overscroll */
+    padding-bottom: 1rem;
+    /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    /* Ensure content doesn't overflow */
+    max-height: 100%;
   }
 
-  /* Input area sticky at bottom with safe-area */
+  /* Input area - FIXED AT BOTTOM */
   .input-area {
-    padding: 1rem;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    /* Stick to bottom */
-    position: sticky;
-    bottom: 0;
-    /* Ensure it stays on top */
-    z-index: 100;
-    /* Prevent it from shrinking */
-    flex-shrink: 0;
+    /* Fixed height, no grow/shrink */
+    flex: 0 0 auto;
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
     /* White background to cover messages */
     background-color: white;
+    border-top: 1px solid var(--chat-border);
+    /* Ensure it stays on top */
+    z-index: 100;
+    /* Prevent from being pushed out */
+    position: relative;
   }
 
   .input-wrapper {
@@ -869,6 +924,34 @@
   /* Message bubbles take more width on mobile */
   .message-wrapper {
     max-width: 85%;
+  }
+
+  /* Appointment Card Mobile Constraints - CRITICAL FIX */
+  .appointment-card {
+    /* Constrain height to prevent overflow */
+    max-height: 400px;
+    overflow-y: auto;
+    /* Smooth internal scrolling if content is too tall */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .appointment-card-body {
+    /* Constrain body content */
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .appointment-actions {
+    /* Ensure buttons wrap on small screens */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .appointment-actions button {
+    /* Full width buttons on mobile for easier tapping */
+    flex: 1 1 120px;
+    min-width: 120px;
   }
 
   /* Chat items */

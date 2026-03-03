@@ -128,103 +128,97 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   async loadChats() {
     if (!this.currentUser) return;
 
-    try {
-      this.chatService.getAllUsers().subscribe({
-        next: (users) => {
-          this.allUsers = users; // Store all users for search
-          const currentUserObj = users.find((u) => u.name === this.currentUser);
-          if (currentUserObj) {
-            this.currentUserId = currentUserObj.id;
-          }
-          
-          // Filter out current user
-          const filteredUsers = users.filter((u) => u.name !== this.currentUser);
-          
-          if (!this.currentUserId || filteredUsers.length === 0) {
-            this.chats = [];
-            this.filteredChats = [];
-            this.loading = false;
-            return;
-          }
-
-          // PARALLEL LOADING: Load all chats at once with forkJoin
-          const chatObservables = filteredUsers.map((user) =>
-            this.chatService
-              .getMessagesForChat(this.currentUserId!, user.id)
-              .pipe(
-                map((messages) => {
-                  if (!messages || messages.length === 0) {
-                    return null; // Skip users with no messages
-                  }
-
-                  const lastMsg = messages[messages.length - 1];
-                  let lastMessage = lastMsg.message || 'Nachricht';
-                  lastMessage =
-                    lastMessage.length > 50
-                      ? lastMessage.substring(0, 50) + '...'
-                      : lastMessage;
-                  let lastUpdate = lastMsg.time || new Date().toISOString();
-
-                  const userName =
-                    typeof user.name === 'object'
-                      ? (user.name as any).username || String(user.name)
-                      : user.name;
-
-                  const newChat: Chat = {
-                    id: user.id,
-                    user1Username: this.currentUser || '',
-                    user2Username: userName,
-                    lastMessage: lastMessage,
-                    lastUpdate: lastUpdate,
-                    isAdmin: userName.toLowerCase() === 'admin',
-                    isPinned: userName.toLowerCase() === 'admin',
-                    unreadCount: this.calculateUnreadCount(
-                      {
-                        id: user.id,
-                        user1Username: this.currentUser || '',
-                        user2Username: userName,
-                        lastMessage,
-                        lastUpdate,
-                        isAdmin: userName.toLowerCase() === 'admin',
-                        isPinned: userName.toLowerCase() === 'admin',
-                        unreadCount: 0,
-                      },
-                      messages
-                    ),
-                  };
-
-                  return newChat;
-                })
-              )
-          );
-
-          // Execute all requests in parallel
-          forkJoin(chatObservables).subscribe({
-            next: (allChats) => {
-              // Filter out null values (users with no messages)
-              this.chats = allChats.filter((chat) => chat !== null) as Chat[];
-
-              this.sortChats();
-              this.filteredChats = [...this.chats];
-              this.loading = false;
-
-              console.log('✅ Chats loaded (PARALLEL):', this.chats.length);
-            },
-            error: (err) => {
-              console.error('Fehler beim parallelen Laden der Chats:', err);
-              this.loading = false;
-            },
-          });
-        },
-        error: (err) => {
-          console.error('Fehler beim Laden der Chats:', err);
+    // Use cached data for instant loading
+    this.chatService.getAllUsers(false).subscribe({
+      next: (users) => {
+        this.allUsers = users;
+        const currentUserObj = users.find((u) => u.name === this.currentUser);
+        if (currentUserObj) {
+          this.currentUserId = currentUserObj.id;
+        }
+        
+        const filteredUsers = users.filter((u) => u.name !== this.currentUser);
+        
+        if (!this.currentUserId || filteredUsers.length === 0) {
+          this.chats = [];
+          this.filteredChats = [];
           this.loading = false;
-        },
-      });
-    } catch (err) {
-      console.error('Fehler:', err);
-      this.loading = false;
-    }
+          return;
+        }
+          return;
+        }
+
+        // PARALLEL LOADING with cache for instant results
+        const chatObservables = filteredUsers.map((user) =>
+          this.chatService
+            .getMessagesForChat(this.currentUserId!, user.id, false)
+            .pipe(
+              map((messages) => {
+                if (!messages || messages.length === 0) {
+                  return null;
+                }
+
+                const lastMsg = messages[messages.length - 1];
+                let lastMessage = lastMsg.message || 'Nachricht';
+                lastMessage =
+                  lastMessage.length > 50
+                    ? lastMessage.substring(0, 50) + '...'
+                    : lastMessage;
+                let lastUpdate = lastMsg.time || new Date().toISOString();
+
+                const userName =
+                  typeof user.name === 'object'
+                    ? (user.name as any).username || String(user.name)
+                    : user.name;
+
+                const newChat: Chat = {
+                  id: user.id,
+                  user1Username: this.currentUser || '',
+                  user2Username: userName,
+                  lastMessage: lastMessage,
+                  lastUpdate: lastUpdate,
+                  isAdmin: userName.toLowerCase() === 'admin',
+                  isPinned: userName.toLowerCase() === 'admin',
+                  unreadCount: this.calculateUnreadCount(
+                    {
+                      id: user.id,
+                      user1Username: this.currentUser || '',
+                      user2Username: userName,
+                      lastMessage,
+                      lastUpdate,
+                      isAdmin: userName.toLowerCase() === 'admin',
+                      isPinned: userName.toLowerCase() === 'admin',
+                      unreadCount: 0,
+                    },
+                    messages
+                  ),
+                };
+
+                return newChat;
+              })
+            )
+        );
+
+        // Execute all requests in parallel with cached data
+        forkJoin(chatObservables).subscribe({
+          next: (allChats) => {
+            this.chats = allChats.filter((chat) => chat !== null) as Chat[];
+            this.sortChats();
+            this.filteredChats = [...this.chats];
+            this.loading = false;
+            console.log('✅ Chats loaded INSTANTLY (cached):', this.chats.length);
+          },
+          error: (err) => {
+            console.error('Fehler beim Laden der Chats:', err);
+            this.loading = false;
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Chats:', err);
+        this.loading = false;
+      },
+    });
   }
 
   openNewChatModal() {
@@ -315,6 +309,18 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadMessagesForChat(chat.id);
   }
 
+  /**
+   * Close mobile chat view and return to list
+   */
+  closeMobileChat() {
+    // On mobile, clear selection to show list again
+    if (window.innerWidth < 768) {
+      this.selectedChat = null;
+      this.currentChatId = null;
+      this.messages = [];
+    }
+  }
+
   private markChatAsRead(chat: Chat) {
     // Clear unread count
     chat.unreadCount = 0;
@@ -353,39 +359,36 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   async loadMessagesForChat(chatId: string | number) {
     if (!this.currentUserId) return;
 
-    try {
-      this.chatService
-        .getMessagesForChat(this.currentUserId, Number(chatId))
-        .subscribe({
-          next: (messages) => {
-            this.messages = messages;
-            this.shouldScrollToBottom = true;
+    // Use cached data with forceRefresh=false for instant loading
+    this.chatService
+      .getMessagesForChat(this.currentUserId, Number(chatId), false)
+      .subscribe({
+        next: (messages) => {
+          this.messages = messages;
+          this.shouldScrollToBottom = true;
 
-            // Load appointment statuses for appointment messages
-            this.loadAppointmentStatuses(messages);
+          // Load appointment statuses for appointment messages
+          this.loadAppointmentStatuses(messages);
 
-            // Update chat object
-            const chat = this.chats.find((c) => c.id === chatId);
-            if (chat && messages.length > 0) {
-              const lastMsg = messages[messages.length - 1];
-              const lastMessage = lastMsg.message || 'Nachricht';
-              chat.lastMessage =
-                lastMessage.length > 50
-                  ? lastMessage.substring(0, 50) + '...'
-                  : lastMessage;
-              chat.lastUpdate = lastMsg.time || new Date().toISOString();
+          // Update chat object
+          const chat = this.chats.find((c) => c.id === chatId);
+          if (chat && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            const lastMessage = lastMsg.message || 'Nachricht';
+            chat.lastMessage =
+              lastMessage.length > 50
+                ? lastMessage.substring(0, 50) + '...'
+                : lastMessage;
+            chat.lastUpdate = lastMsg.time || new Date().toISOString();
 
-              this.sortChats();
-              this.filterChats();
-            }
-          },
-          error: () => {
-            this.messages = [];
-          },
-        });
-    } catch (err) {
-      this.messages = [];
-    }
+            this.sortChats();
+            this.filterChats();
+          }
+        },
+        error: () => {
+          this.messages = [];
+        },
+      });
   }
 
   loadAppointmentStatuses(messages: ChatMessage[]) {
