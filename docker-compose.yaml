@@ -32,7 +32,7 @@ services:
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: "d4d.notification@gmail.com"
-      SMTP_PASSWORD: "ehzrxtbcdbdngxys"
+      SMTP_PASSWORD: "ztdjsclkahuudkdh"
       SMTP_FROM: ${SMTP_FROM:-d4d.notification@gmail.com}
       TEST_EMAIL: "s.jelic@htl-leonding.ac.at"
       # Application URLs (for links in emails)
