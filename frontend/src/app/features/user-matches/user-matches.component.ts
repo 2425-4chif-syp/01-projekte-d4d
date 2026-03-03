@@ -535,7 +535,6 @@ export class UserMatchesComponent implements OnInit {
   }
 
   openRequestModal(match: Match) {
-    if (!match.isOffer) return;
     // Prevent opening if already requested or has active tutoring
     if (match.hasActiveRequest || match.hasActiveTutoring) return;
 

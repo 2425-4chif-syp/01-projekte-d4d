@@ -208,9 +208,9 @@
                   [class.border-primary]="match.isOffer"
                   [class.border-info]="!match.isOffer"
                   [class.border-warning]="match.isPerfectMatch"
-                  [class.cursor-pointer]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring"
-                  [style.cursor]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
-                  (click)="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
+                  [class.cursor-pointer]="!match.hasActiveRequest && !match.hasActiveTutoring"
+                  [style.cursor]="!match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
+                  (click)="!match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
                 >
                   <div class="card-body">
                     <div
@@ -300,9 +300,9 @@
               [class.border-primary]="match.isOffer"
               [class.border-info]="!match.isOffer"
               [class.border-warning]="match.isPerfectMatch"
-              [class.cursor-pointer]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring"
-              [style.cursor]="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
-              (click)="match.isOffer && !match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
+              [class.cursor-pointer]="!match.hasActiveRequest && !match.hasActiveTutoring"
+              [style.cursor]="!match.hasActiveRequest && !match.hasActiveTutoring ? 'pointer' : 'default'"
+              (click)="!match.hasActiveRequest && !match.hasActiveTutoring && openRequestModal(match)"
             >
               <div class="card-body text-center p-3">
                 <div class="mb-2">
@@ -553,14 +553,14 @@
         <button type="button" class="btn-close" (click)="closeModal()"></button>
       </div>
       <div class="modal-body">
-        <p><strong>Anbieter:</strong> {{ selectedMatch?.username }}</p>
+        <p><strong>{{ selectedMatch?.isOffer ? 'Anbieter' : 'Suchender' }}:</strong> {{ selectedMatch?.username }}</p>
         <p>
           <strong>Dienstleistungsart:</strong>
           {{ selectedMatch?.serviceTypeName }}
         </p>
         <div class="alert alert-info mt-3">
           <i class="fas fa-info-circle"></i>
-          Der Anbieter wird über deine Anfrage benachrichtigt und kann diese
+          {{ selectedMatch?.isOffer ? 'Der Anbieter' : 'Der Suchende' }} wird über deine Anfrage benachrichtigt und kann diese
           annehmen oder ablehnen.
         </div>
         @if (modalMessage) {
