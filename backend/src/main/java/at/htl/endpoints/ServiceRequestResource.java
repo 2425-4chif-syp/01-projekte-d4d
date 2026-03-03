@@ -99,38 +99,44 @@ public class ServiceRequestResource {
         ServiceRequest request = new ServiceRequest(sender, receiver, market);
         serviceRequestRepository.persist(request);
 
+        LOG.info("✉️ Sending service request notification emails...");
+        
         // ✉️ E-MAIL 1: Sende Bestätigung an Sender dass Anfrage versendet wurde
-        if (sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
-            String providerName = receiver.getName();
-            String serviceTypeName = market.getServiceType().getName();
-            
-            LOG.info("Sending request-created email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
-            
-            notificationService.sendRequestCreatedEmail(sender.getPupilId(), providerName, serviceTypeName)
-                .subscribe()
-                .with(
-                    unused -> LOG.info("Request-created email queued for: " + sender.getName()),
-                    failure -> LOG.error("Failed to send request-created email", failure)
-                );
-        } else {
-            LOG.warn("Cannot send email to sender: Sender has no pupilId");
+        try {
+            if (sender.getPupilId() != null && !sender.getPupilId().isBlank()) {
+                String providerName = receiver.getName();
+                String serviceTypeName = market.getServiceType().getName();
+                
+                LOG.info("📨 Sending request-created email to sender: " + sender.getName() + " (pupilId: " + sender.getPupilId() + ")");
+                
+                notificationService.sendRequestCreatedEmail(sender.getPupilId(), providerName, serviceTypeName)
+                    .await().indefinitely();
+                    
+                LOG.info("✅ Request-created email sent successfully to: " + sender.getName());
+            } else {
+                LOG.warn("⚠️ Cannot send email to sender: Sender has no pupilId");
+            }
+        } catch (Exception e) {
+            LOG.error("❌ Failed to send request-created email to sender", e);
         }
 
         // ✉️ E-MAIL 2: Sende Benachrichtigung an Provider dass er neue Anfrage erhalten hat
-        if (receiver.getPupilId() != null && !receiver.getPupilId().isBlank()) {
-            String senderName = sender.getName();
-            String serviceTypeName = market.getServiceType().getName();
-            
-            LOG.info("Sending request-received email to provider: " + receiver.getName() + " (pupilId: " + receiver.getPupilId() + ")");
-            
-            notificationService.sendRequestReceivedEmail(receiver.getPupilId(), senderName, serviceTypeName)
-                .subscribe()
-                .with(
-                    unused -> LOG.info("Request-received email queued for: " + receiver.getName()),
-                    failure -> LOG.error("Failed to send request-received email", failure)
-                );
-        } else {
-            LOG.warn("Cannot send email to provider: Receiver has no pupilId");
+        try {
+            if (receiver.getPupilId() != null && !receiver.getPupilId().isBlank()) {
+                String senderName = sender.getName();
+                String serviceTypeName = market.getServiceType().getName();
+                
+                LOG.info("📨 Sending request-received email to provider: " + receiver.getName() + " (pupilId: " + receiver.getPupilId() + ")");
+                
+                notificationService.sendRequestReceivedEmail(receiver.getPupilId(), senderName, serviceTypeName)
+                    .await().indefinitely();
+                    
+                LOG.info("✅ Request-received email sent successfully to: " + receiver.getName());
+            } else {
+                LOG.warn("⚠️ Cannot send email to provider: Receiver has no pupilId");
+            }
+        } catch (Exception e) {
+            LOG.error("❌ Failed to send request-received email to provider", e);
         }
 
         return Response.status(Response.Status.CREATED)
