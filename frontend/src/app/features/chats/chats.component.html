@@ -70,11 +70,15 @@
     </div>
 
     <!-- Main Chat Area -->
-    <div class="col-md-8 col-lg-9 chat-main">
+    <div class="col-md-8 col-lg-9 chat-main" [class.mobile-chat-active]="selectedChat">
       @if (selectedChat) {
         <!-- Chat Header -->
         <div class="chat-header">
-          <div class="d-flex align-items-center">
+          <!-- Mobile Back Button -->
+          <button class="btn btn-icon mobile-back-btn" (click)="closeMobileChat()" title="Zurück zur Liste">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="d-flex align-items-center flex-grow-1">
             <div class="chat-avatar-container me-3">
               <div class="chat-avatar" [class.admin-avatar]="selectedChat.isAdmin">
                 {{ getInitial(selectedChat.user2Username) }}

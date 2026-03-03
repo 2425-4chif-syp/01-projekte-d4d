@@ -119,36 +119,60 @@ export class NavbarComponent implements OnInit, OnDestroy {
       const seenReceivedStr = localStorage.getItem('seenReceivedRequests');
       const seenReceived: Record<string, boolean> = seenReceivedStr ? JSON.parse(seenReceivedStr) : {};
       
-      const seenSentStr = localStorage.getItem('seenSentRequests');
-      const seenSent: Record<string, string> = seenSentStr ? JSON.parse(seenSentStr) : {};
+      const seenAcceptedStr = localStorage.getItem('seenAcceptedRequests');
+      const seenAccepted: Record<string, boolean> = seenAcceptedStr ? JSON.parse(seenAcceptedStr) : {};
 
-      let count = 0;
+      let inboxCount = 0;
+      let chatNotificationCount = 0;
 
-      // Count unseen pending received requests
+      // Count unseen PENDING received requests (for inbox)
       if (received) {
         received.forEach((req: any) => {
           if (req.status === 'PENDING' && !seenReceived[req.id]) {
-            count++;
+            inboxCount++;
           }
         });
       }
 
-      // Count unseen status changes on sent requests
+      // Count unseen ACCEPTED received requests (for chat badge)
+      if (received) {
+        received.forEach((req: any) => {
+          if (req.status === 'ACCEPTED' && !seenAccepted[req.id]) {
+            chatNotificationCount++;
+          }
+        });
+      }
+
+      // Count unseen REJECTED sent requests (for inbox)
       if (sent) {
         sent.forEach((req: any) => {
-          if ((req.status === 'ACCEPTED' || req.status === 'REJECTED') && seenSent[req.id] !== req.status) {
-            count++;
+          const seenSentStr = localStorage.getItem('seenSentRequests');
+          const seenSent: Record<string, string> = seenSentStr ? JSON.parse(seenSentStr) : {};
+          if (req.status === 'REJECTED' && seenSent[req.id] !== req.status) {
+            inboxCount++;
           }
         });
       }
 
-      this.notificationCount = count;
-      this.hasInboxNotification = count > 0;
+      this.notificationCount = inboxCount;
+      this.hasInboxNotification = inboxCount > 0;
+      
+      // Update chat notification for accepted requests
+      // This will be ADDED to chat message notifications
+      this.updateChatNotificationForAcceptedRequests(chatNotificationCount);
     } catch (error) {
       console.error('Error checking inbox notifications:', error);
       this.hasInboxNotification = false;
       this.notificationCount = 0;
     }
+  }
+
+  private acceptedRequestNotificationCount = 0;
+
+  private updateChatNotificationForAcceptedRequests(count: number) {
+    this.acceptedRequestNotificationCount = count;
+    // Combine with existing chat notifications
+    this.updateChatBadgeDisplay();
   }
 
   private startNotificationPolling() {
@@ -170,17 +194,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (!this.currentUsername) {
       this.hasChatNotification = false;
       this.chatNotificationCount = 0;
+      this.updateChatBadgeDisplay();
       return;
     }
 
     try {
-      // Get all users to find chats
-      const users = await this.chatService.getAllUsers().toPromise();
+      // Get all users to find chats - use cached data for speed
+      const users = await this.chatService.getAllUsers(false).toPromise();
       const currentUser = users?.find(u => u.name === this.currentUsername);
       
       if (!currentUser) {
         this.hasChatNotification = false;
         this.chatNotificationCount = 0;
+        this.updateChatBadgeDisplay();
         return;
       }
 
@@ -192,12 +218,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       let unreadCount = 0;
 
-      // Check each other user for unread messages
+      // Check each other user for unread messages - use cached data
       const otherUsers = users?.filter(u => u.name !== this.currentUsername) || [];
       
       for (const otherUser of otherUsers) {
         try {
-          const messages = await this.chatService.getMessagesForChat(currentUserId, otherUser.id).toPromise();
+          const messages = await this.chatService.getMessagesForChat(currentUserId, otherUser.id, false).toPromise();
           
           if (messages && messages.length > 0) {
             const lastReadTime = readTimestamps[otherUser.id];
@@ -223,12 +249,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
 
       this.chatNotificationCount = unreadCount;
-      this.hasChatNotification = unreadCount > 0;
+      this.updateChatBadgeDisplay();
     } catch (error) {
       console.error('Error checking chat notifications:', error);
       this.hasChatNotification = false;
       this.chatNotificationCount = 0;
+      this.updateChatBadgeDisplay();
     }
+  }
+
+  private updateChatBadgeDisplay() {
+    // Combine unread chat messages + accepted request notifications
+    const totalChatNotifications = this.chatNotificationCount + this.acceptedRequestNotificationCount;
+    this.hasChatNotification = totalChatNotifications > 0;
   }
 
   private startChatNotificationPolling() {
