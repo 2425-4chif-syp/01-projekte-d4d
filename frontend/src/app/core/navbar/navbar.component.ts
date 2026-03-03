@@ -284,6 +284,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   private updateChatBadgeDisplay() {
+    // Don't show red dot while user is on the chats page
+    if (this.currentPage === 'chats') {
+      this.hasChatNotification = false;
+      return;
+    }
     // Combine unread chat messages + accepted request notifications
     const totalChatNotifications = this.chatNotificationCount + this.acceptedRequestNotificationCount;
     this.hasChatNotification = totalChatNotifications > 0;
@@ -318,7 +323,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.wsMessageSubscription = this.chatWsService.getMessages().subscribe(message => {
       // A message arrived via WebSocket - if it's from someone else, show red dot instantly
-      if (message.sender?.id !== this.currentUserId) {
+      // But not if user is already on the chats page
+      if (message.sender?.id !== this.currentUserId && this.currentPage !== 'chats') {
         this.hasChatNotification = true;
       }
     });

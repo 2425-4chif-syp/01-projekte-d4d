@@ -181,11 +181,11 @@ export class ChatWebSocketService {
    */
   private getWebSocketUrl(): string {
     const apiUrl = this.configService.getApiUrl();
-    // Convert https://localhost/api to wss://localhost/chat/{userId}
-    // or http://... to ws://...
+    // Convert https://localhost/api to wss://localhost/ws/chat/{userId}
+    // Route through /ws/ location in nginx which has WebSocket upgrade support
     const wsProtocol = apiUrl.startsWith('https://') ? 'wss://' : 'ws://';
     const apiBase = apiUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '');
-    return `${wsProtocol}${apiBase}/chat/${this.userId}`;
+    return `${wsProtocol}${apiBase}/ws/chat/${this.userId}`;
   }
 
   /**
