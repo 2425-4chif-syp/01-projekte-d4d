@@ -30,7 +30,7 @@ public class ChatSocket {
     @Inject
     ObjectMapper objectMapper;
 
-    Map<Long, Session> sessions = new ConcurrentHashMap<>();
+    public Map<Long, Session> sessions = new ConcurrentHashMap<>();
 
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") Long userId) {
