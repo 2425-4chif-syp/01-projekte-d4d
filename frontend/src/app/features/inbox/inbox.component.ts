@@ -202,6 +202,9 @@ export class InboxComponent implements OnInit {
         'success'
       );
 
+      // Notify chat component to reload (new system message was created)
+      window.dispatchEvent(new Event('chat-message-received'));
+
       // Reload requests
       const username = await this.getCurrentUser();
       if (username && username !== 'Gast-Modus') {

@@ -350,6 +350,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   navigateTo(route: string) {
+    if (route === 'chats') {
+      this.hasChatNotification = false;
+      this.chatNotificationCount = 0;
+    }
     this.router.navigate(['/' + route]);
   }
 

@@ -13,6 +13,7 @@ import at.htl.repository.ServiceRepository;
 import at.htl.repository.ServiceRequestRepository;
 import at.htl.repository.UserRepository;
 import at.htl.service.NotificationService;
+import at.htl.websockets.ChatSocket;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -49,6 +50,9 @@ public class ServiceRequestResource {
 
     @Inject
     NotificationService notificationService;
+
+    @Inject
+    ChatSocket chatSocket;
 
     /**
      * Create a new service request
@@ -208,13 +212,31 @@ public class ServiceRequestResource {
         service.setStatus("ACTIVE");
         serviceRepository.persist(service);
 
-        // Create System Chat Message
+        // Create System Chat Message with subject name
+        String serviceTypeName = providerMarket.getServiceType() != null
+                ? providerMarket.getServiceType().getName()
+                : "Nachhilfe";
         ChatEntry systemMsg = new ChatEntry();
         systemMsg.setSender(request.getReceiver()); // Provider (who accepted)
         systemMsg.setReceiver(request.getSender()); // Client (who requested)
-        systemMsg.setMessage("<<<SYSTEM>>> Service bestätigt! Ihr könnt nun hier Details besprechen und Termine vereinbaren.");
+        systemMsg.setMessage("<<<SYSTEM>>> " + serviceTypeName + "-Service bestätigt! Ihr könnt nun hier Details besprechen und Termine vereinbaren.");
         systemMsg.setTime(new java.sql.Timestamp(System.currentTimeMillis()));
         chatEntryRepository.persist(systemMsg);
+
+        // Push system message through WebSocket for real-time delivery
+        try {
+            String msgJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(systemMsg);
+            jakarta.websocket.Session receiverWs = chatSocket.sessions.get(request.getSender().getId());
+            if (receiverWs != null && receiverWs.isOpen()) {
+                receiverWs.getAsyncRemote().sendText(msgJson);
+            }
+            jakarta.websocket.Session senderWs = chatSocket.sessions.get(request.getReceiver().getId());
+            if (senderWs != null && senderWs.isOpen()) {
+                senderWs.getAsyncRemote().sendText(msgJson);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to push system message via WebSocket", e);
+        }
 
         // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an BEIDE Parteien (Sender & Provider)
         LOG.info("Sending service created notification to both parties for service: " + service.getId());
