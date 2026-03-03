@@ -9,6 +9,7 @@ import at.htl.entity.User;
 import at.htl.repository.AppointmentRepository;
 import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.ServiceTypeRepository;
+import at.htl.repository.ServiceRepository;
 import at.htl.repository.UserRepository;
 import at.htl.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -42,6 +43,9 @@ public class AppointmentResource {
 
     @Inject
     ServiceTypeRepository serviceTypeRepository;
+
+    @Inject
+    at.htl.repository.ServiceRepository serviceRepository;
 
     @Inject
     ChatEntryRepository chatEntryRepository;
@@ -120,10 +124,26 @@ public class AppointmentResource {
             dto.endTime()
         );
 
-        // Optional fields
+        // Optional fields - auto-detect service type from active service between users
         if (dto.serviceTypeId() != null) {
             ServiceType serviceType = serviceTypeRepository.findById(dto.serviceTypeId());
             appointment.setServiceType(serviceType);
+        } else {
+            // Try to find active service between the two users to auto-detect subject
+            at.htl.entity.Service activeService = serviceRepository.find(
+                "(marketProvider.user = ?1 AND (marketClient.user = ?2 OR marketClient IS NULL)) " +
+                "OR (marketProvider.user = ?2 AND (marketClient.user = ?1 OR marketClient IS NULL))",
+                proposer, recipient
+            ).firstResult();
+            if (activeService != null && activeService.getMarketProvider() != null
+                    && activeService.getMarketProvider().getServiceType() != null) {
+                appointment.setServiceType(activeService.getMarketProvider().getServiceType());
+                // Enrich title with subject if not already included
+                String subjectName = activeService.getMarketProvider().getServiceType().getName();
+                if (appointment.getTitle() != null && !appointment.getTitle().toLowerCase().contains(subjectName.toLowerCase())) {
+                    appointment.setTitle(subjectName + " - " + appointment.getTitle());
+                }
+            }
         }
         
         if (dto.description() != null) {
@@ -144,12 +164,16 @@ public class AppointmentResource {
 
         appointmentRepository.persist(appointment);
 
-        // Create chat notification with appointment data
+        // Create chat notification with appointment data (including subject)
+        String subjectInfo = appointment.getServiceType() != null
+            ? " (" + appointment.getServiceType().getName() + ")"
+            : "";
         String appointmentMessage = String.format(
-            "<<<APPOINTMENT:%d>>> %s hat einen Termin vorgeschlagen: %s am %s bis %s",
+            "<<<APPOINTMENT:%d>>> %s hat einen Termin vorgeschlagen: %s%s am %s bis %s",
             appointment.getId(),
             proposer.getName(),
             appointment.getTitle(),
+            subjectInfo,
             appointment.getStartTime().format(DATE_FORMATTER),
             appointment.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm"))
         );

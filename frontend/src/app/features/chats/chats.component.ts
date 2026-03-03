@@ -16,6 +16,8 @@ import { Appointment, AppointmentCreate } from '../../core/models/appointment.mo
 import { Subscription, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ChatWebSocketService, ConnectionState } from '../../core/services/chat-websocket.service';
+import { ActiveServiceService } from '../../core/services/active-service.service';
+import { ActiveService } from '../../core/models/service.model';
 
 @Component({
   selector: 'app-chats',
@@ -73,10 +75,16 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     await this.loadActiveUser();
   };
 
+  private chatMessageReceivedHandler = () => {
+    console.log('🔄 chat-message-received event, reloading chats...');
+    this.loadChats();
+  };
+
   constructor(
     private chatService: ChatService,
     private appointmentService: AppointmentService,
-    private chatWsService: ChatWebSocketService
+    private chatWsService: ChatWebSocketService,
+    private activeServiceService: ActiveServiceService
   ) {}
 
   ngOnInit() {
@@ -93,6 +101,9 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Reload data after login
     window.addEventListener('user-logged-in', this.userLoggedInHandler);
+
+    // Reload chats when a new system message is created (e.g. request accepted)
+    window.addEventListener('chat-message-received', this.chatMessageReceivedHandler);
   }
 
   ngOnDestroy() {
@@ -103,6 +114,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
     window.removeEventListener('resize', this.viewportHandler);
     window.removeEventListener('user-logged-in', this.userLoggedInHandler);
+    window.removeEventListener('chat-message-received', this.chatMessageReceivedHandler);
 
     // Clean up WebSocket subscriptions
     if (this.wsMessageSubscription) {
@@ -755,6 +767,23 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     // Set default times
     this.appointmentStartTime = '14:00';
     this.appointmentEndTime = '15:00';
+
+    // Prefill title with subject name if there's an active service between users
+    if (this.currentUser) {
+      this.activeServiceService.getMyServices(this.currentUser).subscribe({
+        next: (services: ActiveService[]) => {
+          const partnerUsername = this.selectedChat?.user2Username;
+          const shared = services.find(s =>
+            s.status === 'ACTIVE' &&
+            (s.providerName === partnerUsername || s.clientName === partnerUsername)
+          );
+          if (shared?.serviceTypeName) {
+            this.appointmentTitle = shared.serviceTypeName + ' - Nachhilfetermin';
+          }
+        },
+        error: () => { /* keep default title */ }
+      });
+    }
   }
 
   closeAppointmentModal() {
