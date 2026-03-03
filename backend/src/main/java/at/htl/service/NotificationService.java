@@ -58,6 +58,7 @@ public class NotificationService {
 
     /**
      * Sendet E-Mail an den Empfänger wenn er eine neue Anfrage erhält.
+     * Verwendet das gleiche Pattern wie sendServiceCreatedNotification (getEmailForUser + sendEmail).
      * 
      * @param receiver Der Provider der die Anfrage erhält
      * @param sender Der Schüler der die Anfrage gesendet hat
@@ -69,6 +70,70 @@ public class NotificationService {
         String recipientEmail = getEmailForUser(receiver);
         String subject = "🔔 Neue Nachhilfe-Anfrage von " + sender.getName();
         
+        String htmlContent = buildBaseEmail(
+            "🔔 Neue Anfrage erhalten!",
+            "#f59e0b", "#d97706",
+            receiver.getName(),
+            String.format("<strong>%s</strong> möchte Nachhilfe in <strong>%s</strong> von dir!", sender.getName(), serviceTypeName),
+            """
+                <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #92400e;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #92400e;"><strong>👤 Schüler:</strong> %s</p>
+                </div>
+                <p style="color: #4b5563;">Gehe zur Plattform, um die Anfrage anzunehmen oder abzulehnen.</p>
+            """.formatted(serviceTypeName, sender.getName()),
+            baseUrl, "Anfrage ansehen"
+        );
+
+        sendEmail(recipientEmail, subject, htmlContent);
+    }
+
+    /**
+     * Sendet Bestätigung an den Sender, dass seine Anfrage versendet wurde.
+     * Verwendet das gleiche Pattern wie sendServiceCreatedNotification (getEmailForUser + sendEmail).
+     *
+     * @param sender Der Benutzer der die Anfrage gesendet hat
+     * @param receiver Der Benutzer an den die Anfrage geht
+     * @param serviceTypeName Name des Fachs
+     */
+    public void sendServiceRequestCreatedNotification(User sender, User receiver, String serviceTypeName) {
+        LOG.info("Sending service request created email to sender: " + sender.getName());
+
+        String recipientEmail = getEmailForUser(sender);
+        String subject = "📨 Deine Nachhilfe-Anfrage wurde gesendet!";
+
+        String htmlContent = buildBaseEmail(
+            "📨 Anfrage gesendet!",
+            "#4facfe", "#00f2fe",
+            sender.getName(),
+            String.format("Deine Anfrage für <strong>%s</strong> wurde an <strong>%s</strong> gesendet!", serviceTypeName, receiver.getName()),
+            """
+                <div style="background: #e0f2fe; border: 2px solid #4facfe; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <p style="margin: 5px 0; color: #0369a1;"><strong>📚 Fach:</strong> %s</p>
+                    <p style="margin: 5px 0; color: #0369a1;"><strong>👨‍🏫 Anbieter:</strong> %s</p>
+                </div>
+                <p style="color: #4b5563;">Du erhältst eine weitere E-Mail, sobald die Anfrage bestätigt wurde.</p>
+            """.formatted(serviceTypeName, receiver.getName()),
+            baseUrl, "Zur Plattform"
+        );
+
+        sendEmail(recipientEmail, subject, htmlContent);
+    }
+
+    /**
+     * Sendet Benachrichtigung an den Empfänger, dass er eine neue Anfrage erhalten hat.
+     * Verwendet das gleiche Pattern wie sendServiceCreatedNotification (getEmailForUser + sendEmail).
+     *
+     * @param receiver Der Provider der die Anfrage erhält
+     * @param sender Der Schüler der die Anfrage gesendet hat
+     * @param serviceTypeName Name des Fachs
+     */
+    public void sendServiceRequestReceivedNotification(User receiver, User sender, String serviceTypeName) {
+        LOG.info("Sending service request received notification to: " + receiver.getName());
+
+        String recipientEmail = getEmailForUser(receiver);
+        String subject = "🔔 Neue Nachhilfe-Anfrage von " + sender.getName();
+
         String htmlContent = buildBaseEmail(
             "🔔 Neue Anfrage erhalten!",
             "#f59e0b", "#d97706",
