@@ -12,7 +12,8 @@ import { ChatService } from '../../core/services/chat.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { Chat, ChatMessage, ChatUser } from '../../core/models/chat.model';
 import { Appointment, AppointmentCreate } from '../../core/models/appointment.model';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ChatWebSocketService, ConnectionState } from '../../core/services/chat-websocket.service';
 
 @Component({
@@ -129,7 +130,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     try {
       this.chatService.getAllUsers().subscribe({
-        next: async (users) => {
+        next: (users) => {
           this.allUsers = users; // Store all users for search
           const currentUserObj = users.find((u) => u.name === this.currentUser);
           if (currentUserObj) {
@@ -139,18 +140,23 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
           // Filter out current user
           const filteredUsers = users.filter((u) => u.name !== this.currentUser);
           
-          // Use a Map to deduplicate chats by ID
-          const chatMap = new Map<number, Chat>();
+          if (!this.currentUserId || filteredUsers.length === 0) {
+            this.chats = [];
+            this.filteredChats = [];
+            this.loading = false;
+            return;
+          }
 
-          // Load chat info for all users
-          for (const user of filteredUsers) {
-            if (this.currentUserId) {
-              try {
-                const messages = await this.chatService
-                  .getMessagesForChat(this.currentUserId, user.id)
-                  .toPromise();
+          // PARALLEL LOADING: Load all chats at once with forkJoin
+          const chatObservables = filteredUsers.map((user) =>
+            this.chatService
+              .getMessagesForChat(this.currentUserId!, user.id)
+              .pipe(
+                map((messages) => {
+                  if (!messages || messages.length === 0) {
+                    return null; // Skip users with no messages
+                  }
 
-                if (messages && messages.length > 0) {
                   const lastMsg = messages[messages.length - 1];
                   let lastMessage = lastMsg.message || 'Nachricht';
                   lastMessage =
@@ -172,29 +178,43 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
                     lastUpdate: lastUpdate,
                     isAdmin: userName.toLowerCase() === 'admin',
                     isPinned: userName.toLowerCase() === 'admin',
-                    unreadCount: 0
+                    unreadCount: this.calculateUnreadCount(
+                      {
+                        id: user.id,
+                        user1Username: this.currentUser || '',
+                        user2Username: userName,
+                        lastMessage,
+                        lastUpdate,
+                        isAdmin: userName.toLowerCase() === 'admin',
+                        isPinned: userName.toLowerCase() === 'admin',
+                        unreadCount: 0,
+                      },
+                      messages
+                    ),
                   };
-                  
-                  // Calculate unread count
-                  newChat.unreadCount = this.calculateUnreadCount(newChat, messages);
-                  
-                  // Deduplicate: only add if not already present
-                  if (!chatMap.has(user.id)) {
-                    chatMap.set(user.id, newChat);
-                  }
-                }
-              } catch (err) {
-                // Ignore errors, just don't add the chat
-              }
-            }
-          }
 
-          // Convert Map to Array
-          this.chats = Array.from(chatMap.values());
+                  return newChat;
+                })
+              )
+          );
 
-          this.sortChats();
-          this.filteredChats = [...this.chats];
-          this.loading = false;
+          // Execute all requests in parallel
+          forkJoin(chatObservables).subscribe({
+            next: (allChats) => {
+              // Filter out null values (users with no messages)
+              this.chats = allChats.filter((chat) => chat !== null) as Chat[];
+
+              this.sortChats();
+              this.filteredChats = [...this.chats];
+              this.loading = false;
+
+              console.log('✅ Chats loaded (PARALLEL):', this.chats.length);
+            },
+            error: (err) => {
+              console.error('Fehler beim parallelen Laden der Chats:', err);
+              this.loading = false;
+            },
+          });
         },
         error: (err) => {
           console.error('Fehler beim Laden der Chats:', err);

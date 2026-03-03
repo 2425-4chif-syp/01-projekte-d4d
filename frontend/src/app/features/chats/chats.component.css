@@ -15,13 +15,9 @@
 
 :host {
   display: block;
-  /* Mobile-safe height with modern viewport units */
-  height: 100vh; /* Fallback for older browsers */
-  height: 100dvh; /* Dynamic viewport height (modern browsers) */
-  height: -webkit-fill-available; /* iOS Safari */
+  /* Desktop: standard viewport height */
+  height: 100vh;
   max-height: 100vh;
-  max-height: 100dvh;
-  max-height: -webkit-fill-available;
   overflow: hidden;
   background-color: var(--chat-bg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -773,11 +769,15 @@
 /* Mobile devices (phones, portrait tablets) */
 @media (max-width: 767px) {
   :host {
-    /* Mobile viewport with dynamic height */
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport for mobile browsers */
-    height: 100svh; /* Small viewport (with browser chrome) */
-    height: -webkit-fill-available;
+    /* Mobile viewport with dynamic height - ONLY on mobile! */
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Dynamic viewport (excludes/includes browser UI as needed) */
+    height: 100svh; /* Small viewport (worst case with browser chrome) */
+    height: -webkit-fill-available; /* iOS Safari */
+    max-height: 100vh;
+    max-height: 100dvh;
+    max-height: 100svh;
+    max-height: -webkit-fill-available;
   }
 
   .chat-container {
