@@ -231,11 +231,19 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
         // Execute all requests in parallel with cached data
         forkJoin(chatObservables).subscribe({
           next: (allChats) => {
-            this.chats = allChats.filter((chat) => chat !== null) as Chat[];
+            const loadedChats = allChats.filter((chat) => chat !== null) as Chat[];
+
+            // Preserve any temporary "new conversation" chats that haven't had a message yet
+            const tempChats = this.chats.filter(existing =>
+              existing.lastMessage === 'Neue Unterhaltung starten' &&
+              !loadedChats.some(lc => lc.id === existing.id)
+            );
+
+            this.chats = [...loadedChats, ...tempChats];
             this.sortChats();
             this.filteredChats = [...this.chats];
             this.loading = false;
-            console.log('✅ Chats loaded INSTANTLY (cached):', this.chats.length);
+            console.log('✅ Chats loaded:', this.chats.length);
           },
           error: (err) => {
             console.error('Fehler beim Laden der Chats:', err);
@@ -559,11 +567,19 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   // WebSocket setup and handlers
+  private wsSetupDone = false;
+
   private setupWebSocket(): void {
     if (!this.currentUserId) {
       console.log('Cannot setup WebSocket: no user ID');
       return;
     }
+
+    // Only set up subscriptions once per component lifetime
+    if (this.wsSetupDone) {
+      return;
+    }
+    this.wsSetupDone = true;
 
     console.log('🔌 Setting up WebSocket connection...');
 
