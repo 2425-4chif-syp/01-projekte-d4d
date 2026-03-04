@@ -31,51 +31,51 @@ public class TestDataResource {
     @Inject
     ReviewTestData reviewTestData;
 
-    private Response disabled() {
-        return Response.status(Response.Status.GONE)
-                .entity("Testdata endpoints are disabled in production.")
-                .build();
-    }
-
     @POST
     @Path("/generate-service-types")
     @Transactional
     public Response generateServiceTypesTestData() {
-        return disabled();
+        serviceTypeTestData.generateServiceTypesTestData();
+        return Response.ok("Dienstleistungsarten-Testdaten erfolgreich generiert.").build();
     }
 
     @POST
     @Path("/generate-users")
     @Transactional
     public Response generateUserTestData() {
-        return disabled();
+        userTestData.generateUserTestData();
+        return Response.ok("Benutzer-Testdaten erfolgreich generiert.").build();
     }
 
     @POST
     @Path("/generate-markets")
     @Transactional
     public Response generateMarketTestData() {
-        return disabled();
+        marketTestData.generateMarketTestData();
+        return Response.ok("Marktplatz-Testdaten erfolgreich generiert.").build();
     }
 
     @POST
     @Path("/generate-services")
     @Transactional
     public Response generateServiceTestData() {
-        return disabled();
+        serviceTestData.generateServiceTestData();
+        return Response.ok("Service-Testdaten erfolgreich generiert.").build();
     }
 
     @POST
     @Path("/generate-chat-entries")
     @Transactional
     public Response generateChatTestData() {
-        return disabled();
+        chatEntryTestData.generateChatEntryTestData();
+        return Response.ok("Chat-Testdaten erfolgreich generiert.").build();
     }
 
     @POST
     @Path("/generate-reviews")
     @Transactional
     public Response generateReviewTestData() {
-        return disabled();
+        reviewTestData.generateReviewTestData();
+        return Response.ok("Review-Testdaten erfolgreich generiert.").build();
     }
 }
