@@ -506,32 +506,17 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
       time: new Date().toISOString()
     };
 
-    // Try to send via WebSocket first (real-time)
-    if (this.chatWsService.isConnected()) {
-      try {
-        this.chatWsService.sendMessage(message);
-        
-        // Optimistic UI update — tag with tempId so we can match the server echo
-        const optimistic: ChatMessage = { ...message, id: tempId };
-        this.messages.push(optimistic);
-        this.shouldScrollToBottom = true;
-        this.submitting = false;
+    // Optimistic UI update
+    const optimistic: ChatMessage = { ...message, id: tempId };
+    this.messages.push(optimistic);
+    this.shouldScrollToBottom = true;
+    this.updateChatInList(messageToSend);
 
-        // Update chat list
-        this.updateChatInList(messageToSend);
-      } catch (error) {
-        console.error('WebSocket send failed, falling back to HTTP:', error);
-        // Fallback to HTTP
-        this.sendMessageViaHttp(messageToSend);
-      }
-    } else {
-      // WebSocket not connected, use HTTP
-      console.log('WebSocket not connected, using HTTP fallback');
-      this.sendMessageViaHttp(messageToSend);
-    }
+    // Always send via HTTP — reliable and guaranteed
+    this.sendMessageViaHttp(messageToSend, tempId);
   }
 
-  private sendMessageViaHttp(messageToSend: string): void {
+  private sendMessageViaHttp(messageToSend: string, tempId?: string): void {
     this.chatService
       .sendMessage(
         this.currentUserId!,
@@ -540,7 +525,14 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
       )
       .subscribe({
         next: (sentMessage) => {
-          this.messages.push(sentMessage);
+          // Replace optimistic message with real one from server
+          if (tempId) {
+            const idx = this.messages.findIndex(m => m.id === tempId);
+            if (idx !== -1) { this.messages[idx] = sentMessage; }
+            else { this.messages.push(sentMessage); }
+          } else {
+            this.messages.push(sentMessage);
+          }
           this.shouldScrollToBottom = true;
           this.submitting = false;
 
