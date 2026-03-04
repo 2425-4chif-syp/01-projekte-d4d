@@ -3,19 +3,16 @@ package at.htl.service;
 import at.htl.repository.ServiceTypeRepository;
 import at.htl.repository.UserRepository;
 import at.htl.testdata.*;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class StartupInitializer {
-
-    @ConfigProperty(name = "quarkus.profile", defaultValue = "prod")
-    String profile;
 
     private static final Logger LOG = Logger.getLogger(StartupInitializer.class);
 
@@ -45,9 +42,9 @@ public class StartupInitializer {
 
     @Transactional
     void onStart(@Observes StartupEvent ev) {
-        LOG.info("=== Application Startup (profile: " + profile + ") ===");
-        if (!profile.equals("dev")) {
-            LOG.info("Not in dev profile - skipping test data initialization.");
+        LOG.info("=== Application Startup (LaunchMode: " + LaunchMode.current() + ") ===");
+        if (!LaunchMode.current().isDevOrTest()) {
+            LOG.info("Not in dev/test mode - skipping test data initialization.");
             return;
         }
         initializeTestData();
