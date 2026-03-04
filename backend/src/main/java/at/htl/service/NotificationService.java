@@ -158,10 +158,17 @@ public class NotificationService {
      * @param service Der erstellte Service
      */
     public void sendServiceCreatedNotification(Service service) {
+        sendServiceCreatedNotification(service, null);
+    }
+
+    /**
+     * Overload that accepts an explicit client user (for when clientMarket is null).
+     */
+    public void sendServiceCreatedNotification(Service service, User explicitClient) {
         LOG.info("Sending service created emails for service: " + service.getId());
         
         User provider = service.getMarketProvider().getUser();
-        User client = service.getMarketClient() != null ? service.getMarketClient().getUser() : null;
+        User client = service.getMarketClient() != null ? service.getMarketClient().getUser() : explicitClient;
         String serviceTypeName = service.getMarketProvider().getServiceType().getName();
         
         // E-Mail an den Client (Schüler der die Anfrage gesendet hat)

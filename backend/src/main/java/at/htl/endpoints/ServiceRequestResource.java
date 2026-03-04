@@ -240,7 +240,7 @@ public class ServiceRequestResource {
 
         // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an BEIDE Parteien (Sender & Provider)
         LOG.info("Sending service created notification to both parties for service: " + service.getId());
-        notificationService.sendServiceCreatedNotification(service);
+        notificationService.sendServiceCreatedNotification(service, client);
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }
