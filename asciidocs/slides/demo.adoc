@@ -31,10 +31,17 @@ endif::[]
 :title-slide-transition: zoom
 :title-slide-transition-speed: fast
 
+== Projektteam
+
+* *Leon Zehetner*
+* *Michael Birklbauer*
+* *Stefan Jelic*
+* *Vlad Guran*
+
 == Was ist D4D?
 * *D4D* ermöglicht einen kostenlosen Austausch von Dienstleistungen
-* aktuell Fokus auf schulischen Austausch, jedoch für alle Dienstleistunge geplant (z.B. Handwerk ...)
-* Prinzip: Du hilfst mir, ich helfe dir
+* aktuell Fokus auf schulischen Austausch, jedoch für alle Dienstleistungen geplant (z.B. Handwerk ...)
+* optimaler Fall: Du hilfst mir, ich helfe dir
 
 == Warum D4D verwenden?
 * *kostenlos* – kein Geld notwendig, nur deine Zeit und Fähigkeiten
@@ -43,28 +50,9 @@ endif::[]
 * *Kalender-Integration* – Termine direkt in der App verwalten
 * *Handy-Synchronisation* – Termine auch in deiner Kalender-App am Handy anzeigen
 
-== Projektteam
-
-* *Leon Zehetner*
-* *Michael Birklbauer*
-* *Stefan Jelic*
-* *Vlad Guran*
-
-=== Systemarchitektur
-
-[.stretch]
-image::system-architecture.png[]
-
-=== CLD
-
-[.stretch]
-image::CLD.png[]
-
-
-=== ERD
-
-[.stretch]
-image::er-diagram.png[]
-
-
 == Live Demo
+
+== Systemarchitektur
+
+[.stretch]
+image::system-architecture2.png[]
