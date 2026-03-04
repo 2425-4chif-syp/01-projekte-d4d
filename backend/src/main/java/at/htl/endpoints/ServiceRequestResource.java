@@ -194,27 +194,51 @@ public class ServiceRequestResource {
         serviceRequestRepository.persist(request);
 
         // Create a new Service
-        Market providerMarket = request.getMarket(); // The market that was requested (the offer)
-        User client = request.getSender(); // The user who sent the request
-        
-        // Try to find the client's corresponding market (their demand for the same service type)
-        // This may or may not exist - if not, clientMarket will be null
-        Market clientMarket = marketRepository.find(
-            "user = ?1 AND serviceType = ?2 AND offer = 0",
-            client,
-            providerMarket.getServiceType()
-        ).firstResult();
-        
-        // Create the service regardless of whether clientMarket exists
-        // providerMarket = always the offer being requested
-        // clientMarket = client's demand if they have one, null otherwise
+        // Determine provider/client based on whether the market is an offer or demand
+        Market requestedMarket = request.getMarket();
+        boolean isOffer = requestedMarket.getOffer() == 1;
+
+        // If offer: market owner = provider, request sender = client
+        // If demand: request sender = provider (offering help), market owner = client
+        User provider = isOffer ? request.getReceiver() : request.getSender();
+        User client = isOffer ? request.getSender() : request.getReceiver();
+
+        // Find or assign provider/client markets
+        Market providerMarket;
+        Market clientMarket;
+
+        if (isOffer) {
+            // Market is an offer → it's the provider market
+            providerMarket = requestedMarket;
+            // Try to find client's demand for the same service type
+            clientMarket = marketRepository.find(
+                "user = ?1 AND serviceType = ?2 AND offer = 0",
+                client, requestedMarket.getServiceType()
+            ).firstResult();
+        } else {
+            // Market is a demand → it's the client market
+            clientMarket = requestedMarket;
+            // Try to find sender's offer for the same service type
+            providerMarket = marketRepository.find(
+                "user = ?1 AND serviceType = ?2 AND offer = 1",
+                provider, requestedMarket.getServiceType()
+            ).firstResult();
+
+            // Provider MUST have an offer market for a valid service
+            if (providerMarket == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Provider has no matching offer for this service type")
+                        .build();
+            }
+        }
+
         Service service = new Service(providerMarket, clientMarket);
         service.setStatus("ACTIVE");
         serviceRepository.persist(service);
 
         // Create System Chat Message with subject name
-        String serviceTypeName = providerMarket.getServiceType() != null
-                ? providerMarket.getServiceType().getName()
+        String serviceTypeName = requestedMarket.getServiceType() != null
+                ? requestedMarket.getServiceType().getName()
                 : "Nachhilfe";
         ChatEntry systemMsg = new ChatEntry();
         systemMsg.setSender(request.getReceiver()); // Provider (who accepted)
@@ -239,8 +263,12 @@ public class ServiceRequestResource {
         }
 
         // ✉️ E-MAIL NOTIFICATION: Sende Bestätigung an BEIDE Parteien (Sender & Provider)
-        LOG.info("Sending service created notification to both parties for service: " + service.getId());
-        notificationService.sendServiceCreatedNotification(service, client);
+        try {
+            LOG.info("Sending service created notification to both parties for service: " + service.getId());
+            notificationService.sendServiceCreatedNotification(service, client);
+        } catch (Exception e) {
+            LOG.error("Failed to send service created email notification", e);
+        }
 
         return Response.ok(ServiceRequestResponseDto.fromEntity(request)).build();
     }
