@@ -137,7 +137,9 @@ export class ChatWebSocketService {
     }
 
     try {
-      const payload = JSON.stringify(message);
+      // Strip time field — let the backend set the server-side timestamp
+      const { time, ...wsPayload } = message as any;
+      const payload = JSON.stringify(wsPayload);
       this.socket.send(payload);
       this.log('Message sent');
     } catch (error) {

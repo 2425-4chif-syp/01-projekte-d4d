@@ -4,6 +4,7 @@ import at.htl.entity.ChatEntry;
 import at.htl.entity.User;
 import at.htl.repository.ChatEntryRepository;
 import at.htl.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -59,52 +60,49 @@ public class ChatSocket {
                 return;
             }
 
-            // Parse message
-            ChatEntry chatEntry = objectMapper.readValue(message, ChatEntry.class);
-            
-            // Ensure sender is the connected user (security check)
-            if (chatEntry.getSender() == null || chatEntry.getSender().getId() == null) {
-                // If sender is missing, assume it's the connected user
-                User sender = new User();
-                sender.setId(userId);
-                chatEntry.setSender(sender);
-            } else if (!chatEntry.getSender().getId().equals(userId)) {
-                // If sender is set but different, force it to be the connected user
-                chatEntry.getSender().setId(userId);
+            // Parse JSON manually to avoid java.sql.Timestamp deserialization issues
+            JsonNode node = objectMapper.readTree(message);
+
+            long senderId = node.path("sender").path("id").asLong(userId);
+            long receiverId = node.path("receiver").path("id").asLong(0);
+            String msgText = node.path("message").asText("");
+
+            if (receiverId == 0 || msgText.isEmpty()) {
+                System.err.println("Invalid message from user " + userId + ": missing receiver or message");
+                return;
             }
 
-            // Fetch full entities to ensure they are attached/exist
-            User sender = userRepository.findById(chatEntry.getSender().getId());
-            User receiver = userRepository.findById(chatEntry.getReceiver().getId());
+            // Security: force sender to be the connected user
+            if (senderId != userId) {
+                senderId = userId;
+            }
+
+            User sender = userRepository.findById(senderId);
+            User receiver = userRepository.findById(receiverId);
 
             if (sender != null && receiver != null) {
-                chatEntry.setSender(sender);
-                chatEntry.setReceiver(receiver);
-                
-                if (chatEntry.getTime() == null) {
-                    chatEntry.setTime(Timestamp.from(Instant.now()));
-                }
-
-                // Persist
+                ChatEntry chatEntry = new ChatEntry(sender, receiver, msgText, Timestamp.from(Instant.now()));
                 chatEntryRepository.persist(chatEntry);
+
+                String json = objectMapper.writeValueAsString(chatEntry);
 
                 // Send to receiver if online
                 Session receiverSession = sessions.get(receiver.getId());
                 if (receiverSession != null && receiverSession.isOpen()) {
-                    receiverSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(chatEntry));
+                    receiverSession.getAsyncRemote().sendText(json);
                 }
-                
-                // Send back to sender (to confirm and display with correct timestamp/ID)
-                // Only if the sender didn't just send it (to avoid duplicates if frontend handles optimistic UI)
-                // But here we want to confirm persistence.
-                // Frontend should handle deduplication or just replace the optimistic one.
+
+                // Send echo to sender (confirms persistence with real ID/timestamp)
                 Session senderSession = sessions.get(sender.getId());
                 if (senderSession != null && senderSession.isOpen()) {
-                    senderSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(chatEntry));
+                    senderSession.getAsyncRemote().sendText(json);
                 }
+            } else {
+                System.err.println("User not found: sender=" + senderId + " receiver=" + receiverId);
             }
 
         } catch (Exception e) {
+            System.err.println("Error processing message from user " + userId + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
