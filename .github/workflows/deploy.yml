@@ -3,14 +3,15 @@ name: Build & Deploy D4D (Fullstack)
 on:
   push:
     branches: [main]
-  pull_request:
-    types: [closed]
-    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     permissions: write-all
     runs-on: ubuntu-24.04
 
@@ -76,8 +77,8 @@ jobs:
             echo "📥 Pulling latest Docker images..."
             docker compose pull backend frontend
 
-            echo "🧹 Removing old containers (keep volumes to preserve data)..."
-            docker compose down
+            echo "🧹 Removing old containers and volumes for fresh data..."
+            docker compose down -v
 
             echo "🚀 Starting updated containers..."
             docker compose up -d
