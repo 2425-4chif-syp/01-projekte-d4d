@@ -59,11 +59,15 @@ export class ChatService {
     const cacheKey = [currentUserId, otherUserId].sort().join('-');
     
     if (!this.messagesCache.has(cacheKey) || forceRefresh) {
-      const messages$ = this.http.get<ChatMessage[]>(
-        `${this.apiUrl}/chatentry/${currentUserId}/${otherUserId}`
-      ).pipe(shareReplay(1));
+      // Do NOT use shareReplay on forceRefresh — we need a fresh HTTP call every time
+      const messages$ = forceRefresh
+        ? this.http.get<ChatMessage[]>(`${this.apiUrl}/chatentry/${currentUserId}/${otherUserId}`)
+        : this.http.get<ChatMessage[]>(`${this.apiUrl}/chatentry/${currentUserId}/${otherUserId}`).pipe(shareReplay(1));
       
-      this.messagesCache.set(cacheKey, messages$);
+      if (!forceRefresh) {
+        this.messagesCache.set(cacheKey, messages$);
+      }
+      return messages$;
     }
     
     return this.messagesCache.get(cacheKey)!;
