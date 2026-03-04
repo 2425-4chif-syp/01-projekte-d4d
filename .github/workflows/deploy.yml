@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.merged == true
     permissions: write-all
     runs-on: ubuntu-24.04
 
