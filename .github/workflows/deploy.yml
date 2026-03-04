@@ -77,8 +77,8 @@ jobs:
             echo "📥 Pulling latest Docker images..."
             docker compose pull backend frontend
 
-            echo "🧹 Removing old containers and volumes for fresh data..."
-            docker compose down -v
+            echo "🧹 Removing old containers (keeping DB volume)..."
+            docker compose down
 
             echo "🚀 Starting updated containers..."
             docker compose up -d
