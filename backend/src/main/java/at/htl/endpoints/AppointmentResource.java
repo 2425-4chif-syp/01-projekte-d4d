@@ -130,9 +130,11 @@ public class AppointmentResource {
             appointment.setServiceType(serviceType);
         } else {
             // Try to find active service between the two users to auto-detect subject
+            // Use LEFT JOIN so services with null marketClient are still found
             at.htl.entity.Service activeService = serviceRepository.find(
-                "(marketProvider.user = ?1 AND (marketClient.user = ?2 OR marketClient IS NULL)) " +
-                "OR (marketProvider.user = ?2 AND (marketClient.user = ?1 OR marketClient IS NULL))",
+                "FROM Service s LEFT JOIN s.marketClient mc WHERE s.status = 'ACTIVE' AND (" +
+                "(s.marketProvider.user = ?1 AND (mc IS NULL OR mc.user = ?2)) OR " +
+                "(s.marketProvider.user = ?2 AND (mc IS NULL OR mc.user = ?1)))",
                 proposer, recipient
             ).firstResult();
             if (activeService != null && activeService.getMarketProvider() != null
