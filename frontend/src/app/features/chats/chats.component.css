@@ -774,11 +774,10 @@
 /* Mobile devices (phones, portrait tablets) */
 @media (max-width: 767px) {
   :host {
-    /* Dynamic viewport: dvh handles mobile URL bar natively, JS fallback for older browsers */
-    height: calc(var(--app-vh, 100vh) - 115px);
-    height: calc(100dvh - 115px);
-    max-height: calc(var(--app-vh, 100vh) - 115px);
-    max-height: calc(100dvh - 115px);
+    /* Use JS-driven --app-vh (visualViewport.height) for accurate mobile height.
+       It correctly excludes URL bar, system taskbar and on-screen keyboard. */
+    height: calc(var(--app-vh, 100dvh) - 115px);
+    max-height: calc(var(--app-vh, 100dvh) - 115px);
   }
 
   .chat-container {

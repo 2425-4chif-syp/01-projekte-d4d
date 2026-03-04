@@ -70,27 +70,26 @@ services:
     networks:
       - d4d-v2-net
 
-  # Testdaten-Container nur für Development - in Production deaktiviert
-  # init-testdata:
-  #   image: curlimages/curl
-  #   container_name: init-testdata
-  #   depends_on:
-  #     - backend
-  #   entrypoint: >
-  #     sh -c "
-  #     echo 'Warte auf Backend...' &&
-  #     until curl -s http://backend:8080/q/health; do sleep 1; done &&
-  #     echo 'Backend erreichbar' &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-service-types &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-users &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-markets &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-services &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-chat-entries &&
-  #     curl -X POST http://backend:8080/d4d/testdata/generate-reviews &&
-  #     echo 'Testdaten erfolgreich eingefügt.'"
-  #   restart: "no"
-  #   networks:
-  #     - d4d-v2-net
+  init-testdata:
+    image: curlimages/curl
+    container_name: init-testdata
+    depends_on:
+      - backend
+    entrypoint: >
+      sh -c "
+      echo 'Warte auf Backend...' &&
+      until curl -s http://backend:8080/q/health; do sleep 1; done &&
+      echo 'Backend erreichbar' &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-service-types &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-users &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-markets &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-services &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-chat-entries &&
+      curl -X POST http://backend:8080/d4d/testdata/generate-reviews &&
+      echo 'Testdaten erfolgreich eingefügt.'"
+    restart: "no"
+    networks:
+      - d4d-v2-net
 
 networks:
   d4d-v2-net:
