@@ -69,6 +69,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
   private wsMessageSubscription?: Subscription;
   private wsStateSubscription?: Subscription;
   private shouldScrollToBottom = false;
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private viewportHandler = () => this.updateViewportHeight();
   private userLoggedInHandler = async () => {
     console.log('🔄 User logged in, reloading chats...');
@@ -115,6 +116,12 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     window.removeEventListener('resize', this.viewportHandler);
     window.removeEventListener('user-logged-in', this.userLoggedInHandler);
     window.removeEventListener('chat-message-received', this.chatMessageReceivedHandler);
+
+    // Stop polling
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
 
     // Clean up WebSocket subscriptions
     if (this.wsMessageSubscription) {
@@ -337,6 +344,23 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   selectChat(chat: Chat) {
     this.currentChatId = chat.id;
+
+    // Start polling for new messages every 3 seconds (guaranteed delivery)
+    if (this.pollingInterval) clearInterval(this.pollingInterval);
+    this.pollingInterval = setInterval(() => {
+      if (this.currentChatId && this.currentUserId) {
+        this.chatService.getMessagesForChat(this.currentUserId, Number(this.currentChatId), true)
+          .subscribe({ next: (msgs) => {
+            if (msgs.length !== this.messages.length ||
+                (msgs.length > 0 && msgs[msgs.length-1].id !== this.messages[this.messages.length-1]?.id)) {
+              // Preserve optimistic (temp) messages not yet confirmed
+              const tempMsgs = this.messages.filter(m => m.id && String(m.id).startsWith('temp-'));
+              this.messages = [...msgs, ...tempMsgs.filter(t => !msgs.some(m => m.message === t.message && m.sender?.id === t.sender?.id))];
+              this.shouldScrollToBottom = true;
+            }
+          }});
+      }
+    }, 3000);
     this.selectedChat = chat;
     this.currentChatTitle = `Chat mit ${chat.user2Username}`;
     
@@ -354,6 +378,7 @@ export class ChatsComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (window.innerWidth < 768) {
       this.selectedChat = null;
       this.currentChatId = null;
+      if (this.pollingInterval) { clearInterval(this.pollingInterval); this.pollingInterval = null; }
       this.messages = [];
     }
   }
